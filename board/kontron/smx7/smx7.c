@@ -591,8 +591,9 @@ int ft_board_setup(void *blob, bd_t *bd)
 	char str_ok[] = "okay";
 	u64 freq = mxc_get_clock(MXC_ARM_CLK);
 	phys_addr_t base = getenv_bootm_low();
-	phys_size_t size = getenv_bootm_low();
+	phys_size_t size = getenv_bootm_size();
 
+	debug("Memory parameters written to device tree: base=0x%08x, size=0x%08x\n", (u32)base, (u32)size);
 	fdt_fixup_memory(blob, (u64)base, (u64)size);
 	nodeoffset = fdt_find_or_add_subnode(blob, 0, "memory");
 	if (nodeoffset < 0)
