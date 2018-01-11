@@ -29,6 +29,7 @@
 #include <usb/ehci-ci.h>
 #include <dm.h>
 #include <dm/platform_data/serial_mxc.h>
+#include <version.h>
 
 /* #include "../common/emb_vpd.h" */
 #include "../common/emb_eep.h"
@@ -580,20 +581,25 @@ int checkboard(void)
 }
 
 #if defined(CONFIG_OF_BOARD_SETUP)
+const char ft_version_string[] = U_BOOT_VERSION_STRING;
+
 int ft_board_setup(void *blob, bd_t *bd)
 {
 	int err;
 	int nodeoffset;
+	int create = 1;
 	char *name;
 	char str_mem_type[] = "memory-type";
 	char str_mem_freq[] = "memory-frequency";
 	char str_pwm1[] = "/soc/aips-bus@30400000/pwm@30660000";
 	char str_ok[] = "okay";
+
 	u64 freq = mxc_get_clock(MXC_ARM_CLK);
 	phys_addr_t base = getenv_bootm_low();
 	phys_size_t size = getenv_bootm_size();
 
-	debug("Memory parameters written to device tree: base=0x%08x, size=0x%08x\n", (u32)base, (u32)size);
+	debug("/memory device tree settings: base=0x%08x, size=0x%08x\n",
+	      (u32)base, (u32)size);
 	fdt_fixup_memory(blob, (u64)base, (u64)size);
 	nodeoffset = fdt_find_or_add_subnode(blob, 0, "memory");
 	if (nodeoffset < 0)
@@ -612,6 +618,14 @@ int ft_board_setup(void *blob, bd_t *bd)
 	name = str_mem_freq;
 	err = fdt_setprop_u64(blob, nodeoffset, name, freq);
 	if (err < 0)
+		goto err;
+
+	printf("bootloader version: %s\n", ft_version_string);
+	err = fdt_find_and_setprop(blob, "/chosen", "u-boot,version",
+	                     ft_version_string,
+	                     sizeof(ft_version_string), create);
+
+	if (err<0)
 		goto err;
 
 	/* check pwm_out_disable and enable pwm if needed */
