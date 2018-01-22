@@ -21,9 +21,11 @@ static int kick_it = 1;
 
 #define WDOG_WCR_WDE  0x0004
 
+#define WDOG_BASE_ADDR WDOG1_BASE_ADDR
+
 static void imx_watchdog_kick(void)
 {
-	struct wdog_regs *wdog = (struct wdog_regs *)WDOG1_BASE_ADDR;
+	struct wdog_regs *wdog = (struct wdog_regs *)WDOG_BASE_ADDR;
 
 	writew(WDOG_SERVICE1, &wdog->wsr);
 	while (readw(&wdog->wsr) != WDOG_SERVICE1)
@@ -48,7 +50,7 @@ void watchdog_reset(void)
  */
 static int imx_watchdog_timeout (int timeout)
 {
-	struct wdog_regs *wdog = (struct wdog_regs *)WDOG1_BASE_ADDR;
+	struct wdog_regs *wdog = (struct wdog_regs *)WDOG_BASE_ADDR;
 
 	timeout = ((timeout << 1) - 1) << 8; /* counter resolution is 0.5 seconds */
 	/* set watchdog timeout count */
@@ -60,7 +62,7 @@ static int imx_watchdog_timeout (int timeout)
 
 static void imx_watchdog_enable(void)
 {
-	struct wdog_regs *wdog = (struct wdog_regs *)WDOG1_BASE_ADDR;
+	struct wdog_regs *wdog = (struct wdog_regs *)WDOG_BASE_ADDR;
 
 	writew(readw(&wdog->wcr) | WDOG_WCR_WDE, &wdog->wcr);
 }
@@ -68,7 +70,7 @@ static void imx_watchdog_enable(void)
 #if defined(CONFIG_WATCHDOG_ALLOW_STOP)
 static void imx_watchdog_disable(void)
 {
-	struct wdog_regs *wdog = (struct wdog_regs *)WDOG1_BASE_ADDR;
+	struct wdog_regs *wdog = (struct wdog_regs *)WDOG_BASE_ADDR;
 
 	writew(readw(&wdog->wcr) & ~WDOG_WCR_WDE, &wdog->wcr);
 }
