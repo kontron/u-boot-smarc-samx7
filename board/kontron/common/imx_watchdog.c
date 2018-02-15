@@ -110,7 +110,7 @@ static int do_imx_watchdog (cmd_tbl_t *cmdtp, int flag, int argc, char * const a
 				return 1;
 			if (timeout == 0) {
 				printf("timeout is 0, watchdog not started\n");
-				return 0;
+				return 1;
 			}
 			if (timeout > 128) {
 				printf("timeout %d is not valid, watchdog not started!\n", (int)timeout);
