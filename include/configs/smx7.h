@@ -169,6 +169,7 @@
 	"pcie_b_prsnt=yes" "\0" \
 	"pcie_c_prsnt=yes" "\0" \
 	"pwm_out_disable=yes" "\0" \
+	"bootm_boot_mode=sec" "\0" \
 	"bootfailed=echo Booting failed from all boot sources && false" "\0" \
 	"bootos=run setbootargs && " \
 		"run loadimage && " \
