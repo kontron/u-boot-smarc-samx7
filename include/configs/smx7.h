@@ -122,11 +122,11 @@
 #define CONFIG_ENV_IS_IN_SPI_FLASH
 #define CONFIG_ENV_SECT_SIZE        (32 * 1024)
 
-#define CONFIG_ENV_OFFSET           0x1c0000
+#define CONFIG_ENV_OFFSET           0x0c0000
 #define CONFIG_ENV_SIZE             SZ_8K
 
 #define CONFIG_SYS_REDUNDAND_ENVIRONMENT
-#define CONFIG_ENV_OFFSET_REDUND    0x1c8000
+#define CONFIG_ENV_OFFSET_REDUND    0x0c8000
 #define CONFIG_ENV_SIZE_REDUND      (CONFIG_ENV_SIZE)
 #else
 #define CONFIG_ENV_IS_NOWHERE
@@ -154,6 +154,7 @@
 #define UPDATE_M4_ENV ""
 #endif
 
+#if 0
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	UPDATE_M4_ENV \
 	"autoload=no" "\0" \
@@ -213,7 +214,22 @@
 		"sf write 80800000 0 200 && sf write 88000000 400 ${filesize}" "\0"
 
 #define CONFIG_BOOTCOMMAND \
-		"run mmcboot || run sdboot || run usbboot || run netboot || run bootfailed"
+	"run mmcboot || run sdboot || run usbboot || run netboot || run bootfailed"
+#else
+#define CONFIG_EXTRA_ENV_SETTINGS \
+	"autoload=no" "\0" \
+	"bootm_boot_mode=sec" "\0" \
+	"qspi_header_file=qspi-header.bin" "\0" \
+	"uboot_update_file=u-boot-smx7-spl.imx" "\0" \
+	"uboot_install=bootp && tftp 80800000 ${qspi_header_file} && tftp 88000000 ${uboot_update_file} && " \
+		"sf probe 0 && sf erase 0 80000 && sf write 80800000 0 200 && sf write 88000000 400 ${filesize}" "\0" \
+	"uboot_update=bootp && tftp 88000000 ${uboot_update_file} && " \
+		"sf probe 0 && sf read 80800000 0 200 && sf erase 0 80000 && " \
+		"sf write 80800000 0 200 && sf write 88000000 400 ${filesize}" "\0"
+
+#define CONFIG_BOOTCOMMAND \
+	"echo Exit to CLI"
+#endif
 
 #define CONFIG_SYS_MEMTEST_START	0x80000000
 #define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + 0x20000000)
