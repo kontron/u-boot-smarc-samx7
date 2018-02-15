@@ -161,6 +161,9 @@ static int setup_lcd(void)
 #define USDHC1_PWR_GPIO	IMX_GPIO_NR(5, 2)
 #define USDHC3_PWR_GPIO IMX_GPIO_NR(6, 11)
 
+#define USDHC_PRES_STATE 0x24
+#define USDHC_PRES_STATE_CINST_SHIFT 16
+
 struct fsl_esdhc_cfg usdhc_cfg[2] = {
 	{USDHC1_BASE_ADDR},
 	{USDHC3_BASE_ADDR},
@@ -173,7 +176,8 @@ int board_mmc_getcd(struct mmc *mmc)
 
 	switch (cfg->esdhc_base) {
 	case USDHC1_BASE_ADDR:
-		ret = !gpio_get_value(USDHC1_CD_GPIO);
+		ret = esdhc_read32(cfg->esdhc_base+USDHC_PRES_STATE) &
+		       (1<<USDHC_PRES_STATE_CINST_SHIFT) ? 1 : 0;
 		break;
 	case USDHC3_BASE_ADDR:
 		ret = 1; /* Assume uSDHC3 emmc is always present */
@@ -272,6 +276,10 @@ static int setup_fec(void)
 
 int board_phy_config(struct phy_device *phydev)
 {
+	/*
+	 * TBD: check if we can remove this as these registers are
+	 *      not used on SMX7 Marvell 88E1510 PHYs.
+	 */
 	/* enable rgmii rxc skew and phy mode select to RGMII copper */
 	phy_write(phydev, MDIO_DEVAD_NONE, 0x1e, 0x21);
 	phy_write(phydev, MDIO_DEVAD_NONE, 0x1f, 0x7ea8);
