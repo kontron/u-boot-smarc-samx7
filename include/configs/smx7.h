@@ -219,13 +219,11 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"autoload=no" "\0" \
 	"bootm_boot_mode=sec" "\0" \
-	"qspi_header_file=qspi-header.bin" "\0" \
-	"uboot_update_file=u-boot-smx7-spl.imx" "\0" \
-	"uboot_install=bootp && tftp 80800000 ${qspi_header_file} && tftp 88000000 ${uboot_update_file} && " \
-		"sf probe 0 && sf erase 0 80000 && sf write 80800000 0 200 && sf write 88000000 400 ${filesize}" "\0" \
-	"uboot_update=bootp && tftp 88000000 ${uboot_update_file} && " \
-		"sf probe 0 && sf read 80800000 0 200 && sf erase 0 80000 && " \
-		"sf write 80800000 0 200 && sf write 88000000 400 ${filesize}" "\0"
+	"updfile=update_smx7_spl/update" "\0" \
+	"updNet=bootp; if tftp $loadaddr $updfile; then setenv loader tftp; source $loadaddr; else run updFal; fi" "\0" \
+	"updUsb=usb start && usb dev 0 && load usb 0:1 $loadaddr $updfile && setenv loader load usb 0:1 && source $loadaddr && true" "\0" \
+	"updFal=echo update failed" "\0" \
+	"update=run updUsb || run updFal" "\0"
 
 #define CONFIG_BOOTCOMMAND \
 	"echo Exit to CLI"
