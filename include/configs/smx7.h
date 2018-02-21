@@ -219,6 +219,8 @@
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"autoload=no" "\0" \
 	"bootm_boot_mode=sec" "\0" \
+	"fdt_high=0xffffffff" "\0" \
+	"initrd_high=0xffffffff" "\0" \
 	"updfile=update_smx7_spl/update" "\0" \
 	"updNet=bootp; if tftp $loadaddr $updfile; then setenv loader tftp; source $loadaddr; else run updFal; fi" "\0" \
 	"updUsb=usb start && usb dev 0 && load usb 0:1 $loadaddr $updfile && setenv loader load usb 0:1 && source $loadaddr && true" "\0" \
