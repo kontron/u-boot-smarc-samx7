@@ -7,6 +7,7 @@
 #include <asm/arch/clock.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/mx7-pins.h>
+#include <asm/arch-mx7/mx7-ddr.h>
 #include <asm/arch/sys_proto.h>
 #include <asm/gpio.h>
 #include <asm/imx-common/iomux-v3.h>
@@ -122,10 +123,7 @@ int board_spi_cs_gpio(unsigned bus, unsigned cs)
 
 int dram_init(void)
 {
-	if (is_cpu_type(MXC_CPU_MX7D))
-		gd->ram_size = SZ_2G;
-	else if (is_cpu_type(MXC_CPU_MX7S))
-		gd->ram_size = SZ_1G;
+	gd->ram_size = imx_ddr_size();
 
 	return 0;
 }
@@ -748,95 +746,102 @@ void board_boot_order(u32 *spl_boot_list)
 	spl_boot_list[0] = BOOT_DEVICE_SPI;
 }
 
-static int mx7d_dcd_table[] = {
-0x30340004, 0x0F400005,
-0x30391000, 0x00000003,
-0x30391000, 0x00000002,
-0x307a0000, 0x01040001,
-0x307a01a0, 0x80400003,
-0x307a01a4, 0x00100020,
-0x307a01a8, 0x80100004,
-0x307a0064, 0x00400046,
-0x307a0490, 0x00000001,
-0x307a00d0, 0x00020103,
-0x307a00d4, 0x00690000,
-0x307a00dc, 0x09300004,
-0x307a00e0, 0x04080000,
-0x307a00e4, 0x00100000,
-0x307a00f4, 0x0000033f,
-0x307a0100, 0x09080809,
-0x307a0104, 0x000d020d,
-0x307a0108, 0x04050307,
-0x307a010c, 0x00002006,
-0x307a0110, 0x04020205,
-0x307a0114, 0x03030202,
-0x307a0120, 0x00000803,
-0x307a0180, 0x00800020,
-0x307a0184, 0x02000100,
-0x307a0190, 0x02098204,
-0x307a0194, 0x00030303,
-0x307a0200, 0x0000001f,
-0x307a0204, 0x00080808,
-0x307a0214, 0x07070707,
-0x307a0218, 0x07070707,
-0x307a0240, 0x06000604,
-0x307a0244, 0x00000001,
-0x30391000, 0x00000000,
-0x30790000, 0x17420f40,
-0x30790004, 0x10210100,
-0x30790010, 0x00060807,
-0x307900b0, 0x1010007e,
-0x3079009c, 0x00000d6e,
-0x30790020, 0x08080808,
-0x30790030, 0x08080808,
-0x30790050, 0x01000010,
-0x30790050, 0x00000010,
-0x307900c0, 0x0e407304,
-0x307900c0, 0x0e447304,
-0x307900c0, 0x0e447306,
-0x307900c4, 0x1,
-0x307900c0, 0x0e447304,
-0x307900c0, 0x0e407304,
-0x30384130, 0x00000000,
-0x30340020, 0x00000178,
-0x30384130, 0x00000002,
-0x30790018, 0x0000000f,
-/* CHECK_BITS_SET 4 0x307a0004 0x1 */
+static struct ddrc smx7_ddrc_regs = {
+	.mstr		= 0x01040001,
+	.dfiupd0	= 0x80400003,
+	.dfiupd1	= 0x00100020,
+	.dfiupd2	= 0x80100004,
+	.rfshtmg	= 0x00400046,
+	.init0		= 0x00020103,
+	.init1		= 0x00690000,
+	.init3		= 0x09300004,
+	.init4		= 0x04080000,
+	.init5		= 0x00100000,
+	.rankctl	= 0x0000033f,
+	.dramtmg0	= 0x090a100a,
+	.dramtmg1	= 0x000d020d,
+	.dramtmg2	= 0x04050307,
+	.dramtmg3	= 0x00002006,
+	.dramtmg4	= 0x04020205,
+	.dramtmg5	= 0x03030202,
+	.dramtmg8	= 0x00000803,
+	.zqctl0		= 0x00800020,
+	.zqctl1		= 0x02000100,
+	.dfitmg0	= 0x02098204,
+	.dfitmg1	= 0x00030303,
+	.addrmap0	= 0x0000001f,
+	.addrmap1	= 0x00080808,
+	.addrmap4	= 0x00000f0f,
+	.addrmap5	= 0x07070707,
+	.addrmap6	= 0x07070707,
+	.odtcfg		= 0x06000604,
+	.odtmap		= 0x00000001,
 };
 
-static void ddr_init(int *table, int size)
-{
-	int i;
+static struct ddrc_mp smx7_ddrc_mp_regs = {
+	.pctrl_0	= 0x00000001,
+};
 
-	for (i = 0; i < size / 2 ; i++) {
-		if (table[2*i] == 0x30391000) {
-			/* wait some time when DDRC is in reset */
-			udelay(200);
-		}
-		if (table[2*i] == 0x307900c4) {
-			/* wait until ZQ calibration is finished */
-			do {
-				unsigned int ddr_phy_zq_con1 = readl(table[2*i]) & 0x1;
-				udelay(10);
-				if (ddr_phy_zq_con1)
-					break;
-			} while (1);
-		} else
-			writel(table[2 * i + 1], table[2 * i]);
-	}
-	/* wait unitl normal operation mode is indicated in DDRC_STAT */
-	do {
-		unsigned int ddrc_stat = readl(0x307a0004) & 0x3;
-		udelay(10);
-		if (ddrc_stat == 0x01)
-			break;
-	} while (1);
-}
+static struct ddr_phy smx7_ddr_phy_regs = {
+	.phy_con0	= 0x17420f40,
+	.phy_con1	= 0x10210100,
+	.phy_con4	= 0x00060807,
+	.mdll_con0	= 0x1010007e,
+	.drvds_con0	= 0x00000d6e,
+	.offset_rd_con0	= 0x08080808,
+	.offset_wr_con0	= 0x08080808,
+	.cmd_sdll_con0	= 0x00000010,
+	.offset_lp_con0	= 0x0000000f,
+};
+
+static struct mx7_calibration smx7_calibration_params = {
+	.num_val	= 5,
+	.values 	= {
+		0x0e407304,
+		0x0e447304,
+		0x0e447306,
+		0x0e447304,
+		0x0e407304,
+	},
+};
 
 static void spl_dram_init(void)
 {
-	/* there is no difference for dual- and solo modules */
-	ddr_init(mx7d_dcd_table, ARRAY_SIZE(mx7d_dcd_table));
+	struct iomuxc_gpr_base_regs *const iomuxc_gpr_regs
+		= (struct iomuxc_gpr_base_regs *) IOMUXC_GPR_BASE_ADDR;
+	struct ddrc *const ddrc_regs = (struct ddrc *)DDRC_IPS_BASE_ADDR;
+	unsigned long ram_size_found;
+	int i;
+
+	/* ddr_init(mx7d_dcd_table, ARRAY_SIZE(mx7d_dcd_table)); */
+	writel(0x0f400005, &iomuxc_gpr_regs->gpr[1]);
+	for (i=0 ; i<3 ; i++) {
+		switch (i) {
+		case 1: /* memory size 1GiB */
+			smx7_ddrc_regs.addrmap6 = 0x0f070707;
+			break;
+		case 2: /* memory size 512 MiB */
+			smx7_ddrc_regs.addrmap6 = 0x0f0f0707;
+			break;
+		default:
+			break;
+		}
+		mx7_dram_cfg(&smx7_ddrc_regs,
+		             &smx7_ddrc_mp_regs,
+		             &smx7_ddr_phy_regs,
+		             &smx7_calibration_params);
+		ram_size_found = get_ram_size((long *)PHYS_SDRAM, (SZ_2G >> i));
+		if (ram_size_found == (SZ_2G >> i))
+			break;
+	}
+
+	/* wait unitl normal operation mode is indicated in DDRC_STAT */
+	do {
+		u32 op_mode = readl(&ddrc_regs->stat) & 0x3;
+		udelay(10);
+		if (op_mode == 0x01)
+			break;
+	} while (1);
 }
 
 void board_init_f(ulong dummy)
