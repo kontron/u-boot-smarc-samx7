@@ -106,6 +106,7 @@ static u32 decode_pll(enum pll_clocks pll, u32 infreq)
 {
 	u32 reg, div_sel;
 	u32 num, denom;
+	u64 tmp;
 
 	/*
 	 * Alought there are four choices for the bypass src,
@@ -167,7 +168,8 @@ static u32 decode_pll(enum pll_clocks pll, u32 infreq)
 		div_sel = (reg & CCM_ANALOG_PLL_DDR_DIV_SELECT_MASK) >>
 			   CCM_ANALOG_PLL_DDR_DIV_SELECT_SHIFT;
 
-		return infreq * (div_sel + num / denom);
+		tmp = ((u64)infreq * (u64)num) / denom;
+		return (infreq * div_sel) + (u32)tmp;
 
 	case PLL_USB:
 		return 480000000u;
@@ -1103,7 +1105,7 @@ int do_mx7_showclocks(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	u32 freq;
 	freq = decode_pll(PLL_CORE, MXC_HCLK);
-	printf("PLL_CORE    %8d MHz\n", freq / 1000000);
+	printf("PLL_CORE   %8d MHz\n", freq / 1000000);
 	freq = decode_pll(PLL_SYS, MXC_HCLK);
 	printf("PLL_SYS    %8d MHz\n", freq / 1000000);
 	freq = decode_pll(PLL_ENET, MXC_HCLK);
@@ -1118,7 +1120,7 @@ int do_mx7_showclocks(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 #endif
 	printf("AHB        %8d kHz\n", mxc_get_clock(MXC_AHB_CLK) / 1000);
 	printf("AXI        %8d kHz\n", mxc_get_clock(MXC_AXI_CLK) / 1000);
-	printf("DDR        %8d kHz\n", mxc_get_clock(MXC_DDR_CLK) / 1000);
+	printf("DDRC       %8d kHz\n", mxc_get_clock(MXC_DDR_CLK) / 1000);
 	printf("USDHC1     %8d kHz\n", mxc_get_clock(MXC_ESDHC_CLK) / 1000);
 	printf("USDHC2     %8d kHz\n", mxc_get_clock(MXC_ESDHC2_CLK) / 1000);
 	printf("USDHC3     %8d kHz\n", mxc_get_clock(MXC_ESDHC3_CLK) / 1000);
