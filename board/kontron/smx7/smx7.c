@@ -600,7 +600,7 @@ int ft_board_setup(void *blob, bd_t *bd)
 	char str_pwm1[] = "/soc/aips-bus@30400000/pwm@30660000";
 	char str_ok[] = "okay";
 
-	u64 freq = mxc_get_clock(MXC_ARM_CLK);
+	u64 freq = mxc_get_clock(MXC_DDR_CLK);
 	phys_addr_t base = getenv_bootm_low();
 	phys_size_t size = getenv_bootm_size();
 
@@ -621,8 +621,12 @@ int ft_board_setup(void *blob, bd_t *bd)
 	if (err < 0)
 		goto err;
 
+	/*
+	 * MXC_DDR_CLK is DFI clock (controller clock),
+	 * Data rate is 4 times this value.
+	 */
 	name = str_mem_freq;
-	err = fdt_setprop_u64(blob, nodeoffset, name, freq);
+	err = fdt_setprop_u64(blob, nodeoffset, name, (freq << 2));
 	if (err < 0)
 		goto err;
 
