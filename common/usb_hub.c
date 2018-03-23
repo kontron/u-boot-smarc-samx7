@@ -151,10 +151,10 @@ static void usb_hub_power_on(struct usb_hub_device *hub)
 	 * will be done based on this value in the USB port loop in
 	 * usb_hub_configure() later.
 	 */
-	hub->connect_timeout = hub->query_delay + 1000;
+	hub->connect_timeout = hub->query_delay + 2000;
 	debug("devnum=%d poweron: query_delay=%d connect_timeout=%d\n",
 	      dev->devnum, max(100, (int)pgood_delay),
-	      max(100, (int)pgood_delay) + 1000);
+	      max(100, (int)pgood_delay) + 2000);
 }
 
 void usb_hub_reset(void)
