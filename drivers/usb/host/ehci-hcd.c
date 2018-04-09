@@ -568,8 +568,10 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 	vtd = &qtd[qtd_counter - 1];
 	timeout = USB_TIMEOUT_MS(pipe);
 	/* Add delay for control pipe to support slow USB thumb devices */
-	if (usb_pipecontrol(pipe))
-		mdelay(5);
+	if (usb_pipecontrol(pipe)) {
+		mdelay(10);
+		timeout += 1000;
+	}
 	do {
 		/* Invalidate dcache */
 		invalidate_dcache_range((unsigned long)&ctrl->qh_list,
