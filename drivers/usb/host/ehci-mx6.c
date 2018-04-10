@@ -303,6 +303,20 @@ int __weak board_ehci_hcd_init(int port)
 }
 
 /**
+ * board_ehci_hcd_exit - board specific action after 'usb stop'
+ * @port:	usb port (otg/hsic)
+ *
+ * Board specific setup when stopping USB, e.g. to re-attach a dedicated
+ * hub which might be necessary to enable it after linux boot.
+ *
+ * Return: 0 Success
+ */
+int __weak board_ehci_hcd_exit(int port)
+{
+	return 0;
+}
+
+/**
  * board_ehci_power - enables/disables usb vbus voltage
  * @port:      usb otg port
  * @on:        on/off vbus voltage
@@ -398,6 +412,8 @@ int ehci_hcd_init(int index, enum usb_init_type init,
 
 int ehci_hcd_stop(int index)
 {
+	board_ehci_hcd_exit(index);
+
 	return 0;
 }
 #else
