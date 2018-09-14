@@ -102,10 +102,12 @@ static int on_ethaddr(const char *name, const char *value, enum env_op op,
 	int flags)
 {
 	int index;
+	int ret = 0;
 	struct eth_device *dev;
+	unsigned char tmp_enetaddr[ARP_HLEN];
 
 	if (!eth_devices)
-		return 0;
+		return ret;
 
 	/* look for an index after "eth" */
 	index = simple_strtoul(name + 3, NULL, 10);
@@ -116,8 +118,18 @@ static int on_ethaddr(const char *name, const char *value, enum env_op op,
 			switch (op) {
 			case env_op_create:
 			case env_op_overwrite:
-				eth_parse_enetaddr(value, dev->enetaddr);
-				eth_write_hwaddr(dev, "eth", dev->index);
+				eth_parse_enetaddr(value, tmp_enetaddr);
+				if (is_valid_ethaddr(tmp_enetaddr)) {
+					eth_parse_enetaddr(value,
+					                   dev->enetaddr);
+					eth_write_hwaddr(dev, "eth",
+					                 dev->index);
+				} else {
+					printf("\nMAC address %pM is not "
+					       "valid\n",
+					       tmp_enetaddr);
+					ret = 1;
+				}
 				break;
 			case env_op_delete:
 				memset(dev->enetaddr, 0, ARP_HLEN);
@@ -126,7 +138,7 @@ static int on_ethaddr(const char *name, const char *value, enum env_op op,
 		dev = dev->next;
 	} while (dev != eth_devices);
 
-	return 0;
+	return ret;
 }
 U_BOOT_ENV_CALLBACK(ethaddr, on_ethaddr);
 
