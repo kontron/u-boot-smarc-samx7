@@ -1,11 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015,2016 Freescale Semiconductor, Inc.
  *
  * FSL USB HOST xHCI Controller
  *
  * Author: Ramneek Mehresh<ramneek.mehresh@freescale.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -20,8 +19,6 @@
 #include <dm.h>
 
 /* Declare global data pointer */
-DECLARE_GLOBAL_DATA_PTR;
-
 #ifndef CONFIG_DM_USB
 static struct fsl_xhci fsl_xhci;
 unsigned long ctr_addr[] = FSL_USB_XHCI_ADDR;
@@ -40,7 +37,8 @@ __weak int __board_usb_init(int index, enum usb_init_type init)
 
 static int erratum_a008751(void)
 {
-#if defined(CONFIG_TARGET_LS2080AQDS) || defined(CONFIG_TARGET_LS2080ARDB)
+#if defined(CONFIG_TARGET_LS2080AQDS) || defined(CONFIG_TARGET_LS2080ARDB) ||\
+					defined(CONFIG_TARGET_LS2080AQDS)
 	u32 __iomem *scfg = (u32 __iomem *)SCFG_BASE;
 	writel(SCFG_USB3PRM1CR_INIT, scfg + SCFG_USB3PRM1CR / 4);
 	return 0;
@@ -121,7 +119,7 @@ static int xhci_fsl_probe(struct udevice *dev)
 	/*
 	 * Get the base address for XHCI controller from the device node
 	 */
-	priv->hcd_base = dev_get_addr(dev);
+	priv->hcd_base = devfdt_get_addr(dev);
 	if (priv->hcd_base == FDT_ADDR_T_NONE) {
 		debug("Can't get the XHCI register base address\n");
 		return -ENXIO;

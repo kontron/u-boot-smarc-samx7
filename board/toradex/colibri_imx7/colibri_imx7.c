@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
- * Copyright (C) 2016 Toradex AG
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Copyright (C) 2016-2018 Toradex AG
  */
 
 #include <asm/arch/clock.h>
@@ -10,19 +9,22 @@
 #include <asm/arch/mx7-pins.h>
 #include <asm/arch/sys_proto.h>
 #include <asm/gpio.h>
-#include <asm/imx-common/boot_mode.h>
-#include <asm/imx-common/iomux-v3.h>
+#include <asm/mach-imx/iomux-v3.h>
 #include <asm/io.h>
 #include <common.h>
 #include <dm.h>
 #include <dm/platform_data/serial_mxc.h>
+#include <fdt_support.h>
 #include <fsl_esdhc.h>
+#include <jffs2/load_kernel.h>
 #include <linux/sizes.h>
 #include <mmc.h>
 #include <miiphy.h>
+#include <mtd_node.h>
 #include <netdev.h>
 #include <power/pmic.h>
 #include <power/rn5t567_pmic.h>
+#include <usb.h>
 #include <usb/ehci-ci.h>
 #include "../common/tdx-common.h"
 
@@ -45,6 +47,8 @@ DECLARE_GLOBAL_DATA_PTR;
 #define NAND_PAD_CTRL (PAD_CTL_DSE_3P3V_49OHM | PAD_CTL_SRE_SLOW | PAD_CTL_HYS)
 
 #define NAND_PAD_READY0_CTRL (PAD_CTL_DSE_3P3V_49OHM | PAD_CTL_PUS_PU5KOHM)
+
+#define USB_CDET_GPIO	IMX_GPIO_NR(7, 14)
 
 int dram_init(void)
 {
@@ -71,7 +75,13 @@ static iomux_v3_cfg_t const usdhc1_pads[] = {
 	MX7D_PAD_GPIO1_IO00__GPIO1_IO0 | MUX_PAD_CTRL(NO_PAD_CTRL),
 };
 
-#ifdef CONFIG_NAND_MXS
+#ifdef CONFIG_USB_EHCI_MX7
+static iomux_v3_cfg_t const usb_cdet_pads[] = {
+	MX7D_PAD_ENET1_CRS__GPIO7_IO14 | MUX_PAD_CTRL(NO_PAD_CTRL),
+};
+#endif
+
+#ifdef CONFIG_TARGET_COLIBRI_IMX7_NAND
 static iomux_v3_cfg_t const gpmi_pads[] = {
 	MX7D_PAD_SD3_DATA0__NAND_DATA00 | MUX_PAD_CTRL(NAND_PAD_CTRL),
 	MX7D_PAD_SD3_DATA1__NAND_DATA01 | MUX_PAD_CTRL(NAND_PAD_CTRL),
@@ -99,6 +109,7 @@ static void setup_gpmi_nand(void)
 }
 #endif
 
+#ifdef CONFIG_TARGET_COLIBRI_IMX7_EMMC
 static iomux_v3_cfg_t const usdhc3_emmc_pads[] = {
 	MX7D_PAD_SD3_CLK__SD3_CLK | MUX_PAD_CTRL(USDHC_PAD_CTRL),
 	MX7D_PAD_SD3_CMD__SD3_CMD | MUX_PAD_CTRL(USDHC_PAD_CTRL),
@@ -114,6 +125,7 @@ static iomux_v3_cfg_t const usdhc3_emmc_pads[] = {
 
 	MX7D_PAD_SD3_RESET_B__GPIO6_IO11 | MUX_PAD_CTRL(USDHC_PAD_CTRL),
 };
+#endif
 
 #ifdef CONFIG_VIDEO_MXS
 static iomux_v3_cfg_t const lcd_pads[] = {
@@ -204,6 +216,9 @@ static void setup_iomux_uart(void)
 #define USDHC1_CD_GPIO	IMX_GPIO_NR(1, 0)
 
 static struct fsl_esdhc_cfg usdhc_cfg[] = {
+#ifdef CONFIG_TARGET_COLIBRI_IMX7_EMMC
+	{USDHC3_BASE_ADDR},
+#endif
 	{USDHC1_BASE_ADDR, 0, 4},
 };
 
@@ -216,6 +231,11 @@ int board_mmc_getcd(struct mmc *mmc)
 	case USDHC1_BASE_ADDR:
 		ret = !gpio_get_value(USDHC1_CD_GPIO);
 		break;
+#ifdef CONFIG_TARGET_COLIBRI_IMX7_EMMC
+	case USDHC3_BASE_ADDR:
+		ret = 1;
+		break;
+#endif
 	}
 
 	return ret;
@@ -224,7 +244,7 @@ int board_mmc_getcd(struct mmc *mmc)
 int board_mmc_init(bd_t *bis)
 {
 	int i, ret;
-	/* USDHC1 is mmc0 */
+	/* USDHC1 is mmc0, USDHC3 is mmc1 */
 	for (i = 0; i < CONFIG_SYS_FSL_USDHC_NUM; i++) {
 		switch (i) {
 		case 0:
@@ -234,6 +254,13 @@ int board_mmc_init(bd_t *bis)
 			gpio_direction_input(USDHC1_CD_GPIO);
 			usdhc_cfg[0].sdhc_clk = mxc_get_clock(MXC_ESDHC_CLK);
 			break;
+#ifdef CONFIG_TARGET_COLIBRI_IMX7_EMMC
+		case 1:
+			imx_iomux_v3_setup_multiple_pads(usdhc3_emmc_pads,
+				ARRAY_SIZE(usdhc3_emmc_pads));
+			usdhc_cfg[1].sdhc_clk = mxc_get_clock(MXC_ESDHC3_CLK);
+			break;
+#endif
 		default:
 			printf("Warning: you configured more USDHC controllers"
 				"(%d) than supported by the board\n", i + 1);
@@ -284,7 +311,7 @@ static int setup_fec(void)
 			IOMUXC_GPR_GPR1_GPR_ENET1_TX_CLK_SEL_MASK);
 #endif
 
-	return set_clk_enet(ENET_50MHz);
+	return set_clk_enet(ENET_50MHZ);
 }
 
 int board_phy_config(struct phy_device *phydev)
@@ -311,7 +338,7 @@ int board_init(void)
 	setup_fec();
 #endif
 
-#ifdef CONFIG_NAND_MXS
+#ifdef CONFIG_TARGET_COLIBRI_IMX7_NAND
 	setup_gpmi_nand();
 #endif
 
@@ -319,22 +346,9 @@ int board_init(void)
 	setup_lcd();
 #endif
 
-	return 0;
-}
-
-#ifdef CONFIG_CMD_BMODE
-static const struct boot_mode board_boot_modes[] = {
-	/* 4 bit bus width */
-	{"nand", MAKE_CFGVAL(0x40, 0x34, 0x00, 0x00)},
-	{"sd1", MAKE_CFGVAL(0x10, 0x10, 0x00, 0x00)},
-	{NULL, 0},
-};
-#endif
-
-int board_late_init(void)
-{
-#ifdef CONFIG_CMD_BMODE
-	add_board_boot_modes(board_boot_modes);
+#ifdef CONFIG_USB_EHCI_MX7
+	imx_iomux_v3_setup_multiple_pads(usb_cdet_pads, ARRAY_SIZE(usb_cdet_pads));
+	gpio_request(USB_CDET_GPIO, "usb-cdet-gpio");
 #endif
 
 	return 0;
@@ -358,6 +372,22 @@ int power_init_board(void)
 
 	/* set judge and press timer of N_OE to minimal values */
 	pmic_clrsetbits(dev, RN5T567_NOETIMSETCNT, 0x7, 0);
+
+	/* configure sleep slot for 3.3V Ethernet */
+	reg = pmic_reg_read(dev, RN5T567_LDO1_SLOT);
+	reg = (reg & 0xf0) | reg >> 4;
+	pmic_reg_write(dev, RN5T567_LDO1_SLOT, reg);
+
+	/* disable DCDC2 discharge to avoid backfeeding through VFB2 */
+	pmic_clrsetbits(dev, RN5T567_DC2CTL, 0x2, 0);
+
+	/* configure sleep slot for ARM rail */
+	reg = pmic_reg_read(dev, RN5T567_DC2_SLOT);
+	reg = (reg & 0xf0) | reg >> 4;
+	pmic_reg_write(dev, RN5T567_DC2_SLOT, reg);
+
+	/* disable LDO2 discharge to avoid backfeeding from +V3.3_SD */
+	pmic_clrsetbits(dev, RN5T567_LDODIS1, 0x2, 0);
 
 	return 0;
 }
@@ -391,6 +421,17 @@ int checkboard(void)
 #if defined(CONFIG_OF_LIBFDT) && defined(CONFIG_OF_BOARD_SETUP)
 int ft_board_setup(void *blob, bd_t *bd)
 {
+#if defined(CONFIG_FDT_FIXUP_PARTITIONS)
+	static const struct node_info nodes[] = {
+		{ "fsl,imx7d-gpmi-nand", MTD_DEV_TYPE_NAND, }, /* NAND flash */
+		{ "fsl,imx6q-gpmi-nand", MTD_DEV_TYPE_NAND, },
+	};
+
+	/* Update partition nodes using info from mtdparts env var */
+	puts("   Updating MTD partitions...\n");
+	fdt_fixup_mtdparts(blob, nodes, ARRAY_SIZE(nodes));
+#endif
+
 	return ft_common_board_setup(blob, bd);
 }
 #endif
@@ -416,5 +457,19 @@ int board_ehci_hcd_init(int port)
 		return -EINVAL;
 	}
 	return 0;
+}
+
+int board_usb_phy_mode(int port)
+{
+	switch (port) {
+	case 0:
+		if (gpio_get_value(USB_CDET_GPIO))
+			return USB_INIT_DEVICE;
+		else
+			return USB_INIT_HOST;
+	case 1:
+	default:
+		return USB_INIT_HOST;
+	}
 }
 #endif

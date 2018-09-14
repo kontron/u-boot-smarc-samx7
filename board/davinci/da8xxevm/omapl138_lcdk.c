@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2012 Texas Instruments Incorporated - http://www.ti.com/
  *
@@ -5,8 +6,6 @@
  *
  * Copyright (C) 2009 Nick Thompson, GE Fanuc, Ltd. <nick.thompson@gefanuc.com>
  * Copyright (C) 2007 Sergey Kubushyn <ksi@koi8.net>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -19,6 +18,7 @@
 #include <asm/ti-common/davinci_nand.h>
 #include <asm/io.h>
 #include <linux/errno.h>
+#include <asm/mach-types.h>
 #include <asm/arch/davinci_misc.h>
 #ifdef CONFIG_MMC_DAVINCI
 #include <mmc.h>
@@ -171,9 +171,7 @@ int board_early_init_f(void)
 
 int board_init(void)
 {
-#ifndef CONFIG_USE_IRQ
 	irq_init();
-#endif
 
 	/* arch number of the board */
 	gd->bd->bi_arch_number = MACH_TYPE_OMAPL138_LCDK;
@@ -294,7 +292,7 @@ static void dspwake(void)
 	if ((REG(CHIP_REV_ID_REG) & 0x3f) == 0x10)
 		return;
 
-	if (!strcmp(getenv("dspwake"), "no"))
+	if (!strcmp(env_get("dspwake"), "no"))
 		return;
 
 	*resetvect++ = 0x1E000; /* DSP Idle */
@@ -324,7 +322,7 @@ int misc_init_r(void)
 	uint8_t tmp[20], addr[10];
 
 
-	if (getenv("ethaddr") == NULL) {
+	if (env_get("ethaddr") == NULL) {
 		/* Read Ethernet MAC address from EEPROM */
 		if (dvevm_read_mac_address(addr)) {
 			/* Set Ethernet MAC address from EEPROM */
@@ -338,7 +336,7 @@ int misc_init_r(void)
 				addr[0], addr[1], addr[2], addr[3], addr[4],
 				addr[5]);
 
-			setenv("ethaddr", (char *)tmp);
+			env_set("ethaddr", (char *)tmp);
 		} else {
 			printf("Invalid MAC address read.\n");
 		}

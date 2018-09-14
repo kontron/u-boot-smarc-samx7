@@ -1,18 +1,12 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2013-2016 Synopsys, Inc. All rights reserved.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _CONFIG_NSIM_H_
 #define _CONFIG_NSIM_H_
 
 #include <linux/sizes.h>
-
-/*
- *  CPU configuration
- */
-#define CONFIG_SYS_TIMER_RATE		CONFIG_SYS_CLK_FREQ
 
 /*
  * Memory configuration
@@ -31,23 +25,8 @@
 #define CONFIG_SYS_LOAD_ADDR		0x82000000
 
 /*
- * UART configuration
- *
- */
-#define CONFIG_ARC_SERIAL
-#define CONFIG_ARC_UART_BASE		0xC0FC1000
-#define CONFIG_BAUDRATE			115200
-
-/*
- * Command line configuration
- */
-#define CONFIG_AUTO_COMPLETE
-#define CONFIG_SYS_MAXARGS		16
-
-/*
  * Environment settings
  */
-#define CONFIG_ENV_IS_NOWHERE
 #define CONFIG_ENV_SIZE			SZ_512
 #define CONFIG_ENV_OFFSET		0
 
@@ -55,16 +34,10 @@
  * Environment configuration
  */
 #define CONFIG_BOOTFILE			"uImage"
-#define CONFIG_BOOTARGS			"console=ttyARC0,115200n8"
 #define CONFIG_LOADADDR			CONFIG_SYS_LOAD_ADDR
 
 /*
  * Console configuration
  */
-#define CONFIG_SYS_LONGHELP
-#define CONFIG_SYS_CBSIZE		SZ_256
-#define CONFIG_SYS_BARGSIZE		CONFIG_SYS_CBSIZE
-#define CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + \
-						sizeof(CONFIG_SYS_PROMPT) + 16)
 
 #endif /* _CONFIG_NSIM_H_ */

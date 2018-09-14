@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * fat_write.c
  *
  * R/W (V)FAT 12/16/32 filesystem implementation by Donggeun Kim
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -345,7 +344,7 @@ get_long_file_name(fsdata *mydata, int curclust, __u8 *cluster,
 		*l_name = '\0';
 	else if (*l_name == aRING)
 		*l_name = DELETED_FLAG;
-	downcase(l_name);
+	downcase(l_name, INT_MAX);
 
 	/* Return the real directory entry */
 	*retdent = realdent;
@@ -502,8 +501,7 @@ set_cluster(fsdata *mydata, __u32 clustnum, __u8 *buffer,
 	int ret;
 
 	if (clustnum > 0)
-		startsect = mydata->data_begin +
-				clustnum * mydata->clust_size;
+		startsect = clust_to_sect(mydata, clustnum);
 	else
 		startsect = mydata->rootdir_sect;
 
@@ -751,8 +749,7 @@ static int check_overflow(fsdata *mydata, __u32 clustnum, loff_t size)
 	__u32 startsect, sect_num, offset;
 
 	if (clustnum > 0) {
-		startsect = mydata->data_begin +
-				clustnum * mydata->clust_size;
+		startsect = clust_to_sect(mydata, clustnum);
 	} else {
 		startsect = mydata->rootdir_sect;
 	}
@@ -762,7 +759,7 @@ static int check_overflow(fsdata *mydata, __u32 clustnum, loff_t size)
 	if (offset != 0)
 		sect_num++;
 
-	if (startsect + sect_num > cur_part_info.start + total_sector)
+	if (startsect + sect_num > total_sector)
 		return -1;
 	return 0;
 }
@@ -791,7 +788,7 @@ static dir_entry *empty_dentptr;
 static dir_entry *find_directory_entry(fsdata *mydata, int startsect,
 	char *filename, dir_entry *retdent, __u32 start)
 {
-	__u32 curclust = (startsect - mydata->data_begin) / mydata->clust_size;
+	__u32 curclust = sect_to_clust(mydata, startsect);
 
 	debug("get_dentfromdir: %s\n", filename);
 
@@ -821,8 +818,7 @@ static dir_entry *find_directory_entry(fsdata *mydata, int startsect,
 				continue;
 			}
 			if ((dentptr->attr & ATTR_VOLUME)) {
-				if (vfat_enabled &&
-				    (dentptr->attr & ATTR_VFAT) &&
+				if ((dentptr->attr & ATTR_VFAT) &&
 				    (dentptr->name[0] & LAST_LONG_ENTRY_MASK)) {
 					get_long_file_name(mydata, curclust,
 						     get_dentfromdir_block,
@@ -844,8 +840,8 @@ static dir_entry *find_directory_entry(fsdata *mydata, int startsect,
 
 			get_name(dentptr, s_name);
 
-			if (strcmp(filename, s_name)
-			    && strcmp(filename, l_name)) {
+			if (strncasecmp(filename, s_name, sizeof(s_name)) &&
+			    strncasecmp(filename, l_name, sizeof(l_name))) {
 				debug("Mismatch: |%s|%s|\n",
 					s_name, l_name);
 				dentptr++;
@@ -913,9 +909,11 @@ static int do_fat_write(const char *filename, void *buffer, loff_t size,
 	volume_info volinfo;
 	fsdata datablock;
 	fsdata *mydata = &datablock;
-	int cursect;
+	int cursect, i;
 	int ret = -1, name_len;
 	char l_filename[VFAT_MAXLEN_BYTES];
+	char bad[2] = " ";
+	const char illegal[] = "<>:\"/\\|?*";
 
 	*actwrite = size;
 	dir_curclust = 0;
@@ -975,13 +973,25 @@ static int do_fat_write(const char *filename, void *buffer, loff_t size,
 	}
 	dentptr = (dir_entry *) do_fat_read_at_block;
 
+	/* Strip leading (back-)slashes */
+	while ISDIRDELIM(*filename)
+		++filename;
+	/* Check that the filename is valid */
+	for (i = 0; i < strlen(illegal); ++i) {
+		*bad = illegal[i];
+		if (strstr(filename, bad)) {
+			printf("FAT: illegal filename (%s)\n", filename);
+			return -1;
+		}
+	}
+
 	name_len = strlen(filename);
 	if (name_len >= VFAT_MAXLEN_BYTES)
 		name_len = VFAT_MAXLEN_BYTES - 1;
 
 	memcpy(l_filename, filename, name_len);
 	l_filename[name_len] = 0; /* terminate the string */
-	downcase(l_filename);
+	downcase(l_filename, INT_MAX);
 
 	startsect = mydata->rootdir_sect;
 	retdent = find_directory_entry(mydata, startsect,

@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * linux/arch/arm/lib/lib1funcs.S: Optimized ARM division routines
  *
@@ -5,12 +6,9 @@
  *   - contributed to gcc-3.4 on Sep 30, 2003
  *   - adapted for the Linux kernel on Oct 2, 2003
  */
-
-/* Copyright 1995, 1996, 1998, 1999, 2000, 2003 Free Software Foundation, Inc.
-
- * SPDX-License-Identifier:	GPL-2.0+
+/*
+ * Copyright 1995, 1996, 1998, 1999, 2000, 2003 Free Software Foundation, Inc.
  */
-
 
 #include <linux/linkage.h>
 #include <asm/assembler.h>
@@ -368,7 +366,7 @@ ENDPROC(Ldiv0)
 .popsection
 
 /* Thumb-1 specialities */
-#if defined(CONFIG_SYS_THUMB_BUILD) && !defined(CONFIG_HAS_THUMB2)
+#if CONFIG_IS_ENABLED(SYS_THUMB_BUILD) && !defined(CONFIG_HAS_THUMB2)
 .pushsection .text.__gnu_thumb1_case_sqi, "ax"
 ENTRY(__gnu_thumb1_case_sqi)
 	push	{r1}

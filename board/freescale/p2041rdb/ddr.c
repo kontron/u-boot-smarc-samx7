@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright 2011 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
@@ -11,6 +10,8 @@
 #include <fsl_ddr_sdram.h>
 #include <fsl_ddr_dimm_params.h>
 #include <asm/fsl_law.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 struct board_specific_parameters {
 	u32 n_ranks;
@@ -116,7 +117,7 @@ found:
 	popts->ddr_cdr1 = DDR_CDR1_DHC_EN;
 }
 
-phys_size_t initdram(int board_type)
+int dram_init(void)
 {
 	phys_size_t dram_size = 0;
 
@@ -127,12 +128,14 @@ phys_size_t initdram(int board_type)
 		dram_size = fsl_ddr_sdram();
 	} else {
 		puts("no SPD and fixed parameters\n");
-		return dram_size;
+		return -ENXIO;
 	}
 
 	dram_size = setup_ddr_tlbs(dram_size / 0x100000);
 	dram_size *= 0x100000;
 
 	debug("    DDR: ");
-	return dram_size;
+	gd->ram_size = dram_size;
+
+	return 0;
 }

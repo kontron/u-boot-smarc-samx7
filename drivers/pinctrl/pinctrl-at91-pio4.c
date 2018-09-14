@@ -1,14 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Atmel PIO4 pinctrl driver
  *
  * Copyright (C) 2016 Atmel Corporation
  *               Wenyou.Yang <wenyou.yang@atmel.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
-#include <dm/device.h>
+#include <dm.h>
 #include <dm/pinctrl.h>
 #include <linux/io.h>
 #include <linux/err.h>
@@ -158,7 +157,7 @@ static int atmel_pinctrl_probe(struct udevice *dev)
 	fdt_addr_t addr_base;
 
 	dev = dev_get_parent(dev);
-	addr_base = dev_get_addr(dev);
+	addr_base = devfdt_get_addr(dev);
 	if (addr_base == FDT_ADDR_T_NONE)
 		return -EINVAL;
 

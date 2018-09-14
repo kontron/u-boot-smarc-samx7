@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * This file is part of UBIFS.
  *
  * Copyright (C) 2006-2008 Nokia Corporation.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * Authors: Artem Bityutskiy (Битюцкий Артём)
  *          Adrian Hunter
@@ -1334,7 +1333,10 @@ static int check_free_space(struct ubifs_info *c)
 static int mount_ubifs(struct ubifs_info *c)
 {
 	int err;
-	long long x, y;
+	long long x;
+#ifndef CONFIG_UBIFS_SILENCE_MSG
+	long long y;
+#endif
 	size_t sz;
 
 	c->ro_mount = !!(c->vfs_sb->s_flags & MS_RDONLY);
@@ -1613,7 +1615,9 @@ static int mount_ubifs(struct ubifs_info *c)
 		  c->vi.ubi_num, c->vi.vol_id, c->vi.name,
 		  c->ro_mount ? ", R/O mode" : "");
 	x = (long long)c->main_lebs * c->leb_size;
+#ifndef CONFIG_UBIFS_SILENCE_MSG
 	y = (long long)c->log_lebs * c->leb_size + c->max_bud_bytes;
+#endif
 	ubifs_msg(c, "LEB size: %d bytes (%d KiB), min./max. I/O unit sizes: %d bytes/%d bytes",
 		  c->leb_size, c->leb_size >> 10, c->min_io_size,
 		  c->max_write_size);
@@ -2356,7 +2360,9 @@ static struct super_block *alloc_super(struct file_system_type *type, int flags)
 		return ERR_PTR(err);
 	}
 
+#ifndef __UBOOT__
 	INIT_HLIST_NODE(&s->s_instances);
+#endif
 	INIT_LIST_HEAD(&s->s_inodes);
 	s->s_time_gran = 1000000000;
 	s->s_flags = flags;
@@ -2425,14 +2431,12 @@ retry:
 #ifndef __UBOOT__
 	strlcpy(s->s_id, type->name, sizeof(s->s_id));
 	list_add_tail(&s->s_list, &super_blocks);
-#else
-	strncpy(s->s_id, type->name, sizeof(s->s_id));
-#endif
 	hlist_add_head(&s->s_instances, &type->fs_supers);
-#ifndef __UBOOT__
 	spin_unlock(&sb_lock);
 	get_filesystem(type);
 	register_shrinker(&s->s_shrink);
+#else
+	strncpy(s->s_id, type->name, sizeof(s->s_id));
 #endif
 	return s;
 }

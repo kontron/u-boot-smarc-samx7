@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2013 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * Derived from mpc85xx_ddr_gen3.c, removed all workarounds
  */
@@ -12,6 +11,7 @@
 #include <asm/processor.h>
 #include <fsl_immap.h>
 #include <fsl_ddr.h>
+#include <asm/arch/clock.h>
 
 #if (CONFIG_CHIP_SELECTS_PER_CTRL > 4)
 #error Invalid setting for CONFIG_CHIP_SELECTS_PER_CTRL

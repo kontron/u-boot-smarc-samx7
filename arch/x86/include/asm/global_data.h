@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2002-2010
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef	__ASM_GBL_DATA_H
@@ -77,6 +76,7 @@ struct arch_global_data {
 	uint8_t x86_mask;
 	uint32_t x86_device;
 	uint64_t tsc_base;		/* Initial value returned by rdtsc() */
+	unsigned long clock_rate;	/* Clock rate of timer in Hz */
 	void *new_fdt;			/* Relocated FDT */
 	uint32_t bist;			/* Built-in self test value */
 	enum pei_boot_mode_t pei_boot_mode;
@@ -98,6 +98,10 @@ struct arch_global_data {
 #ifdef CONFIG_SEABIOS
 	u32 high_table_ptr;
 	u32 high_table_limit;
+#endif
+#ifdef CONFIG_HAVE_ACPI_RESUME
+	int prev_sleep_state;		/* Previous sleep state ACPI_S0/1../5 */
+	ulong backup_mem;		/* Backup memory address for S3 */
 #endif
 };
 

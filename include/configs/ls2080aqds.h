@@ -1,7 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
+ * Copyright 2017 NXP
  * Copyright 2015 Freescale Semiconductor
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __LS2_QDS_H
@@ -15,7 +15,6 @@ unsigned long get_board_ddr_clk(void);
 #endif
 
 #ifdef CONFIG_FSL_QSPI
-#undef CONFIG_CMD_IMLS
 #define CONFIG_QIXIS_I2C_ACCESS
 #define CONFIG_SYS_I2C_EARLY_INIT
 #define CONFIG_SYS_I2C_IFDR_DIV		0x7e
@@ -46,10 +45,7 @@ unsigned long get_board_ddr_clk(void);
 #define CONFIG_FSL_DDR_BIST	/* enable built-in memory test */
 
 /* SATA */
-#define CONFIG_LIBATA
-#define CONFIG_SCSI_AHCI
 #define CONFIG_SCSI_AHCI_PLAT
-#define CONFIG_SCSI
 
 #define CONFIG_SYS_SATA1			AHCI_BASE_ADDR1
 #define CONFIG_SYS_SATA2			AHCI_BASE_ADDR2
@@ -154,7 +150,6 @@ unsigned long get_board_ddr_clk(void);
 #define CONFIG_SYS_NAND_BASE_LIST	{ CONFIG_SYS_NAND_BASE }
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
 #define CONFIG_MTD_NAND_VERIFY_WRITE
-#define CONFIG_CMD_NAND
 
 #define CONFIG_SYS_NAND_BLOCK_SIZE	(128 * 1024)
 
@@ -165,12 +160,14 @@ unsigned long get_board_ddr_clk(void);
 #define QIXIS_LBMAP_DFLTBANK		0x00
 #define QIXIS_LBMAP_ALTBANK		0x04
 #define QIXIS_LBMAP_NAND		0x09
+#define QIXIS_LBMAP_SD			0x00
 #define QIXIS_LBMAP_QSPI		0x0f
 #define QIXIS_RST_CTL_RESET		0x31
 #define QIXIS_RCFG_CTL_RECONFIG_IDLE	0x20
 #define QIXIS_RCFG_CTL_RECONFIG_START	0x21
 #define QIXIS_RCFG_CTL_WATCHDOG_ENBLE	0x08
 #define QIXIS_RCW_SRC_NAND		0x107
+#define QIXIS_RCW_SRC_SD		0x40
 #define QIXIS_RCW_SRC_QSPI		0x62
 #define	QIXIS_RST_FORCE_MEM		0x01
 
@@ -197,7 +194,8 @@ unsigned long get_board_ddr_clk(void);
 					FTIM2_GPCM_TWP(0x3E))
 #define CONFIG_SYS_CS3_FTIM3		0x0
 
-#if defined(CONFIG_SPL) && defined(CONFIG_NAND)
+#if defined(CONFIG_SPL)
+#if defined(CONFIG_NAND_BOOT)
 #define CONFIG_SYS_CSPR1_EXT		CONFIG_SYS_NOR0_CSPR_EXT
 #define CONFIG_SYS_CSPR1		CONFIG_SYS_NOR0_CSPR_EARLY
 #define CONFIG_SYS_CSPR1_FINAL		CONFIG_SYS_NOR0_CSPR
@@ -226,13 +224,17 @@ unsigned long get_board_ddr_clk(void);
 #define CONFIG_SYS_CS0_FTIM2		CONFIG_SYS_NAND_FTIM2
 #define CONFIG_SYS_CS0_FTIM3		CONFIG_SYS_NAND_FTIM3
 
-#define CONFIG_ENV_IS_IN_NAND
 #define CONFIG_ENV_OFFSET		(896 * 1024)
 #define CONFIG_ENV_SECT_SIZE		0x20000
 #define CONFIG_ENV_SIZE			0x2000
 #define CONFIG_SPL_PAD_TO		0x20000
 #define CONFIG_SYS_NAND_U_BOOT_OFFS	(256 * 1024)
 #define CONFIG_SYS_NAND_U_BOOT_SIZE	(640 * 1024)
+#elif defined(CONFIG_SD_BOOT)
+#define CONFIG_ENV_OFFSET		0x300000
+#define CONFIG_SYS_MMC_ENV_DEV		0
+#define CONFIG_ENV_SIZE			0x20000
+#endif
 #else
 #define CONFIG_SYS_CSPR0_EXT		CONFIG_SYS_NOR0_CSPR_EXT
 #define CONFIG_SYS_CSPR0		CONFIG_SYS_NOR0_CSPR_EARLY
@@ -262,15 +264,8 @@ unsigned long get_board_ddr_clk(void);
 #define CONFIG_SYS_CS2_FTIM2		CONFIG_SYS_NAND_FTIM2
 #define CONFIG_SYS_CS2_FTIM3		CONFIG_SYS_NAND_FTIM3
 
-#if defined(CONFIG_QSPI_BOOT)
-#define CONFIG_SYS_TEXT_BASE		0x20010000
-#define CONFIG_ENV_IS_IN_SPI_FLASH
-#define CONFIG_ENV_SIZE			0x2000          /* 8KB */
-#define CONFIG_ENV_OFFSET		0x100000        /* 1MB */
-#define CONFIG_ENV_SECT_SIZE		0x10000
-#else
-#define CONFIG_ENV_IS_IN_FLASH
-#define CONFIG_ENV_ADDR			(CONFIG_SYS_FLASH_BASE + 0x200000)
+#ifndef CONFIG_QSPI_BOOT
+#define CONFIG_ENV_ADDR			(CONFIG_SYS_FLASH_BASE + 0x300000)
 #define CONFIG_ENV_SECT_SIZE		0x20000
 #define CONFIG_ENV_SIZE			0x2000
 #endif
@@ -329,11 +324,9 @@ unsigned long get_board_ddr_clk(void);
 #define RTC
 #define CONFIG_RTC_DS3231               1
 #define CONFIG_SYS_I2C_RTC_ADDR         0x68
-#define CONFIG_CMD_DATE
 
 /* EEPROM */
 #define CONFIG_ID_EEPROM
-#define CONFIG_CMD_EEPROM
 #define CONFIG_SYS_I2C_EEPROM_NXID
 #define CONFIG_SYS_EEPROM_BUS_NUM	0
 #define CONFIG_SYS_I2C_EEPROM_ADDR	0x57
@@ -345,12 +338,10 @@ unsigned long get_board_ddr_clk(void);
 
 #ifdef CONFIG_PCI
 #define CONFIG_PCI_SCAN_SHOW
-#define CONFIG_CMD_PCI
 #endif
 
 /*  MMC  */
 #ifdef CONFIG_MMC
-#define CONFIG_FSL_ESDHC
 #define CONFIG_SYS_FSL_MMC_HAS_CAPBLT_VS33
 #endif
 
@@ -365,13 +356,30 @@ unsigned long get_board_ddr_clk(void);
 	"ramdisk_size=0x2000000\0"		\
 	"fdt_high=0xa0000000\0"			\
 	"initrd_high=0xffffffffffffffff\0"	\
-	"kernel_start=0x581100000\0"		\
+	"kernel_start=0x581000000\0"		\
 	"kernel_load=0xa0000000\0"		\
 	"kernel_size=0x2800000\0"		\
-	"mcinitcmd=esbc_validate 0x580c80000;"  \
-	"esbc_validate 0x580cc0000;"            \
-	"fsl_mc start mc 0x580300000"           \
-	" 0x580800000 \0"
+	"mcmemsize=0x40000000\0"		\
+	"mcinitcmd=esbc_validate 0x580700000;"  \
+	"esbc_validate 0x580740000;"            \
+	"fsl_mc start mc 0x580a00000"           \
+	" 0x580e00000 \0"
+#elif defined(CONFIG_SD_BOOT)
+#define CONFIG_EXTRA_ENV_SETTINGS		\
+	"hwconfig=fsl_ddr:bank_intlv=auto\0"    \
+	"loadaddr=0x90100000\0"                 \
+	"kernel_addr=0x800\0"                \
+	"ramdisk_addr=0x800000\0"               \
+	"ramdisk_size=0x2000000\0"              \
+	"fdt_high=0xa0000000\0"                 \
+	"initrd_high=0xffffffffffffffff\0"      \
+	"kernel_start=0x8000\0"              \
+	"kernel_load=0xa0000000\0"              \
+	"kernel_size=0x14000\0"               \
+	"mcinitcmd=mmcinfo;mmc read 0x80000000 0x5000 0x800;"  \
+	"mmc read 0x80100000 0x7000 0x800;" \
+	"fsl_mc start mc 0x80000000 0x80100000\0"       \
+	"mcmemsize=0x70000000 \0"
 #else
 #define CONFIG_EXTRA_ENV_SETTINGS		\
 	"hwconfig=fsl_ddr:bank_intlv=auto\0"	\
@@ -381,17 +389,17 @@ unsigned long get_board_ddr_clk(void);
 	"ramdisk_size=0x2000000\0"		\
 	"fdt_high=0xa0000000\0"			\
 	"initrd_high=0xffffffffffffffff\0"	\
-	"kernel_start=0x581100000\0"		\
+	"kernel_start=0x581000000\0"		\
 	"kernel_load=0xa0000000\0"		\
 	"kernel_size=0x2800000\0"		\
-	"mcinitcmd=fsl_mc start mc 0x580300000" \
-	" 0x580800000 \0"
+	"mcmemsize=0x40000000\0"		\
+	"mcinitcmd=fsl_mc start mc 0x580a00000" \
+	" 0x580e00000 \0"
 #endif /* CONFIG_SECURE_BOOT */
 
 
-#ifdef CONFIG_FSL_MC_ENET
+#if defined(CONFIG_FSL_MC_ENET) && !defined(CONFIG_SPL_BUILD)
 #define CONFIG_FSL_MEMAC
-#define	CONFIG_PHYLIB
 #define CONFIG_PHYLIB_10G
 #define CONFIG_PHY_VITESSE
 #define CONFIG_PHY_REALTEK
@@ -418,19 +426,9 @@ unsigned long get_board_ddr_clk(void);
 #define XQSGMII_CARD_PHY4_PORT2_ADDR 0xe
 #define XQSGMII_CARD_PHY4_PORT3_ADDR 0xf
 
-#define CONFIG_MII		/* MII PHY management */
 #define CONFIG_ETHPRIME		"DPMAC1@xgmii"
-#define CONFIG_PHY_GIGE		/* Include GbE speed/duplex detection */
 
 #endif
-
-/*
- * USB
- */
-#define CONFIG_HAS_FSL_XHCI_USB
-#define CONFIG_USB_XHCI_FSL
-#define CONFIG_USB_MAX_CONTROLLER_COUNT		2
-#define CONFIG_SYS_USB_XHCI_MAX_ROOT_PORTS	2
 
 #include <asm/fsl_secure_boot.h>
 

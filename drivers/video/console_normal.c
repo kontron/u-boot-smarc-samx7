@@ -1,11 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2015 Google, Inc
  * (C) Copyright 2001-2015
  * DENX Software Engineering -- wd@denx.de
  * Compulab Ltd - http://compulab.co.il/
  * Bernecker & Rainer Industrieelektronik GmbH - http://www.br-automation.com
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -18,7 +17,7 @@ static int console_normal_set_row(struct udevice *dev, uint row, int clr)
 {
 	struct video_priv *vid_priv = dev_get_uclass_priv(dev->parent);
 	void *line;
-	int pixels = VIDEO_FONT_HEIGHT * vid_priv->line_length;
+	int pixels = VIDEO_FONT_HEIGHT * vid_priv->xsize;
 	int i;
 
 	line = vid_priv->fb + row * VIDEO_FONT_HEIGHT * vid_priv->line_length;

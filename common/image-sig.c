@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2013, Google Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifdef USE_HOSTCC
@@ -32,42 +31,42 @@ void *image_get_host_blob(void)
 
 struct checksum_algo checksum_algos[] = {
 	{
-		"sha1",
-		SHA1_SUM_LEN,
-		SHA1_DER_LEN,
-		sha1_der_prefix,
+		.name = "sha1",
+		.checksum_len = SHA1_SUM_LEN,
+		.der_len = SHA1_DER_LEN,
+		.der_prefix = sha1_der_prefix,
 #if IMAGE_ENABLE_SIGN
-		EVP_sha1,
+		.calculate_sign = EVP_sha1,
 #endif
-		hash_calculate,
+		.calculate = hash_calculate,
 	},
 	{
-		"sha256",
-		SHA256_SUM_LEN,
-		SHA256_DER_LEN,
-		sha256_der_prefix,
+		.name = "sha256",
+		.checksum_len = SHA256_SUM_LEN,
+		.der_len = SHA256_DER_LEN,
+		.der_prefix = sha256_der_prefix,
 #if IMAGE_ENABLE_SIGN
-		EVP_sha256,
+		.calculate_sign = EVP_sha256,
 #endif
-		hash_calculate,
+		.calculate = hash_calculate,
 	}
 
 };
 
 struct crypto_algo crypto_algos[] = {
 	{
-		"rsa2048",
-		RSA2048_BYTES,
-		rsa_sign,
-		rsa_add_verify_data,
-		rsa_verify,
+		.name = "rsa2048",
+		.key_len = RSA2048_BYTES,
+		.sign = rsa_sign,
+		.add_verify_data = rsa_add_verify_data,
+		.verify = rsa_verify,
 	},
 	{
-		"rsa4096",
-		RSA4096_BYTES,
-		rsa_sign,
-		rsa_add_verify_data,
-		rsa_verify,
+		.name = "rsa4096",
+		.key_len = RSA4096_BYTES,
+		.sign = rsa_sign,
+		.add_verify_data = rsa_add_verify_data,
+		.verify = rsa_verify,
 	}
 
 };
@@ -156,6 +155,11 @@ static int fit_image_setup_verify(struct image_sign_info *info,
 		char **err_msgp)
 {
 	char *algo_name;
+
+	if (fdt_totalsize(fit) > CONFIG_FIT_SIGNATURE_MAX_SIZE) {
+		*err_msgp = "Total size too large";
+		return 1;
+	}
 
 	if (fit_image_hash_get_algo(fit, noffset, &algo_name)) {
 		*err_msgp = "Can't get hash algo property";
@@ -347,7 +351,7 @@ int fit_config_check_sig(const void *fit, int noffset, int required_keynode,
 
 	/*
 	 * Each node can generate one region for each sub-node. Allow for
-	 * 7 sub-nodes (hash@1, signature@1, etc.) and some extra.
+	 * 7 sub-nodes (hash-1, signature-1, etc.) and some extra.
 	 */
 	max_regions = 20 + count * 7;
 	struct fdt_region fdt_regions[max_regions];
@@ -373,8 +377,11 @@ int fit_config_check_sig(const void *fit, int noffset, int required_keynode,
 	/* Add the strings */
 	strings = fdt_getprop(fit, noffset, "hashed-strings", NULL);
 	if (strings) {
-		fdt_regions[count].offset = fdt_off_dt_strings(fit) +
-				fdt32_to_cpu(strings[0]);
+		/*
+		 * The strings region offset must be a static 0x0.
+		 * This is set in tool/image-host.c
+		 */
+		fdt_regions[count].offset = fdt_off_dt_strings(fit);
 		fdt_regions[count].size = fdt32_to_cpu(strings[1]);
 		count++;
 	}

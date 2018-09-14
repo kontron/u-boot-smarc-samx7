@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (c) 2016, NVIDIA CORPORATION.
- *
- * SPDX-License-Identifier: GPL-2.0
  */
 
 #ifndef _POWER_DOMAIN_UCLASS_H
@@ -40,7 +39,7 @@ struct power_domain_ops {
 	 * @return 0 if OK, or a negative error code.
 	 */
 	int (*of_xlate)(struct power_domain *power_domain,
-			struct fdtdec_phandle_args *args);
+			struct ofnode_phandle_args *args);
 	/**
 	 * request - Request a translated power domain.
 	 *

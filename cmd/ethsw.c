@@ -1,13 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:      GPL-2.0+
  *
  * Ethernet Switch commands
  */
 
 #include <common.h>
 #include <command.h>
+#include <environment.h>
 #include <errno.h>
 #include <env_flags.h>
 #include <ethsw.h>
@@ -915,7 +915,7 @@ static void cmd_keywords_opt_check(const struct ethsw_command_def *parsed_cmd,
 	 * check if our command's optional keywords match the optional
 	 * keywords of an available command
 	 */
-	for (i = 0; i < ARRAY_SIZE(ethsw_cmd_def); i++) {
+	for (i = 0; i < ARRAY_SIZE(cmd_opt_def); i++) {
 		keyw_opt_matched = 0;
 		cmd_keyw_p = &parsed_cmd->cmd_to_keywords[keyw_opt_matched];
 		cmd_keyw_opt_p = &cmd_opt_def[i].cmd_keyword[keyw_opt_matched];

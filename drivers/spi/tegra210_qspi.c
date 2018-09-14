@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * NVIDIA Tegra210 QSPI controller driver
  *
  * (C) Copyright 2015 NVIDIA Corporation <www.nvidia.com>
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
@@ -99,8 +98,8 @@ static int tegra210_qspi_ofdata_to_platdata(struct udevice *bus)
 	const void *blob = gd->fdt_blob;
 	int node = dev_of_offset(bus);
 
-	plat->base = dev_get_addr(bus);
-	plat->periph_id = clock_decode_periph_id(blob, node);
+	plat->base = devfdt_get_addr(bus);
+	plat->periph_id = clock_decode_periph_id(bus);
 
 	if (plat->periph_id == PERIPH_ID_NONE) {
 		debug("%s: could not decode periph id %d\n", __func__,

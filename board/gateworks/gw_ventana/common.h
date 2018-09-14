@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2013 Gateworks Corporation
  *
  * Author: Tim Harvey <tharvey@gateworks.com>
- *
- * SPDX-License-Identifier: GPL-2.0+
  */
 
 #ifndef _GWVENTANA_COMMON_H_
@@ -13,11 +12,8 @@
 
 /* GPIO's common to all baseboards */
 #define GP_PHY_RST	IMX_GPIO_NR(1, 30)
-#define GP_USB_OTG_PWR	IMX_GPIO_NR(3, 22)
-#define GP_SD3_CD	IMX_GPIO_NR(7, 0)
 #define GP_RS232_EN	IMX_GPIO_NR(2, 11)
 #define GP_MSATA_SEL	IMX_GPIO_NR(2, 8)
-#define GP_SD3_VSELECT	IMX_GPIO_NR(6, 14)
 
 #define UART_PAD_CTRL  (PAD_CTL_PKE | PAD_CTL_PUE |		\
 	PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED |		\
@@ -79,6 +75,9 @@ struct ventana {
 	int wdis;
 	int msata_en;
 	int rs232_en;
+	int otgpwr_en;
+	int vsel_pin;
+	int mmc_cd;
 	/* various features */
 	bool usd_vsel;
 };

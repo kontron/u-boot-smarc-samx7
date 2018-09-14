@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2016 Google, Inc
  *
  * From coreboot src/soc/intel/broadwell/romstage/raminit.c
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
@@ -28,9 +27,11 @@ ulong board_get_usable_ram_top(ulong total_size)
 	return mrc_common_board_get_usable_ram_top(total_size);
 }
 
-void dram_init_banksize(void)
+int dram_init_banksize(void)
 {
 	mrc_common_dram_init_banksize();
+
+	return 0;
 }
 
 void broadwell_fill_pei_data(struct pei_data *pei_data)

@@ -1,20 +1,17 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2016 Stefan Roese <sr@denx.de>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <dm.h>
 #include <fdtdec.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <asm/io.h>
 #include <asm/system.h>
 #include <asm/arch/cpu.h>
 #include <asm/arch/soc.h>
 #include <asm/armv8/mmu.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 /* Armada 7k/8k */
 #define MVEBU_RFU_BASE			(MVEBU_REGISTER(0x6f0000))
@@ -109,4 +106,22 @@ void reset_cpu(ulong ignored)
 	reg = readl(RFU_GLOBAL_SW_RST);
 	reg &= ~(1 << RFU_SW_RESET_OFFSET);
 	writel(reg, RFU_GLOBAL_SW_RST);
+}
+
+/*
+ * TODO - implement this functionality using platform
+ *        clock driver once it gets available
+ * Return NAND clock in Hz
+ */
+u32 mvebu_get_nand_clock(void)
+{
+	unsigned long NAND_FLASH_CLK_CTRL = 0xF2440700UL;
+	unsigned long NF_CLOCK_SEL_MASK = 0x1;
+	u32 reg;
+
+	reg = readl(NAND_FLASH_CLK_CTRL);
+	if (reg & NF_CLOCK_SEL_MASK)
+		return 400 * 1000000;
+	else
+		return 250 * 1000000;
 }

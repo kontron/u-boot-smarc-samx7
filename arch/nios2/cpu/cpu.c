@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2004, Psyent Corporation <www.psyent.com>
  * Scott McNutt <smcnutt@psyent.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -150,3 +149,9 @@ U_BOOT_DRIVER(altera_nios2) = {
 	.ops		= &altera_nios2_ops,
 	.flags		= DM_FLAG_PRE_RELOC,
 };
+
+/* This is a dummy function on nios2 */
+int dram_init(void)
+{
+	return 0;
+}

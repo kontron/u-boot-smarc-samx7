@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (C) 2012-2020  ASPEED Technology Inc.
  *
  * Copyright 2016 Google, Inc
- *
- * SPDX-License-Identifier:		GPL-2.0
  */
 
 #include <common.h>
@@ -12,6 +11,7 @@
 #include <errno.h>
 #include <ram.h>
 #include <regmap.h>
+#include <reset.h>
 #include <asm/io.h>
 #include <asm/arch/scu_ast2500.h>
 #include <asm/arch/sdram_ast2500.h>
@@ -182,9 +182,8 @@ static int ast2500_sdrammc_ddr4_calibrate_vref(struct dram_info *info)
 static size_t ast2500_sdrammc_get_vga_mem_size(struct dram_info *info)
 {
 	size_t vga_mem_size_base = 8 * 1024 * 1024;
-	u32 vga_hwconf = (readl(&info->scu->hwstrap)
-			  >> SCU_HWSTRAP_VGAMEM_SHIFT)
-			& SCU_HWSTRAP_VGAMEM_MASK;
+	u32 vga_hwconf = (readl(&info->scu->hwstrap) & SCU_HWSTRAP_VGAMEM_MASK)
+	    >> SCU_HWSTRAP_VGAMEM_SHIFT;
 
 	return vga_mem_size_base << vga_hwconf;
 }
@@ -328,6 +327,7 @@ static void ast2500_sdrammc_lock(struct dram_info *info)
 
 static int ast2500_sdrammc_probe(struct udevice *dev)
 {
+	struct reset_ctl reset_ctl;
 	struct dram_info *priv = (struct dram_info *)dev_get_priv(dev);
 	struct ast2500_sdrammc_regs *regs = priv->regs;
 	int i;
@@ -345,9 +345,15 @@ static int ast2500_sdrammc_probe(struct udevice *dev)
 	}
 
 	clk_set_rate(&priv->ddr_clk, priv->clock_rate);
-	ret = ast_wdt_reset_masked(ast_get_wdt(0), WDT_RESET_SDRAM);
+	ret = reset_get_by_index(dev, 0, &reset_ctl);
 	if (ret) {
-		debug("%s(): SDRAM reset failed\n", __func__);
+		debug("%s(): Failed to get reset signal\n", __func__);
+		return ret;
+	}
+
+	ret = reset_assert(&reset_ctl);
+	if (ret) {
+		debug("%s(): SDRAM reset failed: %u\n", __func__, ret);
 		return ret;
 	}
 
@@ -385,7 +391,7 @@ static int ast2500_sdrammc_ofdata_to_platdata(struct udevice *dev)
 	struct regmap *map;
 	int ret;
 
-	ret = regmap_init_mem(dev, &map);
+	ret = regmap_init_mem(dev_ofnode(dev), &map);
 	if (ret)
 		return ret;
 

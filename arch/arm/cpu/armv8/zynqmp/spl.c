@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015 - 2016 Xilinx, Inc.
  *
  * Michal Simek <michal.simek@xilinx.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -17,7 +16,7 @@
 
 void board_init_f(ulong dummy)
 {
-	psu_init();
+	board_early_init_f();
 	board_early_init_r();
 
 #ifdef CONFIG_DEBUG_UART
@@ -83,9 +82,15 @@ u32 spl_boot_device(void)
 	case JTAG_MODE:
 		return BOOT_DEVICE_RAM;
 #ifdef CONFIG_SPL_MMC_SUPPORT
-	case EMMC_MODE:
-	case SD_MODE:
 	case SD_MODE1:
+	case SD1_LSHFT_MODE: /* not working on silicon v1 */
+/* if both controllers enabled, then these two are the second controller */
+#if defined(CONFIG_ZYNQ_SDHCI0) && defined(CONFIG_ZYNQ_SDHCI1)
+		return BOOT_DEVICE_MMC2;
+/* else, fall through, the one SDHCI controller that is enabled is number 1 */
+#endif
+	case SD_MODE:
+	case EMMC_MODE:
 		return BOOT_DEVICE_MMC1;
 #endif
 #ifdef CONFIG_SPL_DFU_SUPPORT
@@ -96,33 +101,17 @@ u32 spl_boot_device(void)
 	case SW_SATA_MODE:
 		return BOOT_DEVICE_SATA;
 #endif
+#ifdef CONFIG_SPL_SPI_SUPPORT
+	case QSPI_MODE_24BIT:
+	case QSPI_MODE_32BIT:
+		return BOOT_DEVICE_SPI;
+#endif
 	default:
 		printf("Invalid Boot Mode:0x%x\n", bootmode);
 		break;
 	}
 
 	return 0;
-}
-
-u32 spl_boot_mode(const u32 boot_device)
-{
-	switch (spl_boot_device()) {
-	case BOOT_DEVICE_RAM:
-		return 0;
-	case BOOT_DEVICE_MMC1:
-		return MMCSD_MODE_FS;
-	default:
-		puts("spl: error: unsupported device\n");
-		hang();
-	}
-}
-
-__weak void psu_init(void)
-{
-	 /*
-	  * This function is overridden by the one in
-	  * board/xilinx/zynqmp/(platform)/psu_init_gpl.c, if it exists.
-	  */
 }
 
 #ifdef CONFIG_SPL_OS_BOOT

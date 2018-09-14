@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2009 Samsung Electronics
  * Minkyu Kang <mk7.kang@samsung.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -316,7 +315,7 @@ static int gpio_exynos_bind(struct udevice *parent)
 	if (plat)
 		return 0;
 
-	base = (struct s5p_gpio_bank *)dev_get_addr(parent);
+	base = (struct s5p_gpio_bank *)devfdt_get_addr(parent);
 	for (node = fdt_first_subnode(blob, dev_of_offset(parent)), bank = base;
 	     node > 0;
 	     node = fdt_next_subnode(blob, node), bank++) {
@@ -339,7 +338,7 @@ static int gpio_exynos_bind(struct udevice *parent)
 
 		dev_set_of_offset(dev, node);
 
-		reg = dev_get_addr(dev);
+		reg = devfdt_get_addr(dev);
 		if (reg != FDT_ADDR_T_NONE)
 			bank = (struct s5p_gpio_bank *)((ulong)base + reg);
 

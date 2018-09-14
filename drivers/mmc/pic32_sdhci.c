@@ -1,14 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Support of SDHCI for Microchip PIC32 SoC.
  *
  * Copyright (C) 2015 Microchip Technology Inc.
  * Andrei Pistirica <andrei.pistirica@microchip.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
-#include <dm.h>
 #include <common.h>
+#include <dm.h>
 #include <sdhci.h>
 #include <linux/errno.h>
 #include <mach/pic32.h>

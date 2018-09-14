@@ -1,6 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (c) 2012 The Chromium OS Authors.
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _HASH_H
@@ -16,10 +16,6 @@ enum {
 	HASH_FLAG_VERIFY	= 1 << 0,	/* Enable verify mode */
 	HASH_FLAG_ENV		= 1 << 1,	/* Allow env vars */
 };
-
-#if defined(CONFIG_SHA1SUM_VERIFY) || defined(CONFIG_CRC32_VERIFY)
-#define CONFIG_HASH_VERIFY
-#endif
 
 struct hash_algo {
 	const char *name;			/* Name of algorithm */

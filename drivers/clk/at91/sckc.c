@@ -1,15 +1,11 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2016 Atmel Corporation
  *               Wenyou.Yang <wenyou.yang@atmel.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
-#include <dm/device.h>
-#include <dm/root.h>
-
-DECLARE_GLOBAL_DATA_PTR;
+#include <dm.h>
 
 static const struct udevice_id at91_sckc_match[] = {
 	{ .compatible = "atmel,at91sam9x5-sckc" },

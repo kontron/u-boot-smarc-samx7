@@ -1,11 +1,15 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) 2016 Imagination Technologies
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #ifndef __CONFIGS_BOSTON_H__
 #define __CONFIGS_BOSTON_H__
+
+/*
+ * General board configuration
+ */
+#define CONFIG_SYS_BOOTM_LEN		(64 * 1024 * 1024)
 
 /*
  * CPU
@@ -15,7 +19,6 @@
 /*
  * PCI
  */
-#define CONFIG_CMD_PCI
 
 /*
  * Memory map
@@ -30,7 +33,7 @@
 
 #define CONFIG_SYS_MONITOR_BASE		CONFIG_SYS_TEXT_BASE
 
-#define CONFIG_SYS_LOAD_ADDR		(CONFIG_SYS_SDRAM_BASE + 0x100000)
+#define CONFIG_SYS_LOAD_ADDR		(CONFIG_SYS_SDRAM_BASE + 0x08000000)
 
 #define CONFIG_SYS_MEMTEST_START	(CONFIG_SYS_SDRAM_BASE + 0)
 #define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_SDRAM_BASE + 0x10000000)
@@ -40,12 +43,6 @@
 /*
  * Console
  */
-#define CONFIG_SYS_MAXARGS		16
-#define CONFIG_SYS_CBSIZE		256
-#define CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + \
-					 sizeof(CONFIG_SYS_PROMPT) + 16)
-#define CONFIG_SYS_LONGHELP
-#define CONFIG_BAUDRATE			115200
 
 /*
  * Flash
@@ -60,7 +57,6 @@
 /*
  * Environment
  */
-#define CONFIG_ENV_IS_IN_FLASH
 #define CONFIG_ENV_SECT_SIZE		0x20000
 #define CONFIG_ENV_SIZE			CONFIG_ENV_SECT_SIZE
 #ifdef CONFIG_64BIT

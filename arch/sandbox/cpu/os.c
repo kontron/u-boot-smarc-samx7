@@ -1,12 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2011 The Chromium OS Authors.
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <dirent.h>
 #include <errno.h>
 #include <fcntl.h>
 #include <getopt.h>
+#include <setjmp.h>
 #include <stdio.h>
 #include <stdint.h>
 #include <stdlib.h>
@@ -319,6 +320,7 @@ int os_dirent_ls(const char *dirname, struct os_dirent_node **headp)
 	DIR *dir;
 	int ret;
 	char *fname;
+	char *old_fname;
 	int len;
 	int dirlen;
 
@@ -344,15 +346,22 @@ int os_dirent_ls(const char *dirname, struct os_dirent_node **headp)
 			break;
 		}
 		next = malloc(sizeof(*node) + strlen(entry->d_name) + 1);
-		if (dirlen + strlen(entry->d_name) > len) {
-			len = dirlen + strlen(entry->d_name);
-			fname = realloc(fname, len);
-		}
-		if (!next || !fname) {
-			free(next);
+		if (!next) {
 			os_dirent_free(head);
 			ret = -ENOMEM;
 			goto done;
+		}
+		if (dirlen + strlen(entry->d_name) > len) {
+			len = dirlen + strlen(entry->d_name);
+			old_fname = fname;
+			fname = realloc(fname, len);
+			if (!fname) {
+				free(old_fname);
+				free(next);
+				os_dirent_free(head);
+				ret = -ENOMEM;
+				goto done;
+			}
 		}
 		next->next = NULL;
 		strcpy(next->name, entry->d_name);
@@ -395,7 +404,7 @@ const char *os_dirent_typename[OS_FILET_COUNT] = {
 
 const char *os_dirent_get_typename(enum os_dirent_t type)
 {
-	if (type >= 0 && type < OS_FILET_COUNT)
+	if (type >= OS_FILET_REG && type < OS_FILET_COUNT)
 		return os_dirent_typename[type];
 
 	return os_dirent_typename[OS_FILET_UNKNOWN];
@@ -619,4 +628,26 @@ void os_localtime(struct rtc_time *rt)
 	rt->tm_wday = tm->tm_wday;
 	rt->tm_yday = tm->tm_yday;
 	rt->tm_isdst = tm->tm_isdst;
+}
+
+int os_setjmp(ulong *jmp, int size)
+{
+	jmp_buf dummy;
+
+	/*
+	 * We cannot rely on the struct name that jmp_buf uses, so use a
+	 * local variable here
+	 */
+	if (size < sizeof(dummy)) {
+		printf("setjmp: jmpbuf is too small (%d bytes, need %d)\n",
+		       size, sizeof(jmp_buf));
+		return -ENOSPC;
+	}
+
+	return setjmp((struct __jmp_buf_tag *)jmp);
+}
+
+void os_longjmp(ulong *jmp, int ret)
+{
+	longjmp((struct __jmp_buf_tag *)jmp, ret);
 }

@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2016 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -11,6 +10,7 @@
 #ifdef CONFIG_FSL_DEEP_SLEEP
 #include <fsl_sleep.h>
 #endif
+#include <asm/arch/clock.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -28,7 +28,10 @@ void fsl_ddr_board_options(memctl_options_t *popts,
 	if (!pdimm->n_ranks)
 		return;
 
-	pbsp = udimms[0];
+	if (popts->registered_dimm_en)
+		pbsp = rdimms[0];
+	else
+		pbsp = udimms[0];
 
 	/* Get clk_adjust, wrlvl_start, wrlvl_ctl, according to the board ddr
 	 * freqency and n_banks specified in board_specific_parameters table.
@@ -65,8 +68,6 @@ found:
 	      pbsp->n_ranks, pbsp->datarate_mhz_high, pbsp->rank_gb);
 
 	popts->data_bus_width = 0;	/* 64-bit data bus */
-	popts->otf_burst_chop_en = 0;
-	popts->burst_length = DDR_BL8;
 	popts->bstopre = 0;		/* enable auto precharge */
 
 	/*
@@ -93,15 +94,17 @@ found:
 			  DDR_CDR2_VREF_TRAIN_EN | DDR_CDR2_VREF_RANGE_2;
 
 	/* optimize cpo for erratum A-009942 */
-	popts->cpo_sample = 0x70;
+	popts->cpo_sample = 0x61;
 }
 
-phys_size_t initdram(int board_type)
+int fsl_initdram(void)
 {
 	phys_size_t dram_size;
 
 #if defined(CONFIG_SPL) && !defined(CONFIG_SPL_BUILD)
-	return fsl_ddr_sdram_size();
+	gd->ram_size = fsl_ddr_sdram_size();
+
+	return 0;
 #else
 	puts("Initializing DDR....using SPD\n");
 
@@ -110,34 +113,7 @@ phys_size_t initdram(int board_type)
 
 	erratum_a008850_post();
 
-	return dram_size;
-}
+	gd->ram_size = dram_size;
 
-void dram_init_banksize(void)
-{
-	/*
-	 * gd->arch.secure_ram tracks the location of secure memory.
-	 * It was set as if the memory starts from 0.
-	 * The address needs to add the offset of its bank.
-	 */
-	gd->bd->bi_dram[0].start = CONFIG_SYS_SDRAM_BASE;
-	if (gd->ram_size > CONFIG_SYS_DDR_BLOCK1_SIZE) {
-		gd->bd->bi_dram[0].size = CONFIG_SYS_DDR_BLOCK1_SIZE;
-		gd->bd->bi_dram[1].start = CONFIG_SYS_DDR_BLOCK2_BASE;
-		gd->bd->bi_dram[1].size = gd->ram_size -
-					  CONFIG_SYS_DDR_BLOCK1_SIZE;
-#ifdef CONFIG_SYS_MEM_RESERVE_SECURE
-		gd->arch.secure_ram = gd->bd->bi_dram[1].start +
-				 gd->arch.secure_ram -
-				 CONFIG_SYS_DDR_BLOCK1_SIZE;
-		gd->arch.secure_ram |= MEM_RESERVE_SECURE_MAINTAINED;
-#endif
-	} else {
-		gd->bd->bi_dram[0].size = gd->ram_size;
-#ifdef CONFIG_SYS_MEM_RESERVE_SECURE
-		gd->arch.secure_ram = gd->bd->bi_dram[0].start +
-				 gd->arch.secure_ram;
-		gd->arch.secure_ram |= MEM_RESERVE_SECURE_MAINTAINED;
-#endif
-	}
+	return 0;
 }

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2000-2003
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
@@ -6,9 +7,9 @@
  * TsiChung Liew (Tsi-Chung.Liew@freescale.com)
  * Chao Fu (B44548@freescale.com)
  * Haikun Wang (B53464@freescale.com)
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
+
+#include <common.h>
 #include <dm.h>
 #include <errno.h>
 #include <common.h>
@@ -394,16 +395,6 @@ void spi_init(void)
 	/* Nothing to do */
 }
 
-void spi_init_f(void)
-{
-	/* Nothing to do */
-}
-
-void spi_init_r(void)
-{
-	/* Nothing to do */
-}
-
 int spi_cs_is_valid(unsigned int bus, unsigned int cs)
 {
 	if (((cs >= 0) && (cs < 8)) && ((bus >= 0) && (bus < 8)))
@@ -654,7 +645,7 @@ static int fsl_dspi_ofdata_to_platdata(struct udevice *bus)
 	plat->num_chipselect =
 		fdtdec_get_int(blob, node, "num-cs", FSL_DSPI_MAX_CHIPSELECT);
 
-	addr = dev_get_addr(bus);
+	addr = devfdt_get_addr(bus);
 	if (addr == FDT_ADDR_T_NONE) {
 		debug("DSPI: Can't get base address or size\n");
 		return -ENOMEM;

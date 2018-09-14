@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2011
  * eInfochips Ltd. <www.einfochips.com>
@@ -8,8 +9,6 @@
  * Marvell Semiconductor <www.marvell.com>
  * Written-by: Prafulla Wadaskar <prafulla@marvell.com>
  * Contributor: Mahavir Jain <mjain@marvell.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -19,6 +18,7 @@
 #include <asm/arch/armada100.h>
 #include <asm/gpio.h>
 #include <miiphy.h>
+#include <asm/mach-types.h>
 
 #ifdef CONFIG_ARMADA100_FEC
 #include <net.h>

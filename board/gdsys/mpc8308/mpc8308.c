@@ -1,15 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2014
- * Dirk Eibach,  Guntermann & Drunck GmbH, eibach@gdsys.de
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Dirk Eibach,  Guntermann & Drunck GmbH, dirk.eibach@gdsys.cc
  */
 
 #include <common.h>
 #include <command.h>
 #include <asm/processor.h>
 #include <asm/io.h>
-#include <asm/ppc4xx-gpio.h>
 #include <asm/global_data.h>
 
 #include "mpc8308.h"

@@ -1,13 +1,11 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  *  Copyright (C) 2015 Samsung Electronics
  *
  *  Przemyslaw Marczak <p.marczak@samsung.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
-#include <fdtdec.h>
 #include <errno.h>
 #include <dm.h>
 #include <i2c.h>
@@ -15,11 +13,10 @@
 #include <power/pmic.h>
 #include <power/regulator.h>
 
-DECLARE_GLOBAL_DATA_PTR;
-
 struct fixed_regulator_platdata {
 	struct gpio_desc gpio; /* GPIO for regulator enable control */
 	unsigned int startup_delay_us;
+	unsigned int off_on_delay_us;
 };
 
 static int fixed_regulator_ofdata_to_platdata(struct udevice *dev)
@@ -27,8 +24,7 @@ static int fixed_regulator_ofdata_to_platdata(struct udevice *dev)
 	struct dm_regulator_uclass_platdata *uc_pdata;
 	struct fixed_regulator_platdata *dev_pdata;
 	struct gpio_desc *gpio;
-	const void *blob = gd->fdt_blob;
-	int node = dev_of_offset(dev), flags = GPIOD_IS_OUT;
+	int flags = GPIOD_IS_OUT;
 	int ret;
 
 	dev_pdata = dev_get_platdata(dev);
@@ -39,7 +35,7 @@ static int fixed_regulator_ofdata_to_platdata(struct udevice *dev)
 	/* Set type to fixed */
 	uc_pdata->type = REGULATOR_TYPE_FIXED;
 
-	if (fdtdec_get_bool(blob, node, "enable-active-high"))
+	if (dev_read_bool(dev, "enable-active-high"))
 		flags |= GPIOD_IS_OUT_ACTIVE;
 
 	/* Get fixed regulator optional enable GPIO desc */
@@ -53,9 +49,10 @@ static int fixed_regulator_ofdata_to_platdata(struct udevice *dev)
 	}
 
 	/* Get optional ramp up delay */
-	dev_pdata->startup_delay_us = fdtdec_get_uint(gd->fdt_blob,
-						      dev_of_offset(dev),
-						      "startup-delay-us", 0);
+	dev_pdata->startup_delay_us = dev_read_u32_default(dev,
+							"startup-delay-us", 0);
+	dev_pdata->off_on_delay_us =
+			dev_read_u32_default(dev, "u-boot,off-on-delay-us", 0);
 
 	return 0;
 }
@@ -92,7 +89,7 @@ static int fixed_regulator_get_current(struct udevice *dev)
 	return uc_pdata->min_uA;
 }
 
-static bool fixed_regulator_get_enable(struct udevice *dev)
+static int fixed_regulator_get_enable(struct udevice *dev)
 {
 	struct fixed_regulator_platdata *dev_pdata = dev_get_platdata(dev);
 
@@ -108,8 +105,11 @@ static int fixed_regulator_set_enable(struct udevice *dev, bool enable)
 	struct fixed_regulator_platdata *dev_pdata = dev_get_platdata(dev);
 	int ret;
 
+	debug("%s: dev='%s', enable=%d, delay=%d, has_gpio=%d\n", __func__,
+	      dev->name, enable, dev_pdata->startup_delay_us,
+	      dm_gpio_is_valid(&dev_pdata->gpio));
 	/* Enable GPIO is optional */
-	if (!dev_pdata->gpio.dev) {
+	if (!dm_gpio_is_valid(&dev_pdata->gpio)) {
 		if (!enable)
 			return -ENOSYS;
 		return 0;
@@ -117,13 +117,17 @@ static int fixed_regulator_set_enable(struct udevice *dev, bool enable)
 
 	ret = dm_gpio_set_value(&dev_pdata->gpio, enable);
 	if (ret) {
-		error("Can't set regulator : %s gpio to: %d\n", dev->name,
+		pr_err("Can't set regulator : %s gpio to: %d\n", dev->name,
 		      enable);
 		return ret;
 	}
 
 	if (enable && dev_pdata->startup_delay_us)
 		udelay(dev_pdata->startup_delay_us);
+	debug("%s: done\n", __func__);
+
+	if (!enable && dev_pdata->off_on_delay_us)
+		udelay(dev_pdata->off_on_delay_us);
 
 	return 0;
 }

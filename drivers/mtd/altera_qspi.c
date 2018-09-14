@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015 Thomas Chou <thomas@wytron.com.tw>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -362,7 +361,7 @@ static int altera_qspi_ofdata_to_platdata(struct udevice *dev)
 	 * match with reg-names.
 	 */
 	parent = fdt_parent_offset(blob, node);
-	of_bus_default_count_cells(blob, parent, &addrc, &sizec);
+	fdt_support_default_count_cells(blob, parent, &addrc, &sizec);
 	list = fdt_getprop(blob, node, "reg-names", &len);
 	if (!list)
 		return -ENOENT;

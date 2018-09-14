@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013-2015
  * NVIDIA Corporation <www.nvidia.com>
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 /* Tegra124 Clock control functions */
@@ -889,6 +888,24 @@ void clock_early_init(void)
 	data |= (1 << PLLD_CLKENABLE) | (1 << pllinfo->lock_ena);
 	writel(data, &clkrst->crc_pll[CLOCK_ID_DISPLAY].pll_misc);
 	udelay(2);
+}
+
+/*
+ * clock_early_init_done - Check if clock_early_init() has been called
+ *
+ * Check a register that we set up to see if clock_early_init() has already
+ * been called.
+ *
+ * @return true if clock_early_init() was called, false if not
+ */
+bool clock_early_init_done(void)
+{
+	struct clk_rst_ctlr *clkrst = (struct clk_rst_ctlr *)NV_PA_CLK_RST_BASE;
+	u32 val;
+
+	val = readl(&clkrst->crc_sclk_brst_pol);
+
+	return val == 0x20002222;
 }
 
 void arch_timer_init(void)

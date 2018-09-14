@@ -1,15 +1,15 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * boot-common.c
  *
  * Common bootmode functions for omap based boards
  *
  * Copyright (C) 2011, Texas Instruments, Incorporated - http://www.ti.com/
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <ahci.h>
+#include <environment.h>
 #include <spl.h>
 #include <asm/omap_common.h>
 #include <asm/arch/omap.h>
@@ -65,6 +65,23 @@ void save_omap_boot_params(void)
 	if (boot_device == BOOT_DEVICE_QSPI_4)
 		boot_device = BOOT_DEVICE_SPI;
 #endif
+#ifdef CONFIG_TI816X
+	/*
+	 * On PG2.0 and later TI816x the values we get when booting are not the
+	 * same as on PG1.0, which is what the defines are based on.  Update
+	 * them as needed.
+	 */
+	if (get_cpu_rev() != 1) {
+		if (boot_device == 0x05) {
+			omap_boot_params->boot_device = BOOT_DEVICE_NAND;
+			boot_device = BOOT_DEVICE_NAND;
+		}
+		if (boot_device == 0x08) {
+			omap_boot_params->boot_device = BOOT_DEVICE_MMC1;
+			boot_device = BOOT_DEVICE_MMC1;
+		}
+	}
+#endif
 	/*
 	 * When booting from peripheral booting, the boot device is not usable
 	 * as-is (unless there is support for it), so the boot device is instead
@@ -81,7 +98,7 @@ void save_omap_boot_params(void)
 			sys_boot_device = 1;
 			break;
 #endif
-#if defined(BOOT_DEVICE_USBETH) && !defined(CONFIG_SPL_USBETH_SUPPORT)
+#if defined(BOOT_DEVICE_USBETH) && !defined(CONFIG_SPL_USB_ETHER)
 		case BOOT_DEVICE_USBETH:
 			sys_boot_device = 1;
 			break;
@@ -178,16 +195,10 @@ u32 spl_boot_mode(const u32 boot_device)
 
 void spl_board_init(void)
 {
-	/*
-	 * Save the boot parameters passed from romcode.
-	 * We cannot delay the saving further than this,
-	 * to prevent overwrites.
-	 */
-	save_omap_boot_params();
-
+#ifdef CONFIG_SPL_SERIAL_SUPPORT
 	/* Prepare console output */
 	preloader_console_init();
-
+#endif
 #if defined(CONFIG_SPL_NAND_SUPPORT) || defined(CONFIG_SPL_ONENAND_SUPPORT)
 	gpmc_init();
 #endif
@@ -203,21 +214,6 @@ void spl_board_init(void)
 #ifdef CONFIG_AM33XX
 	am33xx_spl_board_init();
 #endif
-}
-
-__weak int board_mmc_init(bd_t *bis)
-{
-	switch (spl_boot_device()) {
-	case BOOT_DEVICE_MMC1:
-		omap_mmc_init(0, 0, 0, -1, -1);
-		break;
-	case BOOT_DEVICE_MMC2:
-	case BOOT_DEVICE_MMC2_2:
-		omap_mmc_init(0, 0, 0, -1, -1);
-		omap_mmc_init(1, 0, 0, -1, -1);
-		break;
-	}
-	return 0;
 }
 
 void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
@@ -238,15 +234,5 @@ void __noreturn jump_to_image_no_args(struct spl_image_info *spl_image)
 void arch_preboot_os(void)
 {
 	ahci_reset((void __iomem *)DWC_AHSATA_BASE);
-}
-#endif
-
-#if defined(CONFIG_USB_FUNCTION_FASTBOOT) && !defined(CONFIG_ENV_IS_NOWHERE)
-int fb_set_reboot_flag(void)
-{
-	printf("Setting reboot to fastboot flag ...\n");
-	setenv("dofastboot", "1");
-	saveenv();
-	return 0;
 }
 #endif

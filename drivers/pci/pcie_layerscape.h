@@ -1,8 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
+ * Copyright 2017 NXP
  * Copyright 2014-2015 Freescale Semiconductor, Inc.
  * Layerscape PCIe driver
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _PCIE_LAYERSCAPE_H_
@@ -25,6 +25,10 @@
 #ifndef CONFIG_SYS_PCI_EP_MEMORY_BASE
 #define CONFIG_SYS_PCI_EP_MEMORY_BASE CONFIG_SYS_LOAD_ADDR
 #endif
+
+#define PCIE_PHYS_SIZE			0x200000000
+#define LS2088A_PCIE_PHYS_SIZE		0x800000000
+#define LS2088A_PCIE1_PHYS_ADDR		0x2000000000
 
 /* iATU registers */
 #define PCIE_ATU_VIEWPORT		0x900
@@ -94,8 +98,10 @@
 #define PCIE_LUT_ENTRY_COUNT	32
 
 /* PF Controll registers */
+#define PCIE_PF_CONFIG		0x14
 #define PCIE_PF_VF_CTRL		0x7F8
 #define PCIE_PF_DBG		0x7FC
+#define PCIE_CONFIG_READY	(1 << 0)
 
 #define PCIE_SRDS_PRTCL(idx)	(PCIE1 + (idx))
 #define PCIE_SYS_BASE_ADDR	0x3400000
@@ -107,6 +113,12 @@
 #define SVR_LS102XA		0
 #define SVR_VAR_PER_SHIFT	8
 #define SVR_LS102XA_MASK	0x700
+#define SVR_LS2088A		0x870900
+#define SVR_LS2084A		0x870910
+#define SVR_LS2048A		0x870920
+#define SVR_LS2044A		0x870930
+#define SVR_LS2081A		0x870918
+#define SVR_LS2041A		0x870914
 
 /* LS1021a PCIE space */
 #define LS1021_PCIE_SPACE_OFFSET	0x4000000000ULL
@@ -132,7 +144,6 @@ struct ls_pcie {
 	bool big_endian;
 	bool enabled;
 	int next_lut_index;
-	struct pci_controller hose;
 };
 
 extern struct list_head ls_pcie_list;

@@ -1,11 +1,10 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * UniPhier SG (SoC Glue) block registers
  *
  * Copyright (C) 2011-2015 Copyright (C) 2011-2015 Panasonic Corporation
  * Copyright (C) 2016-2017 Socionext Inc.
  *   Author: Masahiro Yamada <yamada.masahiro@socionext.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef UNIPHIER_SG_REGS_H
@@ -55,6 +54,7 @@
 
 #define SG_MEMCONF_SPARSEMEM		(0x1 << 4)
 
+#define SG_USBPHYCTRL			(SG_CTRL_BASE | 0x500)
 #define SG_ETPHYPSHUT			(SG_CTRL_BASE | 0x554)
 #define SG_ETPHYCNT			(SG_CTRL_BASE | 0x550)
 
@@ -69,6 +69,7 @@
 
 /* Pin Monitor */
 #define SG_PINMON0			(SG_DBG_BASE | 0x0100)
+#define SG_PINMON2			(SG_DBG_BASE | 0x0108)
 
 #define SG_PINMON0_CLK_MODE_UPLLSRC_MASK	(0x3 << 19)
 #define SG_PINMON0_CLK_MODE_UPLLSRC_DEFAULT	(0x0 << 19)

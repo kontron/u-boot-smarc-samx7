@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * siemens rut
  * (C) Copyright 2013 Siemens Schweiz AG
@@ -7,19 +8,15 @@
  * U-Boot file:/include/configs/am335x_evm.h
  *
  * Copyright (C) 2011 Texas Instruments Incorporated - http://www.ti.com/
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_RUT_H
 #define __CONFIG_RUT_H
 
-#define CONFIG_SIEMENS_RUT
 #define CONFIG_SIEMENS_MACH_TYPE	MACH_TYPE_RUT
 
 #include "siemens-am33x-common.h"
 
-#define CONFIG_SYS_MPUCLK	600
 #define RUT_IOCTRL_VAL	0x18b
 #define DDR_PLL_FREQ	303
 
@@ -44,7 +41,6 @@
 #ifndef CONFIG_SPL_BUILD
 
 /* Use common default */
-#define MTDPARTS_DEFAULT	MTDPARTS_DEFAULT_V1
 
 /* Default env settings */
 #define CONFIG_EXTRA_ENV_SETTINGS \
@@ -111,10 +107,6 @@
 
 #endif /* CONFIG_SPL_BUILD */
 
-#ifdef CONFIG_SPL_BUILD
-#undef CONFIG_HW_WATCHDOG
-#endif
-
 #if defined(CONFIG_VIDEO)
 #define CONFIG_VIDEO_DA8XX
 #define CONFIG_SPLASH_SCREEN
@@ -122,11 +114,7 @@
 #define CONFIG_VIDEO_LOGO
 #define CONFIG_VIDEO_BMP_RLE8
 #define CONFIG_VIDEO_BMP_LOGO
-#define CONFIG_CMD_BMP
 #define DA8XX_LCD_CNTL_BASE	LCD_CNTL_BASE
-
-#define CONFIG_SPI
-#define CONFIG_OMAP3_SPI
 
 #define BOARD_LCD_RESET		115	/* Bank 3 pin 19 */
 #define CONFIG_FORMIKE

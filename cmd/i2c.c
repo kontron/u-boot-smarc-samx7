@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2009
  * Sergey Kubushyn, himself, ksi@koi8.net
@@ -6,8 +7,6 @@
  *
  * (C) Copyright 2001
  * Gerald Van Baren, Custom IDEAS, vanbaren@cideas.com.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -79,8 +78,6 @@
 #include <asm/byteorder.h>
 #include <linux/compiler.h>
 
-DECLARE_GLOBAL_DATA_PTR;
-
 /* Display values from last command.
  * Memory modify remembered values are different from display memory.
  */
@@ -151,6 +148,16 @@ static int cmd_i2c_set_bus_num(unsigned int busnum)
 
 static int i2c_get_cur_bus(struct udevice **busp)
 {
+#ifdef CONFIG_I2C_SET_DEFAULT_BUS_NUM
+	if (!i2c_cur_bus) {
+		if (cmd_i2c_set_bus_num(CONFIG_I2C_DEFAULT_BUS_NUMBER)) {
+			printf("Default I2C bus %d not found\n",
+			       CONFIG_I2C_DEFAULT_BUS_NUMBER);
+			return -ENODEV;
+		}
+	}
+#endif
+
 	if (!i2c_cur_bus) {
 		puts("No I2C bus selected\n");
 		return -ENODEV;
@@ -1146,7 +1153,10 @@ static int do_sdram (cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 	uint	chip;
 	u_char	data[128];
 	u_char	cksum;
-	int	j;
+	int	j, ret;
+#ifdef CONFIG_DM_I2C
+	struct udevice *dev;
+#endif
 
 	static const char *decode_CAS_DDR2[] = {
 		" TBD", " 6", " 5", " 4", " 3", " 2", " TBD", " TBD"
@@ -1200,7 +1210,14 @@ static int do_sdram (cmd_tbl_t * cmdtp, int flag, int argc, char * const argv[])
 	 */
 	chip = simple_strtoul (argv[1], NULL, 16);
 
-	if (i2c_read (chip, 0, 1, data, sizeof (data)) != 0) {
+#ifdef CONFIG_DM_I2C
+	ret = i2c_get_cur_bus_chip(chip, &dev);
+	if (!ret)
+		ret = dm_i2c_read(dev, 0, data, sizeof(data));
+#else
+	ret = i2c_read(chip, 0, 1, data, sizeof(data));
+#endif
+	if (ret) {
 		puts ("No SDRAM Serial Presence Detect found.\n");
 		return 1;
 	}

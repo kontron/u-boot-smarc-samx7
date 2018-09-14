@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2008
  * Texas Instruments, <www.ti.com>
@@ -8,8 +9,6 @@
  * Derived from Beagle Board and 3430 SDP code by
  *      Richard Woodruff <r-woodruff2@ti.com>
  *      Syed Mohammed Khasim <khasim@ti.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -17,6 +16,7 @@
 #include <asm/arch/mem.h>	/* get mem tables */
 #include <asm/arch/sys_proto.h>
 #include <asm/bootm.h>
+#include <asm/omap_common.h>
 
 #include <i2c.h>
 #include <linux/compiler.h>
@@ -234,14 +234,6 @@ u32 is_running_in_sdram(void)
 u32 get_boot_type(void)
 {
 	return (readl(&ctrl_base->status) & SYSBOOT_MASK);
-}
-
-/*************************************************************
- *  get_device_type(): tell if GP/HS/EMU/TST
- *************************************************************/
-u32 get_device_type(void)
-{
-	return ((readl(&ctrl_base->status) & (DEVICE_MASK)) >> 8);
 }
 
 #ifdef CONFIG_DISPLAY_CPUINFO

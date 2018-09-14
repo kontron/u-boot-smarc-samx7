@@ -1,5 +1,5 @@
 LS1043A BOARD
-M:	Mingkai Hu <Mingkai.hu@freescale.com>
+M:	Mingkai Hu <mingkai.hu@nxp.com>
 S:	Maintained
 F:	board/freescale/ls1043ardb/
 F:	board/freescale/ls1043ardb/ls1043ardb.c
@@ -12,3 +12,5 @@ LS1043A_SECURE_BOOT BOARD
 M:	Ruchika Gupta <ruchika.gupta@nxp.com>
 S:	Maintained
 F:	configs/ls1043ardb_SECURE_BOOT_defconfig
+F:	configs/ls1043ardb_sdcard_SECURE_BOOT_defconfig
+F:	configs/ls1043ardb_nand_SECURE_BOOT_defconfig

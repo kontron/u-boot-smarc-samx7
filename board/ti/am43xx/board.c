@@ -1,14 +1,14 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * board.c
  *
  * Board functions for TI AM43XX based boards
  *
  * Copyright (C) 2013, Texas Instruments, Incorporated - http://www.ti.com/
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
+#include <environment.h>
 #include <i2c.h>
 #include <linux/errno.h>
 #include <spl.h>
@@ -20,6 +20,7 @@
 #include <asm/arch/ddr_defs.h>
 #include <asm/arch/gpio.h>
 #include <asm/emif.h>
+#include <asm/omap_common.h>
 #include "../common/board_detect.h"
 #include "board.h"
 #include <power/pmic.h>
@@ -42,14 +43,13 @@ static struct ctrl_dev *cdev = (struct ctrl_dev *)CTRL_DEVICE_BASE;
 #ifdef CONFIG_TI_I2C_BOARD_DETECT
 void do_board_detect(void)
 {
-	if (ti_i2c_eeprom_am_get(-1, CONFIG_SYS_I2C_EEPROM_ADDR))
+	if (ti_i2c_eeprom_am_get(CONFIG_EEPROM_BUS_ADDRESS,
+				 CONFIG_EEPROM_CHIP_ADDRESS))
 		printf("ti_i2c_eeprom_init failed\n");
 }
 #endif
 
 #ifndef CONFIG_SKIP_LOWLEVEL_INIT
-
-#define NUM_OPPS	6
 
 const struct dpll_params dpll_mpu[NUM_CRYSTAL_FREQ][NUM_OPPS] = {
 	{	/* 19.2 MHz */
@@ -317,25 +317,6 @@ void emif_get_ext_phy_ctrl_const_regs(const u32 **regs, u32 *size)
 	return;
 }
 
-/*
- * get_sys_clk_index : returns the index of the sys_clk read from
- *			ctrl status register. This value is either
- *			read from efuse or sysboot pins.
- */
-static u32 get_sys_clk_index(void)
-{
-	struct ctrl_stat *ctrl = (struct ctrl_stat *)CTRL_BASE;
-	u32 ind = readl(&ctrl->statusreg), src;
-
-	src = (ind & CTRL_CRYSTAL_FREQ_SRC_MASK) >> CTRL_CRYSTAL_FREQ_SRC_SHIFT;
-	if (src == CTRL_CRYSTAL_FREQ_SRC_EFUSE) /* Value read from EFUSE */
-		return ((ind & CTRL_CRYSTAL_FREQ_SELECTION_MASK) >>
-			CTRL_CRYSTAL_FREQ_SELECTION_SHIFT);
-	else /* Value read from SYS BOOT pins */
-		return ((ind & CTRL_SYSBOOT_15_14_MASK) >>
-			CTRL_SYSBOOT_15_14_SHIFT);
-}
-
 const struct dpll_params *get_dpll_ddr_params(void)
 {
 	int ind = get_sys_clk_index();
@@ -403,7 +384,7 @@ const struct dpll_params *get_dpll_per_params(void)
 
 void scale_vcores_generic(u32 m)
 {
-	int mpu_vdd;
+	int mpu_vdd, ddr_volt;
 
 	if (i2c_probe(TPS65218_CHIP_PM))
 		return;
@@ -438,6 +419,17 @@ void scale_vcores_generic(u32 m)
 
 	/* Set DCDC2 (MPU) voltage */
 	if (tps65218_voltage_update(TPS65218_DCDC2, mpu_vdd)) {
+		printf("%s failure\n", __func__);
+		return;
+	}
+
+	if (board_is_eposevm())
+		ddr_volt = TPS65218_DCDC3_VOLT_SEL_1200MV;
+	else
+		ddr_volt = TPS65218_DCDC3_VOLT_SEL_1350MV;
+
+	/* Set DCDC3 (DDR) voltage */
+	if (tps65218_voltage_update(TPS65218_DCDC3, ddr_volt)) {
 		printf("%s failure\n", __func__);
 		return;
 	}
@@ -532,6 +524,62 @@ static void enable_vtt_regulator(void)
 	writel(temp, AM33XX_GPIO5_BASE + OMAP_GPIO_OE);
 }
 
+enum {
+	RTC_BOARD_EPOS = 1,
+	RTC_BOARD_EVM14,
+	RTC_BOARD_EVM12,
+	RTC_BOARD_GPEVM,
+	RTC_BOARD_SK,
+};
+
+/*
+ * In the rtc_only+DRR in self-refresh boot path we have the board type info
+ * in the rtc scratch pad register hence we bypass the costly i2c reads to
+ * eeprom and directly programthe board name string
+ */
+void rtc_only_update_board_type(u32 btype)
+{
+	const char *name = "";
+	const char *rev = "1.0";
+
+	switch (btype) {
+	case RTC_BOARD_EPOS:
+		name = "AM43EPOS";
+		break;
+	case RTC_BOARD_EVM14:
+		name = "AM43__GP";
+		rev = "1.4";
+		break;
+	case RTC_BOARD_EVM12:
+		name = "AM43__GP";
+		rev = "1.2";
+		break;
+	case RTC_BOARD_GPEVM:
+		name = "AM43__GP";
+		break;
+	case RTC_BOARD_SK:
+		name = "AM43__SK";
+		break;
+	}
+	ti_i2c_eeprom_am_set(name, rev);
+}
+
+u32 rtc_only_get_board_type(void)
+{
+	if (board_is_eposevm())
+		return RTC_BOARD_EPOS;
+	else if (board_is_evm_14_or_later())
+		return RTC_BOARD_EVM14;
+	else if (board_is_evm_12_or_later())
+		return RTC_BOARD_EVM12;
+	else if (board_is_gpevm())
+		return RTC_BOARD_GPEVM;
+	else if (board_is_sk())
+		return RTC_BOARD_SK;
+
+	return 0;
+}
+
 void sdram_init(void)
 {
 	/*
@@ -592,6 +640,11 @@ int board_init(void)
 	gd->bd->bi_boot_params = CONFIG_SYS_SDRAM_BASE + 0x100;
 	gpmc_init();
 
+	/*
+	 * Call this to initialize *ctrl again
+	 */
+	hw_data_init();
+
 	/* Clear all important bits for DSS errata that may need to be tweaked*/
 	mreqprio_0 = readl(&cdev->mreqprio_0) & MREQPRIO_0_SAB_INIT1_MASK &
 	                   MREQPRIO_0_SAB_INIT0_MASK;
@@ -638,7 +691,7 @@ int board_late_init(void)
 	 * on HS devices.
 	 */
 	if (get_device_type() == HS_DEVICE)
-		setenv("boot_fit", "1");
+		env_set("boot_fit", "1");
 #endif
 	return 0;
 }
@@ -803,10 +856,10 @@ int board_eth_init(bd_t *bis)
 	mac_addr[4] = mac_lo & 0xFF;
 	mac_addr[5] = (mac_lo & 0xFF00) >> 8;
 
-	if (!getenv("ethaddr")) {
+	if (!env_get("ethaddr")) {
 		puts("<ethaddr> not set. Validating first E-fuse MAC\n");
 		if (is_valid_ethaddr(mac_addr))
-			eth_setenv_enetaddr("ethaddr", mac_addr);
+			eth_env_set_enetaddr("ethaddr", mac_addr);
 	}
 
 	mac_lo = readl(&cdev->macid1l);
@@ -818,9 +871,9 @@ int board_eth_init(bd_t *bis)
 	mac_addr[4] = mac_lo & 0xFF;
 	mac_addr[5] = (mac_lo & 0xFF00) >> 8;
 
-	if (!getenv("eth1addr")) {
+	if (!env_get("eth1addr")) {
 		if (is_valid_ethaddr(mac_addr))
-			eth_setenv_enetaddr("eth1addr", mac_addr);
+			eth_env_set_enetaddr("eth1addr", mac_addr);
 	}
 
 	if (board_is_eposevm()) {
@@ -850,10 +903,23 @@ int board_eth_init(bd_t *bis)
 }
 #endif
 
-#ifdef CONFIG_SPL_LOAD_FIT
+#if defined(CONFIG_OF_LIBFDT) && defined(CONFIG_OF_BOARD_SETUP)
+int ft_board_setup(void *blob, bd_t *bd)
+{
+	ft_cpu_setup(blob, bd);
+
+	return 0;
+}
+#endif
+
+#if defined(CONFIG_SPL_LOAD_FIT) || defined(CONFIG_DTB_RESELECT)
 int board_fit_config_name_match(const char *name)
 {
-	if (board_is_evm() && !strcmp(name, "am437x-gp-evm"))
+	bool eeprom_read = board_ti_was_eeprom_read();
+
+	if (!strcmp(name, "am4372-generic") && !eeprom_read)
+		return 0;
+	else if (board_is_evm() && !strcmp(name, "am437x-gp-evm"))
 		return 0;
 	else if (board_is_sk() && !strcmp(name, "am437x-sk-evm"))
 		return 0;
@@ -866,9 +932,26 @@ int board_fit_config_name_match(const char *name)
 }
 #endif
 
+#ifdef CONFIG_DTB_RESELECT
+int embedded_dtb_select(void)
+{
+	do_board_detect();
+	fdtdec_setup();
+
+	return 0;
+}
+#endif
+
 #ifdef CONFIG_TI_SECURE_DEVICE
 void board_fit_image_post_process(void **p_image, size_t *p_size)
 {
 	secure_boot_verify_image(p_image, p_size);
 }
+
+void board_tee_image_process(ulong tee_image, size_t tee_size)
+{
+	secure_tee_install((u32)tee_image);
+}
+
+U_BOOT_FIT_LOADABLE_HANDLER(IH_TYPE_TEE, board_tee_image_process);
 #endif

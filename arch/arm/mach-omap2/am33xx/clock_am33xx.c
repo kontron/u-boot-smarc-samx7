@@ -1,15 +1,15 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * clock_am33xx.c
  *
  * clocks for AM33XX based boards
  *
  * Copyright (C) 2013, Texas Instruments, Incorporated - http://www.ti.com/
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <asm/arch/cpu.h>
+#include <asm/arch/sys_proto.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/hardware.h>
 #include <asm/io.h>
@@ -51,30 +51,105 @@ const struct dpll_regs dpll_ddr_regs = {
 	.cm_div_m2_dpll		= CM_WKUP + 0xA0,
 };
 
+const struct dpll_regs dpll_disp_regs = {
+	.cm_clkmode_dpll	= CM_WKUP + 0x98,
+	.cm_idlest_dpll		= CM_WKUP + 0x48,
+	.cm_clksel_dpll		= CM_WKUP + 0x54,
+	.cm_div_m2_dpll		= CM_WKUP + 0xA4,
+};
+
 struct dpll_params dpll_mpu_opp100 = {
 		CONFIG_SYS_MPUCLK, OSC-1, 1, -1, -1, -1, -1};
 const struct dpll_params dpll_core_opp100 = {
 		1000, OSC-1, -1, -1, 10, 8, 4};
-const struct dpll_params dpll_mpu = {
-		MPUPLL_M_300, OSC-1, 1, -1, -1, -1, -1};
-const struct dpll_params dpll_core = {
-		50, OSC-1, -1, -1, 1, 1, 1};
-const struct dpll_params dpll_per = {
-		960, OSC-1, 5, -1, -1, -1, -1};
 
-const struct dpll_params *get_dpll_mpu_params(void)
+const struct dpll_params dpll_mpu_opp[NUM_CRYSTAL_FREQ][NUM_OPPS] = {
+	{	/* 19.2 MHz */
+		{125, 3, 2, -1, -1, -1, -1},	/* OPP 50 */
+		{-1, -1, -1, -1, -1, -1, -1},	/* OPP RESERVED	*/
+		{125, 3, 1, -1, -1, -1, -1},	/* OPP 100 */
+		{150, 3, 1, -1, -1, -1, -1},	/* OPP 120 */
+		{125, 2, 1, -1, -1, -1, -1},	/* OPP TB */
+		{625, 11, 1, -1, -1, -1, -1}	/* OPP NT */
+	},
+	{	/* 24 MHz */
+		{25, 0, 2, -1, -1, -1, -1},	/* OPP 50 */
+		{-1, -1, -1, -1, -1, -1, -1},	/* OPP RESERVED	*/
+		{25, 0, 1, -1, -1, -1, -1},	/* OPP 100 */
+		{30, 0, 1, -1, -1, -1, -1},	/* OPP 120 */
+		{100, 3, 1, -1, -1, -1, -1},	/* OPP TB */
+		{125, 2, 1, -1, -1, -1, -1}	/* OPP NT */
+	},
+	{	/* 25 MHz */
+		{24, 0, 2, -1, -1, -1, -1},	/* OPP 50 */
+		{-1, -1, -1, -1, -1, -1, -1},	/* OPP RESERVED	*/
+		{24, 0, 1, -1, -1, -1, -1},	/* OPP 100 */
+		{144, 4, 1, -1, -1, -1, -1},	/* OPP 120 */
+		{32, 0, 1, -1, -1, -1, -1},	/* OPP TB */
+		{40, 0, 1, -1, -1, -1, -1}	/* OPP NT */
+	},
+	{	/* 26 MHz */
+		{300, 12, 2, -1, -1, -1, -1},	/* OPP 50 */
+		{-1, -1, -1, -1, -1, -1, -1},	/* OPP RESERVED	*/
+		{300, 12, 1, -1, -1, -1, -1},	/* OPP 100 */
+		{360, 12, 1, -1, -1, -1, -1},	/* OPP 120 */
+		{400, 12, 1, -1, -1, -1, -1},	/* OPP TB */
+		{500, 12, 1, -1, -1, -1, -1}	/* OPP NT */
+	},
+};
+
+const struct dpll_params dpll_core_1000MHz[NUM_CRYSTAL_FREQ] = {
+		{625, 11, -1, -1, 10, 8, 4},	/* 19.2 MHz */
+		{125, 2, -1, -1, 10, 8, 4},	/* 24 MHz */
+		{40, 0, -1, -1, 10, 8, 4},	/* 25 MHz */
+		{500, 12, -1, -1, 10, 8, 4}	/* 26 MHz */
+};
+
+const struct dpll_params dpll_per_192MHz[NUM_CRYSTAL_FREQ] = {
+		{400, 7, 5, -1, -1, -1, -1},	/* 19.2 MHz */
+		{400, 9, 5, -1, -1, -1, -1},	/* 24 MHz */
+		{384, 9, 5, -1, -1, -1, -1},	/* 25 MHz */
+		{480, 12, 5, -1, -1, -1, -1}	/* 26 MHz */
+};
+
+const struct dpll_params dpll_ddr3_303MHz[NUM_CRYSTAL_FREQ] = {
+		{505, 15, 2, -1, -1, -1, -1}, /*19.2*/
+		{101, 3, 2, -1, -1, -1, -1}, /* 24 MHz */
+		{303, 24, 1, -1, -1, -1, -1}, /* 25 MHz */
+		{303, 12, 2, -1, -1, -1, -1}  /* 26 MHz */
+};
+
+const struct dpll_params dpll_ddr3_400MHz[NUM_CRYSTAL_FREQ] = {
+		{125, 5, 1, -1, -1, -1, -1}, /*19.2*/
+		{50, 2, 1, -1, -1, -1, -1}, /* 24 MHz */
+		{16, 0, 1, -1, -1, -1, -1}, /* 25 MHz */
+		{200, 12, 1, -1, -1, -1, -1}  /* 26 MHz */
+};
+
+const struct dpll_params dpll_ddr2_266MHz[NUM_CRYSTAL_FREQ] = {
+		{665, 47, 1, -1, -1, -1, -1}, /*19.2*/
+		{133, 11, 1, -1, -1, -1, -1}, /* 24 MHz */
+		{266, 24, 1, -1, -1, -1, -1}, /* 25 MHz */
+		{133, 12, 1, -1, -1, -1, -1}  /* 26 MHz */
+};
+
+__weak const struct dpll_params *get_dpll_mpu_params(void)
 {
-	return &dpll_mpu;
+	return &dpll_mpu_opp100;
 }
 
 const struct dpll_params *get_dpll_core_params(void)
 {
-	return &dpll_core;
+	int ind = get_sys_clk_index();
+
+	return &dpll_core_1000MHz[ind];
 }
 
 const struct dpll_params *get_dpll_per_params(void)
 {
-	return &dpll_per;
+	int ind = get_sys_clk_index();
+
+	return &dpll_per_192MHz[ind];
 }
 
 void setup_clocks_for_console(void)

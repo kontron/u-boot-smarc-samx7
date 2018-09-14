@@ -1,8 +1,6 @@
+# SPDX-License-Identifier: GPL-2.0+
 #
 # Copyright 2009-2011 Freescale Semiconductor, Inc.
-#
-# SPDX-License-Identifier:	GPL-2.0+
-#
 
 obj-y += dtsec.o
 obj-y += eth.o
@@ -34,5 +32,5 @@ obj-$(CONFIG_ARCH_T4240) += t4240.o
 obj-$(CONFIG_ARCH_T4160) += t4240.o
 obj-$(CONFIG_ARCH_B4420) += b4860.o
 obj-$(CONFIG_ARCH_B4860) += b4860.o
-obj-$(CONFIG_LS1043A)	+= ls1043.o
+obj-$(CONFIG_ARCH_LS1043A)	+= ls1043.o
 obj-$(CONFIG_ARCH_LS1046A)	+= ls1046.o

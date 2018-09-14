@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2012 Samsung Electronics
  *
  * Author: InKi Dae <inki.dae@samsung.com>
  * Author: Donghwa Lee <dh09.lee@samsung.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <config.h>
@@ -13,7 +12,7 @@
 #include <div64.h>
 #include <dm.h>
 #include <fdtdec.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <panel.h>
 #include <video.h>
 #include <video_bridge.h>
@@ -486,7 +485,7 @@ int exynos_fb_ofdata_to_platdata(struct udevice *dev)
 	const void *blob = gd->fdt_blob;
 	fdt_addr_t addr;
 
-	addr = dev_get_addr(dev);
+	addr = devfdt_get_addr(dev);
 	if (addr == FDT_ADDR_T_NONE) {
 		debug("Can't get the FIMD base address\n");
 		return -EINVAL;

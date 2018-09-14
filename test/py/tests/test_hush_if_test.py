@@ -1,12 +1,13 @@
-# Copyright (c) 2015-2016, NVIDIA CORPORATION. All rights reserved.
-#
 # SPDX-License-Identifier: GPL-2.0
+# Copyright (c) 2015-2016, NVIDIA CORPORATION. All rights reserved.
 
 # Test operation of the "if" shell command.
 
 import os
 import os.path
 import pytest
+
+pytestmark = pytest.mark.buildconfigspec('hush_parser')
 
 # The list of "if test" conditions to test.
 subtests = (
@@ -109,29 +110,27 @@ def exec_hush_if(u_boot_console, expr, result):
     response = u_boot_console.run_command(cmd)
     assert response.strip() == str(result).lower()
 
-@pytest.mark.buildconfigspec('hush_parser')
 def test_hush_if_test_setup(u_boot_console):
     """Set up environment variables used during the "if" tests."""
 
     u_boot_console.run_command('setenv ut_var_nonexistent')
     u_boot_console.run_command('setenv ut_var_exists 1')
 
-@pytest.mark.buildconfigspec('hush_parser')
+@pytest.mark.buildconfigspec('cmd_echo')
 @pytest.mark.parametrize('expr,result', subtests)
 def test_hush_if_test(u_boot_console, expr, result):
     """Test a single "if test" condition."""
 
     exec_hush_if(u_boot_console, expr, result)
 
-@pytest.mark.buildconfigspec('hush_parser')
 def test_hush_if_test_teardown(u_boot_console):
     """Clean up environment variables used during the "if" tests."""
 
     u_boot_console.run_command('setenv ut_var_exists')
 
-@pytest.mark.buildconfigspec('hush_parser')
 # We might test this on real filesystems via UMS, DFU, 'save', etc.
 # Of those, only UMS currently allows file removal though.
+@pytest.mark.buildconfigspec('cmd_echo')
 @pytest.mark.boardspec('sandbox')
 def test_hush_if_test_host_file_exists(u_boot_console):
     """Test the "if test -e" shell command."""
@@ -149,7 +148,7 @@ def test_hush_if_test_host_file_exists(u_boot_console):
     exec_hush_if(u_boot_console, expr, False)
 
     try:
-        with file(test_file, 'wb'):
+        with open(test_file, 'wb'):
             pass
         assert os.path.exists(test_file)
 

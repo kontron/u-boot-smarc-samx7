@@ -1,11 +1,10 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * MUSB OTG driver DMA controller abstraction
  *
  * Copyright 2005 Mentor Graphics Corporation
  * Copyright (C) 2005-2006 by Texas Instruments
  * Copyright (C) 2006-2007 Nokia Corporation
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #ifndef __MUSB_DMA_H__
@@ -54,17 +53,6 @@ struct musb_hw_ep;
 #define tusb_dma_omap()			1
 #else
 #define tusb_dma_omap()			0
-#endif
-
-/* Anomaly 05000456 - USB Receive Interrupt Is Not Generated in DMA Mode 1
- *	Only allow DMA mode 1 to be used when the USB will actually generate the
- *	interrupts we expect.
- */
-#ifdef CONFIG_BLACKFIN
-# undef USE_MODE1
-# if !ANOMALY_05000456
-#  define USE_MODE1
-# endif
 #endif
 
 /*

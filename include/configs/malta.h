@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (C) 2013 Gabor Juhos <juhosg@openwrt.org>
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #ifndef _MALTA_CONFIG_H
@@ -20,7 +19,6 @@
 #define CONFIG_PCNET_79C973
 #define PCNET_HAS_PROM
 
-#define CONFIG_MISC_INIT_R
 #define CONFIG_RTC_MC146818
 #define CONFIG_SYS_ISA_IO_BASE_ADDRESS	0
 
@@ -52,18 +50,9 @@
 #define CONFIG_SYS_BOOTPARAMS_LEN	(128 * 1024)
 #define CONFIG_SYS_BOOTM_LEN		(64 * 1024 * 1024)
 
-#define CONFIG_SYS_CBSIZE		256
-#define CONFIG_SYS_PBSIZE		(CONFIG_SYS_CBSIZE + \
-					 sizeof(CONFIG_SYS_PROMPT) + 16)
-#define CONFIG_SYS_MAXARGS		16
-
-#define CONFIG_AUTO_COMPLETE
-#define CONFIG_CMDLINE_EDITING
-
 /*
  * Serial driver
  */
-#define CONFIG_BAUDRATE			115200
 #define CONFIG_SYS_NS16550_PORT_MAPPED
 
 /*
@@ -83,7 +72,6 @@
 /*
  * Environment
  */
-#define CONFIG_ENV_IS_IN_FLASH
 #define CONFIG_ENV_SECT_SIZE		0x20000
 #define CONFIG_ENV_SIZE			CONFIG_ENV_SECT_SIZE
 #define CONFIG_ENV_ADDR \
@@ -102,10 +90,5 @@
 /*
  * Commands
  */
-#define CONFIG_CMD_DATE
-#define CONFIG_CMD_IDE
-#define CONFIG_CMD_PCI
-
-#define CONFIG_SYS_LONGHELP		/* verbose help, undef to save memory */
 
 #endif /* _MALTA_CONFIG_H */

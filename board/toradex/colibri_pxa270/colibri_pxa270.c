@@ -1,13 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Toradex Colibri PXA270 Support
  *
  * Copyright (C) 2010 Marek Vasut <marek.vasut@gmail.com>
  * Copyright (C) 2016 Marcel Ziswiler <marcel.ziswiler@toradex.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
+#include <dm.h>
 #include <asm/arch/hardware.h>
 #include <asm/arch/pxa.h>
 #include <asm/arch/regs-mmc.h>
@@ -18,6 +18,7 @@
 #include <netdev.h>
 #include <serial.h>
 #include <usb.h>
+#include <asm/mach-types.h>
 #include "../common/tdx-common.h"
 
 DECLARE_GLOBAL_DATA_PTR;

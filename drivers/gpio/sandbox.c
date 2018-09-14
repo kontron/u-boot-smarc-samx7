@@ -1,6 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2011 The Chromium OS Authors.
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -8,9 +8,8 @@
 #include <fdtdec.h>
 #include <malloc.h>
 #include <asm/gpio.h>
+#include <dm/of.h>
 #include <dt-bindings/gpio/gpio.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 /* Flags for each GPIO */
 #define GPIOF_OUTPUT	(1 << 0)	/* Currently set as an output */
@@ -165,7 +164,7 @@ static int sb_gpio_get_function(struct udevice *dev, unsigned offset)
 }
 
 static int sb_gpio_xlate(struct udevice *dev, struct gpio_desc *desc,
-			 struct fdtdec_phandle_args *args)
+			 struct ofnode_phandle_args *args)
 {
 	desc->offset = args->args[0];
 	if (args->args_count < 2)
@@ -197,10 +196,9 @@ static int sandbox_gpio_ofdata_to_platdata(struct udevice *dev)
 {
 	struct gpio_dev_priv *uc_priv = dev_get_uclass_priv(dev);
 
-	uc_priv->gpio_count = fdtdec_get_int(gd->fdt_blob, dev_of_offset(dev),
-					     "num-gpios", 0);
-	uc_priv->bank_name = fdt_getprop(gd->fdt_blob, dev_of_offset(dev),
-					 "gpio-bank-name", NULL);
+	uc_priv->gpio_count = dev_read_u32_default(dev, "sandbox,gpio-count",
+						   0);
+	uc_priv->bank_name = dev_read_string(dev, "gpio-bank-name");
 
 	return 0;
 }
@@ -209,10 +207,9 @@ static int gpio_sandbox_probe(struct udevice *dev)
 {
 	struct gpio_dev_priv *uc_priv = dev_get_uclass_priv(dev);
 
-	if (dev_of_offset(dev) == -1) {
+	if (!dev_of_valid(dev))
 		/* Tell the uclass how many GPIOs we have */
 		uc_priv->gpio_count = CONFIG_SANDBOX_GPIO_COUNT;
-	}
 
 	dev->priv = calloc(sizeof(struct gpio_state), uc_priv->gpio_count);
 

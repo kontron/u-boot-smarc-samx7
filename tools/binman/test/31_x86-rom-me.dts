@@ -5,14 +5,16 @@
 	#size-cells = <1>;
 
 	binman {
-		sort-by-pos;
+		sort-by-offset;
 		end-at-4gb;
 		size = <0x800000>;
 		intel-descriptor {
+			filename = "descriptor.bin";
 		};
 
 		intel-me {
-			pos-unset;
+			filename = "me.bin";
+			offset-unset;
 		};
 	};
 };

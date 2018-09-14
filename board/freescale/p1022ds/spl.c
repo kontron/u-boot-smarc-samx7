@@ -1,11 +1,11 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2013 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <console.h>
+#include <environment.h>
 #include <ns16550.h>
 #include <malloc.h>
 #include <mmc.h>
@@ -100,7 +100,7 @@ void board_init_r(gd_t *gd, ulong dest_addr)
 			    (uchar *)CONFIG_ENV_ADDR);
 
 	gd->env_addr  = (ulong)(CONFIG_ENV_ADDR);
-	gd->env_valid = 1;
+	gd->env_valid = ENV_VALID;
 #else
 	env_relocate();
 #endif
@@ -111,7 +111,7 @@ void board_init_r(gd_t *gd, ulong dest_addr)
 	i2c_init(CONFIG_SYS_I2C_SPEED, CONFIG_SYS_I2C_SLAVE);
 #endif
 
-	gd->ram_size = initdram(0);
+	dram_init();
 #ifdef CONFIG_SPL_NAND_BOOT
 	puts("Tertiary program loader running in sram...");
 #else

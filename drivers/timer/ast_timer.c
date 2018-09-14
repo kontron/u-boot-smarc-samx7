@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2016 Google Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -10,8 +9,6 @@
 #include <timer.h>
 #include <asm/io.h>
 #include <asm/arch/timer.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 #define AST_TICK_TIMER  1
 #define AST_TMC_RELOAD_VAL  0xffffffff
@@ -66,7 +63,7 @@ static int ast_timer_ofdata_to_platdata(struct udevice *dev)
 {
 	struct ast_timer_priv *priv = dev_get_priv(dev);
 
-	priv->regs = dev_get_addr_ptr(dev);
+	priv->regs = devfdt_get_addr_ptr(dev);
 	if (IS_ERR(priv->regs))
 		return PTR_ERR(priv->regs);
 

@@ -1,15 +1,13 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * cm_t43.h
  *
  * Copyright (C) 2015 Compulab, Ltd.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __CONFIG_CM_T43_H
 #define __CONFIG_CM_T43_H
 
-#define CONFIG_AM43XX
 #define CONFIG_CM_T43
 #define CONFIG_ARCH_CPU_INIT
 #define CONFIG_MAX_RAM_BANK_SIZE	(2048 << 20)	/* 2GB */
@@ -21,13 +19,11 @@
 #define CONFIG_SYS_NS16550_SERIAL
 #define CONFIG_SYS_NS16550_CLK		48000000
 #define CONFIG_SYS_NS16550_COM1		0x44e09000
-#ifdef CONFIG_SPL_BUILD
+#if !defined(CONFIG_SPL_DM) || !defined(CONFIG_DM_SERIAL)
 #define CONFIG_SYS_NS16550_REG_SIZE	(-4)
 #endif
 
 /* NAND support */
-#define CONFIG_NAND
-#define CONFIG_NAND_OMAP_ELM
 #define CONFIG_SYS_NAND_ONFI_DETECTION
 #define CONFIG_SYS_NAND_5_ADDR_CYCLE
 #define CONFIG_SYS_NAND_PAGE_SIZE	2048
@@ -48,21 +44,13 @@
 					 50, 51, 52, 53, 54, 55, 56, 57, }
 
 /* CPSW Ethernet support */
-#define CONFIG_DRIVER_TI_CPSW
-#define CONFIG_MII
 #define CONFIG_BOOTP_DEFAULT
 #define CONFIG_BOOTP_SEND_HOSTNAME
-#define CONFIG_BOOTP_GATEWAY
-#define CONFIG_NET_MULTI
-#define CONFIG_PHY_GIGE
 #define CONFIG_PHY_ATHEROS
-#define CONFIG_PHYLIB
 #define CONFIG_SYS_RX_ETH_BUFFER	64
 
 /* USB support */
 #define CONFIG_USB_XHCI_OMAP
-#define CONFIG_SYS_USB_XHCI_MAX_ROOT_PORTS 2
-#define CONFIG_OMAP_USB_PHY
 #define CONFIG_AM437X_USB2PHY2_HOST
 
 /* SPI Flash support */
@@ -93,17 +81,13 @@
 #undef CONFIG_SYS_MONITOR_LEN
 
 #define CONFIG_ENV_SIZE			(16 * 1024)
-#define CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
 
 #define V_OSCK				24000000  /* Clock output from T2 */
 #define V_SCLK				(V_OSCK)
 
-#define CONFIG_ENV_IS_IN_SPI_FLASH
 #define CONFIG_ENV_SECT_SIZE		(64 * 1024)
 #define CONFIG_ENV_OFFSET		(768 * 1024)
 #define CONFIG_ENV_SPI_MAX_HZ           48000000
-
-#define CONFIG_SPL_LDSCRIPT		"arch/arm/mach-omap2/u-boot-spl.lds"
 
 #define CONFIG_EXTRA_ENV_SETTINGS \
 	"loadaddr=0x80200000\0" \
@@ -140,24 +124,17 @@
 		"run emmcboot; " \
 	"fi;"
 
-#define CONFIG_CONS_INDEX		1
-
 /* SPL defines. */
 #define CONFIG_SPL_TEXT_BASE		0x40300350
 #define CONFIG_SYS_SPL_ARGS_ADDR	(CONFIG_SYS_SDRAM_BASE + (128 << 20))
 #define CONFIG_SYS_SPI_U_BOOT_OFFS	(256 * 1024)
 #define CONFIG_SYS_MONITOR_LEN		(512 * 1024)
-#define CONFIG_SPL_SPI_LOAD
 
 /* EEPROM */
-#define CONFIG_CMD_EEPROM
 #define CONFIG_ENV_EEPROM_IS_ON_I2C
 #define CONFIG_SYS_I2C_EEPROM_ADDR_LEN		1
 #define CONFIG_SYS_EEPROM_PAGE_WRITE_BITS	4
 #define CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS	5
 #define CONFIG_SYS_EEPROM_SIZE			256
-
-#define CONFIG_CMD_EEPROM_LAYOUT
-#define CONFIG_EEPROM_LAYOUT_HELP_STRING "v2, v3"
 
 #endif	/* __CONFIG_CM_T43_H */

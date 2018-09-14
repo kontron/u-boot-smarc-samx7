@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * code for switching cores into non-secure state and into HYP mode
  *
  * Copyright (c) 2013	Andre Przywara <andre.przywara@linaro.org>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <config.h>
@@ -81,6 +80,8 @@ _secure_monitor:
 #ifdef CONFIG_ARMV7_VIRT
 	orreq	r5, r5, #0x100			@ allow HVC instruction
 	moveq	r6, #HYP_MODE			@ Enter the kernel as HYP
+	mrseq	r3, sp_svc
+	msreq	sp_hyp, r3			@ migrate SP
 #endif
 
 	mcr	p15, 0, r5, c1, c1, 0		@ write SCR (with NS bit set)
@@ -188,11 +189,11 @@ ENTRY(_nonsec_init)
  * we do this here instead.
  * But first check if we have the generic timer.
  */
-#ifdef CONFIG_TIMER_CLK_FREQ
+#ifdef COUNTER_FREQUENCY
 	mrc	p15, 0, r0, c0, c1, 1		@ read ID_PFR1
 	and	r0, r0, #CPUID_ARM_GENTIMER_MASK	@ mask arch timer bits
 	cmp	r0, #(1 << CPUID_ARM_GENTIMER_SHIFT)
-	ldreq	r1, =CONFIG_TIMER_CLK_FREQ
+	ldreq	r1, =COUNTER_FREQUENCY
 	mcreq	p15, 0, r1, c14, c0, 0		@ write CNTFRQ
 #endif
 

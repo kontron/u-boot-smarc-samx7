@@ -1,11 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Image manipulator for Marvell SoCs
  *  supports Kirkwood, Dove, Armada 370, Armada XP, and Armada 38x
  *
  * (C) Copyright 2013 Thomas Petazzoni
  * <thomas.petazzoni@free-electrons.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * Not implemented: support for the register headers in v1 images
  */
@@ -18,10 +17,31 @@
 #include "kwbimage.h"
 
 #ifdef CONFIG_KWB_SECURE
+#include <openssl/bn.h>
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
 #include <openssl/err.h>
 #include <openssl/evp.h>
+
+#if OPENSSL_VERSION_NUMBER < 0x10100000L || \
+    (defined(LIBRESSL_VERSION_NUMBER) && LIBRESSL_VERSION_NUMBER < 0x2070000fL)
+static void RSA_get0_key(const RSA *r,
+                 const BIGNUM **n, const BIGNUM **e, const BIGNUM **d)
+{
+   if (n != NULL)
+       *n = r->n;
+   if (e != NULL)
+       *e = r->e;
+   if (d != NULL)
+       *d = r->d;
+}
+
+#elif !defined(LIBRESSL_VERSION_NUMBER)
+void EVP_MD_CTX_cleanup(EVP_MD_CTX *ctx)
+{
+	EVP_MD_CTX_reset(ctx);
+}
+#endif
 #endif
 
 static struct image_cfg_element *image_cfg;
@@ -270,6 +290,33 @@ static uint8_t image_checksum8(void *start, uint32_t len)
 	return csum;
 }
 
+size_t kwbimage_header_size(unsigned char *ptr)
+{
+	if (image_version((void *)ptr) == 0)
+		return sizeof(struct main_hdr_v0);
+	else
+		return KWBHEADER_V1_SIZE((struct main_hdr_v1 *)ptr);
+}
+
+/*
+ * Verify checksum over a complete header that includes the checksum field.
+ * Return 1 when OK, otherwise 0.
+ */
+static int main_hdr_checksum_ok(void *hdr)
+{
+	/* Offsets of checksum in v0 and v1 headers are the same */
+	struct main_hdr_v0 *main_hdr = (struct main_hdr_v0 *)hdr;
+	uint8_t checksum;
+
+	checksum = image_checksum8(hdr, kwbimage_header_size(hdr));
+	/* Calculated checksum includes the header checksum field. Compensate
+	 * for that.
+	 */
+	checksum -= main_hdr->checksum;
+
+	return checksum == main_hdr->checksum;
+}
+
 static uint32_t image_checksum32(void *start, uint32_t len)
 {
 	uint32_t csum = 0;
@@ -470,12 +517,16 @@ static int kwb_export_pubkey(RSA *key, struct pubkey_der_v1 *dst, FILE *hashf,
 			     char *keyname)
 {
 	int size_exp, size_mod, size_seq;
+	const BIGNUM *key_e, *key_n;
 	uint8_t *cur;
 	char *errmsg = "Failed to encode %s\n";
 
-	if (!key || !key->e || !key->n || !dst) {
+	RSA_get0_key(key, NULL, &key_e, NULL);
+	RSA_get0_key(key, &key_n, NULL, NULL);
+
+	if (!key || !key_e || !key_n || !dst) {
 		fprintf(stderr, "export pk failed: (%p, %p, %p, %p)",
-			key, key->e, key->n, dst);
+			key, key_e, key_n, dst);
 		fprintf(stderr, errmsg, keyname);
 		return -EINVAL;
 	}
@@ -490,8 +541,8 @@ static int kwb_export_pubkey(RSA *key, struct pubkey_der_v1 *dst, FILE *hashf,
 	 * do the encoding manually.
 	 */
 
-	size_exp = BN_num_bytes(key->e);
-	size_mod = BN_num_bytes(key->n);
+	size_exp = BN_num_bytes(key_e);
+	size_mod = BN_num_bytes(key_n);
 	size_seq = 4 + size_mod + 4 + size_exp;
 
 	if (size_mod > 256) {
@@ -520,14 +571,14 @@ static int kwb_export_pubkey(RSA *key, struct pubkey_der_v1 *dst, FILE *hashf,
 	*cur++ = 0x82;
 	*cur++ = (size_mod >> 8) & 0xFF;
 	*cur++ = size_mod & 0xFF;
-	BN_bn2bin(key->n, cur);
+	BN_bn2bin(key_n, cur);
 	cur += size_mod;
 	/* Exponent */
 	*cur++ = 0x02;		/* INTEGER */
 	*cur++ = 0x82;
 	*cur++ = (size_exp >> 8) & 0xFF;
 	*cur++ = size_exp & 0xFF;
-	BN_bn2bin(key->e, cur);
+	BN_bn2bin(key_e, cur);
 
 	if (hashf) {
 		struct hash_v1 pk_hash;
@@ -1452,47 +1503,6 @@ static int image_get_version(void)
 	return e->version;
 }
 
-static int image_version_file(const char *input)
-{
-	FILE *fcfg;
-	int version;
-	int ret;
-
-	fcfg = fopen(input, "r");
-	if (!fcfg) {
-		fprintf(stderr, "Could not open input file %s\n", input);
-		return -1;
-	}
-
-	image_cfg = malloc(IMAGE_CFG_ELEMENT_MAX *
-			   sizeof(struct image_cfg_element));
-	if (!image_cfg) {
-		fprintf(stderr, "Cannot allocate memory\n");
-		fclose(fcfg);
-		return -1;
-	}
-
-	memset(image_cfg, 0,
-	       IMAGE_CFG_ELEMENT_MAX * sizeof(struct image_cfg_element));
-	rewind(fcfg);
-
-	ret = image_create_config_parse(fcfg);
-	fclose(fcfg);
-	if (ret) {
-		free(image_cfg);
-		return -1;
-	}
-
-	version = image_get_version();
-	/* Fallback to version 0 is no version is provided in the cfg file */
-	if (version == -1)
-		version = 0;
-
-	free(image_cfg);
-
-	return version;
-}
-
 static void kwbimage_set_header(void *ptr, struct stat *sbuf, int ifd,
 				struct image_tool_params *params)
 {
@@ -1604,14 +1614,13 @@ static int kwbimage_check_image_types(uint8_t type)
 static int kwbimage_verify_header(unsigned char *ptr, int image_size,
 				  struct image_tool_params *params)
 {
-	struct main_hdr_v0 *main_hdr;
 	uint8_t checksum;
+	size_t header_size = kwbimage_header_size(ptr);
 
-	main_hdr = (struct main_hdr_v0 *)ptr;
-	checksum = image_checksum8(ptr,
-				   sizeof(struct main_hdr_v0)
-				   - sizeof(uint8_t));
-	if (checksum != main_hdr->checksum)
+	if (header_size > image_size)
+		return -FDT_ERR_BADSTRUCTURE;
+
+	if (!main_hdr_checksum_ok(ptr))
 		return -FDT_ERR_BADSTRUCTURE;
 
 	/* Only version 0 extended header has checksum */
@@ -1633,17 +1642,61 @@ static int kwbimage_verify_header(unsigned char *ptr, int image_size,
 static int kwbimage_generate(struct image_tool_params *params,
 			     struct image_type_params *tparams)
 {
+	FILE *fcfg;
 	int alloc_len;
+	int version;
 	void *hdr;
-	int version = 0;
+	int ret;
 
-	version = image_version_file(params->imagename);
-	if (version == 0) {
+	fcfg = fopen(params->imagename, "r");
+	if (!fcfg) {
+		fprintf(stderr, "Could not open input file %s\n",
+			params->imagename);
+		exit(EXIT_FAILURE);
+	}
+
+	image_cfg = malloc(IMAGE_CFG_ELEMENT_MAX *
+			   sizeof(struct image_cfg_element));
+	if (!image_cfg) {
+		fprintf(stderr, "Cannot allocate memory\n");
+		fclose(fcfg);
+		exit(EXIT_FAILURE);
+	}
+
+	memset(image_cfg, 0,
+	       IMAGE_CFG_ELEMENT_MAX * sizeof(struct image_cfg_element));
+	rewind(fcfg);
+
+	ret = image_create_config_parse(fcfg);
+	fclose(fcfg);
+	if (ret) {
+		free(image_cfg);
+		exit(EXIT_FAILURE);
+	}
+
+	version = image_get_version();
+	switch (version) {
+		/*
+		 * Fallback to version 0 if no version is provided in the
+		 * cfg file
+		 */
+	case -1:
+	case 0:
 		alloc_len = sizeof(struct main_hdr_v0) +
 			sizeof(struct ext_hdr_v0);
-	} else {
+		break;
+
+	case 1:
 		alloc_len = image_headersz_v1(NULL);
+		break;
+
+	default:
+		fprintf(stderr, "Unsupported version %d\n", version);
+		free(image_cfg);
+		exit(EXIT_FAILURE);
 	}
+
+	free(image_cfg);
 
 	hdr = malloc(alloc_len);
 	if (!hdr) {

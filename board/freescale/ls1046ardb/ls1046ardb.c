@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2016 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -12,6 +11,7 @@
 #include <asm/arch/fsl_serdes.h>
 #include <asm/arch/ppa.h>
 #include <asm/arch/soc.h>
+#include <asm/arch-fsl-layerscape/fsl_icid.h>
 #include <hwconfig.h>
 #include <ahci.h>
 #include <mmc.h>
@@ -21,9 +21,18 @@
 #include <fsl_esdhc.h>
 #include <power/mc34vr500_pmic.h>
 #include "cpld.h"
+#include <fsl_sec.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
+int board_early_init_f(void)
+{
+	fsl_lsch2_early_init_f();
+
+	return 0;
+}
+
+#ifndef CONFIG_SPL_BUILD
 int checkboard(void)
 {
 	static const char *freq[2] = {"100.00MHZ", "156.25MHZ"};
@@ -56,26 +65,26 @@ int checkboard(void)
 	return 0;
 }
 
-int dram_init(void)
-{
-	gd->ram_size = initdram(0);
-
-	return 0;
-}
-
-int board_early_init_f(void)
-{
-	fsl_lsch2_early_init_f();
-
-	return 0;
-}
-
 int board_init(void)
 {
 	struct ccsr_scfg *scfg = (struct ccsr_scfg *)CONFIG_SYS_FSL_SCFG_ADDR;
 
-#ifdef CONFIG_LAYERSCAPE_NS_ACCESS
-	enable_layerscape_ns_access();
+#ifdef CONFIG_SECURE_BOOT
+	/*
+	 * In case of Secure Boot, the IBR configures the SMMU
+	 * to allow only Secure transactions.
+	 * SMMU must be reset in bypass mode.
+	 * Set the ClientPD bit and Clear the USFCFG Bit
+	 */
+	u32 val;
+	val = (in_le32(SMMU_SCR0) | SCR0_CLIENTPD_MASK) & ~(SCR0_USFCFG_MASK);
+	out_le32(SMMU_SCR0, val);
+	val = (in_le32(SMMU_NSCR0) | SCR0_CLIENTPD_MASK) & ~(SCR0_USFCFG_MASK);
+	out_le32(SMMU_NSCR0, val);
+#endif
+
+#ifdef CONFIG_FSL_CAAM
+	sec_init();
 #endif
 
 #ifdef CONFIG_FSL_LS_PPA
@@ -166,5 +175,8 @@ int ft_board_setup(void *blob, bd_t *bd)
 	fdt_fixup_fman_ethernet(blob);
 #endif
 
+	fdt_fixup_icid(blob);
+
 	return 0;
 }
+#endif

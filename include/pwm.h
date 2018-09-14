@@ -1,11 +1,10 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * header file for pwm driver.
  *
  * Copyright 2016 Google Inc.
  * Copyright (c) 2011 samsung electronics
  * Donghwa Lee <dh09.lee@samsung.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _pwm_h_
@@ -34,6 +33,15 @@ struct pwm_ops {
 	 * @return 0 if OK, -ve on error
 	 */
 	int (*set_enable)(struct udevice *dev, uint channel, bool enable);
+	/**
+	 * set_invert() - Set the PWM invert
+	 *
+	 * @dev:        PWM device to update
+	 * @channel:    PWM channel to update
+	 * @polarity:   true to invert, false to keep normal polarity
+	 * @return 0 if OK, -ve on error
+	 */
+	int (*set_invert)(struct udevice *dev, uint channel, bool polarity);
 };
 
 #define pwm_get_ops(dev)	((struct pwm_ops *)(dev)->driver->ops)
@@ -59,6 +67,16 @@ int pwm_set_config(struct udevice *dev, uint channel, uint period_ns,
  * @return 0 if OK, -ve on error
  */
 int pwm_set_enable(struct udevice *dev, uint channel, bool enable);
+
+/**
+ * pwm_set_invert() - Set pwm default polarity
+ *
+ * @dev:	PWM device to update
+ * @channel:	PWM channel to update
+ * @polarity:	true to invert, false to keep normal polarity
+ * @return 0 if OK, -ve on error
+ */
+int pwm_set_invert(struct udevice *dev, uint channel, bool polarity);
 
 /* Legacy interface */
 #ifndef CONFIG_DM_PWM

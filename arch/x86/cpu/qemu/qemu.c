@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015, Bin Meng <bmeng.cn@gmail.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -144,22 +143,18 @@ int arch_cpu_init(void)
 
 	return x86_cpu_init_f();
 }
-#endif
 
-#if !CONFIG_IS_ENABLED(EFI_STUB) && \
-	!CONFIG_IS_ENABLED(SPL_X86_32BIT_INIT)
+int checkcpu(void)
+{
+	return 0;
+}
+
 int print_cpuinfo(void)
 {
 	post_code(POST_CPU_INFO);
 	return default_print_cpuinfo();
 }
 #endif
-
-void reset_cpu(ulong addr)
-{
-	/* cold reset */
-	x86_full_reset();
-}
 
 int arch_early_init_r(void)
 {

@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+ OR X11
 /*
  * (C) Copyright 2016 Rockchip Electronics Co., Ltd
- *
- * SPDX-License-Identifier:     GPL-2.0+ X11
  */
 
 /dts-v1/;
@@ -30,6 +29,12 @@
 
 &pinctrl {
 	u-boot,dm-pre-reloc;
+
+	usb {
+		host_vbus_drv: host-vbus-drv {
+			rockchip,pins = <0 14 RK_FUNC_GPIO &pcfg_pull_none>;
+		};
+	};
 };
 
 &pwm1 {
@@ -39,6 +44,11 @@
 &uart2 {
 	u-boot,dm-pre-reloc;
 	reg-shift = <2>;
+};
+
+&usb_host1 {
+	vbus-supply = <&vcc5v0_host>;
+	status = "okay";
 };
 
 &sdmmc {
@@ -55,4 +65,11 @@
 
 &gpio8 {
 	u-boot,dm-pre-reloc;
+};
+
+&i2c2 {
+    m24c08@50 {
+        compatible = "at,24c08", "i2c-eeprom";
+        reg = <0x50>;
+    };
 };

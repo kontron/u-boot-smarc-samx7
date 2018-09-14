@@ -1,17 +1,17 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015  Masahiro Yamada <yamada.masahiro@socionext.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <linux/err.h>
 #include <linux/list.h>
-#include <dm/device.h>
+#include <dm.h>
 #include <dm/lists.h>
 #include <dm/pinctrl.h>
-#include <dm/uclass.h>
+#include <dm/util.h>
+#include <dm/of_access.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -63,16 +63,13 @@ static int pinctrl_config_one(struct udevice *config)
  */
 static int pinctrl_select_state_full(struct udevice *dev, const char *statename)
 {
-	const void *fdt = gd->fdt_blob;
-	int node = dev_of_offset(dev);
 	char propname[32]; /* long enough */
 	const fdt32_t *list;
 	uint32_t phandle;
-	int config_node;
 	struct udevice *config;
 	int state, size, i, ret;
 
-	state = fdt_stringlist_search(fdt, node, "pinctrl-names", statename);
+	state = dev_read_stringlist_search(dev, "pinctrl-names", statename);
 	if (state < 0) {
 		char *end;
 		/*
@@ -85,22 +82,15 @@ static int pinctrl_select_state_full(struct udevice *dev, const char *statename)
 	}
 
 	snprintf(propname, sizeof(propname), "pinctrl-%d", state);
-	list = fdt_getprop(fdt, node, propname, &size);
+	list = dev_read_prop(dev, propname, &size);
 	if (!list)
 		return -EINVAL;
 
 	size /= sizeof(*list);
 	for (i = 0; i < size; i++) {
 		phandle = fdt32_to_cpu(*list++);
-
-		config_node = fdt_node_offset_by_phandle(fdt, phandle);
-		if (config_node < 0) {
-			dev_err(dev, "prop %s index %d invalid phandle\n",
-				propname, i);
-			return -EINVAL;
-		}
-		ret = uclass_get_device_by_of_offset(UCLASS_PINCONFIG,
-						     config_node, &config);
+		ret = uclass_get_device_by_phandle_id(UCLASS_PINCONFIG, phandle,
+						      &config);
 		if (ret)
 			return ret;
 
@@ -121,34 +111,31 @@ static int pinctrl_select_state_full(struct udevice *dev, const char *statename)
  */
 static int pinconfig_post_bind(struct udevice *dev)
 {
-	const void *fdt = gd->fdt_blob;
-	int offset = dev_of_offset(dev);
 	bool pre_reloc_only = !(gd->flags & GD_FLG_RELOC);
 	const char *name;
+	ofnode node;
 	int ret;
 
-	for (offset = fdt_first_subnode(fdt, offset);
-	     offset > 0;
-	     offset = fdt_next_subnode(fdt, offset)) {
+	dev_for_each_subnode(node, dev) {
 		if (pre_reloc_only &&
-		    !fdt_getprop(fdt, offset, "u-boot,dm-pre-reloc", NULL))
+		    !ofnode_pre_reloc(node))
 			continue;
 		/*
 		 * If this node has "compatible" property, this is not
 		 * a pin configuration node, but a normal device. skip.
 		 */
-		fdt_get_property(fdt, offset, "compatible", &ret);
+		ofnode_get_property(node, "compatible", &ret);
 		if (ret >= 0)
 			continue;
 
 		if (ret != -FDT_ERR_NOTFOUND)
 			return ret;
 
-		name = fdt_get_name(fdt, offset, NULL);
+		name = ofnode_get_name(node);
 		if (!name)
 			return -EINVAL;
 		ret = device_bind_driver_to_node(dev, "pinconfig", name,
-						 offset, NULL);
+						 node, NULL);
 		if (ret)
 			return ret;
 	}
@@ -211,6 +198,12 @@ static int pinctrl_select_state_simple(struct udevice *dev)
 
 int pinctrl_select_state(struct udevice *dev, const char *statename)
 {
+	/*
+	 * Some device which is logical like mmc.blk, do not have
+	 * a valid ofnode.
+	 */
+	if (!ofnode_valid(dev->node))
+		return 0;
 	/*
 	 * Try full-implemented pinctrl first.
 	 * If it fails or is not implemented, try simple one.

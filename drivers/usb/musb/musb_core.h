@@ -1,10 +1,9 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /******************************************************************
  * Copyright 2008 Mentor Graphics Corporation
  * Copyright (C) 2008 by Texas Instruments
  *
  * This file is part of the Inventra Controller Driver for Linux.
- *
- * SPDX-License-Identifier:	GPL-2.0
  ******************************************************************/
 
 #ifndef __MUSB_HDRC_DEFS_H__
@@ -12,10 +11,6 @@
 
 #include <usb_defs.h>
 #include <asm/io.h>
-
-#ifdef CONFIG_USB_BLACKFIN
-# include "blackfin_usb.h"
-#endif
 
 #define MUSB_EP0_FIFOSIZE	64	/* This is non-configurable */
 
@@ -336,28 +331,6 @@ extern void musb_configure_ep(const struct musb_epinfo *epinfo, u8 cnt);
 extern void write_fifo(u8 ep, u32 length, void *fifo_data);
 extern void read_fifo(u8 ep, u32 length, void *fifo_data);
 
-#if defined(CONFIG_USB_BLACKFIN)
-/* Every USB register is accessed as a 16-bit even if the value itself
- * is only 8-bits in size.  Fun stuff.
- */
-# undef  readb
-# define readb(addr)     (u8)bfin_read16(addr)
-# undef  writeb
-# define writeb(b, addr) bfin_write16(addr, b)
-# undef MUSB_TXCSR_MODE /* not supported */
-# define MUSB_TXCSR_MODE 0
-/*
- * The USB PHY on current Blackfin processors is a UTMI+ level 2 PHY.
- * However, it has no ULPI support - so there are no registers at all.
- * That means accesses to ULPI_BUSCONTROL have to be abstracted away.
- */
-static inline u8 musb_read_ulpi_buscontrol(struct musb_regs *musbr)
-{
-	return 0;
-}
-static inline void musb_write_ulpi_buscontrol(struct musb_regs *musbr, u8 val)
-{}
-#else
 static inline u8 musb_read_ulpi_buscontrol(struct musb_regs *musbr)
 {
 	return readb(&musbr->ulpi_busctl);
@@ -366,6 +339,5 @@ static inline void musb_write_ulpi_buscontrol(struct musb_regs *musbr, u8 val)
 {
 	writeb(val, &musbr->ulpi_busctl);
 }
-#endif
 
 #endif	/* __MUSB_HDRC_DEFS_H__ */

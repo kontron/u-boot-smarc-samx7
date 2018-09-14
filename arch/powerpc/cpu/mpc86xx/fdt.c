@@ -1,15 +1,12 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright 2008, 2011 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <fdt_support.h>
 #include <asm/mp.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 extern void ft_fixup_num_cores(void *blob);
 extern void ft_srio_setup(void *blob);
@@ -31,11 +28,6 @@ void ft_cpu_setup(void *blob, bd_t *bd)
 			     "bus-frequency", bd->bi_busfreq, 1);
 
 	fdt_fixup_memory(blob, (u64)bd->bi_memstart, (u64)bd->bi_memsize);
-
-#if defined(CONFIG_HAS_ETH0) || defined(CONFIG_HAS_ETH1) \
-    || defined(CONFIG_HAS_ETH2) || defined(CONFIG_HAS_ETH3)
-	fdt_fixup_ethernet(blob);
-#endif
 
 #ifdef CONFIG_SYS_NS16550
 	do_fixup_by_compat_u32(blob, "ns16550",

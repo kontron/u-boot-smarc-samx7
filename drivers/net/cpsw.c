@@ -612,21 +612,25 @@ static void cpsw_set_slave_mac(struct cpsw_slave *slave,
 #endif
 }
 
-static void cpsw_slave_update_link(struct cpsw_slave *slave,
+static int cpsw_slave_update_link(struct cpsw_slave *slave,
 				   struct cpsw_priv *priv, int *link)
 {
 	struct phy_device *phy;
 	u32 mac_control = 0;
+	int ret = -ENODEV;
 
 	phy = priv->phydev;
-
 	if (!phy)
-		return;
+		goto out;
 
-	phy_startup(phy);
-	*link = phy->link;
+	ret = phy_startup(phy);
+	if (ret)
+		goto out;
 
-	if (*link) { /* link up */
+	if (link)
+		*link = phy->link;
+
+	if (phy->link) { /* link up */
 		mac_control = priv->data.mac_control;
 		if (phy->speed == 1000)
 			mac_control |= GIGABITEN;
@@ -637,7 +641,7 @@ static void cpsw_slave_update_link(struct cpsw_slave *slave,
 	}
 
 	if (mac_control == slave->mac_control)
-		return;
+		goto out;
 
 	if (mac_control) {
 		printf("link up on port %d, speed %d, %s duplex\n",
@@ -649,17 +653,20 @@ static void cpsw_slave_update_link(struct cpsw_slave *slave,
 
 	__raw_writel(mac_control, &slave->sliver->mac_control);
 	slave->mac_control = mac_control;
+
+out:
+	return ret;
 }
 
 static int cpsw_update_link(struct cpsw_priv *priv)
 {
-	int link = 0;
+	int ret = -ENODEV;
 	struct cpsw_slave *slave;
 
 	for_active_slave(slave, priv)
-		cpsw_slave_update_link(slave, priv, &link);
+		ret = cpsw_slave_update_link(slave, priv, NULL);
 
-	return link;
+	return ret;
 }
 
 static inline u32  cpsw_get_slave_port(struct cpsw_priv *priv, u32 slave_num)
@@ -822,7 +829,9 @@ static int _cpsw_init(struct cpsw_priv *priv, u8 *enetaddr)
 	for_active_slave(slave, priv)
 		cpsw_slave_init(slave, priv);
 
-	cpsw_update_link(priv);
+	ret = cpsw_update_link(priv);
+	if (ret)
+		goto out;
 
 	/* init descriptor pool */
 	for (i = 0; i < NUM_DESCS; i++) {
@@ -897,11 +906,26 @@ static int _cpsw_init(struct cpsw_priv *priv, u8 *enetaddr)
 		}
 	}
 
-	return 0;
+out:
+	return ret;
+}
+
+static int cpsw_reap_completed_packets(struct cpsw_priv *priv)
+{
+	int timeout = CPDMA_TIMEOUT;
+
+	/* reap completed packets */
+	while (timeout-- &&
+	       (cpdma_process(priv, &priv->tx_chan, NULL, NULL) >= 0))
+		;
+
+	return timeout;
 }
 
 static void _cpsw_halt(struct cpsw_priv *priv)
 {
+	cpsw_reap_completed_packets(priv);
+
 	writel(0, priv->dma_regs + CPDMA_TXCONTROL);
 	writel(0, priv->dma_regs + CPDMA_RXCONTROL);
 
@@ -915,18 +939,12 @@ static void _cpsw_halt(struct cpsw_priv *priv)
 
 static int _cpsw_send(struct cpsw_priv *priv, void *packet, int length)
 {
-	void *buffer;
-	int len;
-	int timeout = CPDMA_TIMEOUT;
+	int timeout;
 
 	flush_dcache_range((unsigned long)packet,
 			   (unsigned long)packet + ALIGN(length, PKTALIGN));
 
-	/* first reap completed packets */
-	while (timeout-- &&
-		(cpdma_process(priv, &priv->tx_chan, &buffer, &len) >= 0))
-		;
-
+	timeout = cpsw_reap_completed_packets(priv);
 	if (timeout == -1) {
 		printf("cpdma_process timeout\n");
 		return -ETIMEDOUT;
@@ -939,7 +957,7 @@ static int _cpsw_recv(struct cpsw_priv *priv, uchar **pkt)
 {
 	void *buffer;
 	int len;
-	int ret = -EAGAIN;
+	int ret;
 
 	ret = cpdma_process(priv, &priv->rx_chan, &buffer, &len);
 	if (ret < 0)
@@ -981,7 +999,7 @@ static int cpsw_phy_init(struct cpsw_priv *priv, struct cpsw_slave *slave)
 
 #ifdef CONFIG_DM_ETH
 	if (slave->data->phy_of_handle)
-		dev_set_of_offset(phydev->dev, slave->data->phy_of_handle);
+		phydev->node = offset_to_ofnode(slave->data->phy_of_handle);
 #endif
 
 	priv->phydev = phydev;
@@ -1293,7 +1311,7 @@ static int cpsw_eth_ofdata_to_platdata(struct udevice *dev)
 	int num_mode_gpios;
 	int ret;
 
-	pdata->iobase = dev_get_addr(dev);
+	pdata->iobase = devfdt_get_addr(dev);
 	priv->data.version = CPSW_CTRL_VERSION_2;
 	priv->data.bd_ram_ofs = CPSW_BD_OFFSET;
 	priv->data.ale_reg_ofs = CPSW_ALE_OFFSET;
@@ -1358,7 +1376,7 @@ static int cpsw_eth_ofdata_to_platdata(struct udevice *dev)
 
 			mdio_base = cpsw_get_addr_by_node(fdt, subnode);
 			if (mdio_base == FDT_ADDR_T_NONE) {
-				error("Not able to get MDIO address space\n");
+				pr_err("Not able to get MDIO address space\n");
 				return -ENOENT;
 			}
 			priv->data.mdio_base = mdio_base;
@@ -1397,7 +1415,7 @@ static int cpsw_eth_ofdata_to_platdata(struct udevice *dev)
 								    subnode);
 
 			if (priv->data.gmii_sel == FDT_ADDR_T_NONE) {
-				error("Not able to get gmii_sel reg address\n");
+				pr_err("Not able to get gmii_sel reg address\n");
 				return -ENOENT;
 			}
 
@@ -1408,7 +1426,7 @@ static int cpsw_eth_ofdata_to_platdata(struct udevice *dev)
 			phy_sel_compat = fdt_getprop(fdt, subnode, "compatible",
 						     NULL);
 			if (!phy_sel_compat) {
-				error("Not able to get gmii_sel compatible\n");
+				pr_err("Not able to get gmii_sel compatible\n");
 				return -ENOENT;
 			}
 		}
@@ -1424,7 +1442,7 @@ static int cpsw_eth_ofdata_to_platdata(struct udevice *dev)
 
 	ret = ti_cm_get_macid(dev, active_slave, pdata->enetaddr);
 	if (ret < 0) {
-		error("cpsw read efuse mac failed\n");
+		pr_err("cpsw read efuse mac failed\n");
 		return ret;
 	}
 

@@ -1,9 +1,7 @@
+# SPDX-License-Identifier: GPL-2.0+
 #
 # (C) Copyright 2000-2008
 # Wolfgang Denk, DENX Software Engineering, wd@denx.de.
-#
-# SPDX-License-Identifier:	GPL-2.0+
-#
 
 obj-$(CONFIG_AT91SAM9260)	+= at91sam9260_devices.o
 obj-$(CONFIG_AT91SAM9G20)	+= at91sam9260_devices.o
@@ -22,8 +20,18 @@ obj-y += cache.o
 obj-y += clock.o
 obj-y += cpu.o
 obj-y	+= reset.o
+ifeq ($(CONFIG_ATMEL_PIT_TIMER),)
 obj-y	+= timer.o
+endif
 
 ifndef CONFIG_SKIP_LOWLEVEL_INIT
 obj-y	+= lowlevel_init.o
+endif
+
+ifdef CONFIG_$(SPL_)SYS_THUMB_BUILD
+ifndef CONFIG_HAS_THUMB2
+
+CFLAGS_cache.o := -marm
+
+endif
 endif

@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2013-2014 Synopsys, Inc. All rights reserved.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -26,5 +25,11 @@ int arch_early_init_r(void)
 {
 	gd->bd->bi_memstart = CONFIG_SYS_SDRAM_BASE;
 	gd->bd->bi_memsize = CONFIG_SYS_SDRAM_SIZE;
+	return 0;
+}
+
+/* This is a dummy function on arc */
+int dram_init(void)
+{
 	return 0;
 }

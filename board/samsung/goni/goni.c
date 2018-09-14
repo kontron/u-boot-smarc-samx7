@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  *  Copyright (C) 2008-2009 Samsung Electronics
  *  Minkyu Kang <mk7.kang@samsung.com>
  *  Kyungmin Park <kyungmin.park@samsung.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -17,6 +16,7 @@
 #include <samsung/misc.h>
 #include <usb.h>
 #include <usb_mass_storage.h>
+#include <asm/mach-types.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -52,7 +52,7 @@ int dram_init(void)
 	return 0;
 }
 
-void dram_init_banksize(void)
+int dram_init_banksize(void)
 {
 	gd->bd->bi_dram[0].start = PHYS_SDRAM_1;
 	gd->bd->bi_dram[0].size = PHYS_SDRAM_1_SIZE;
@@ -60,6 +60,8 @@ void dram_init_banksize(void)
 	gd->bd->bi_dram[1].size = PHYS_SDRAM_2_SIZE;
 	gd->bd->bi_dram[2].start = PHYS_SDRAM_3;
 	gd->bd->bi_dram[2].size = PHYS_SDRAM_3_SIZE;
+
+	return 0;
 }
 
 #ifdef CONFIG_DISPLAY_BOARDINFO
@@ -70,7 +72,7 @@ int checkboard(void)
 }
 #endif
 
-#ifdef CONFIG_GENERIC_MMC
+#ifdef CONFIG_MMC
 int board_mmc_init(bd_t *bis)
 {
 	int i, ret, ret_sd = 0;
@@ -99,7 +101,7 @@ int board_mmc_init(bd_t *bis)
 
 	ret = s5p_mmc_init(0, 4);
 	if (ret)
-		error("MMC: Failed to init MMC:0.\n");
+		pr_err("MMC: Failed to init MMC:0.\n");
 
 	/*
 	 * SD card (T_FLASH) detect and init
@@ -124,7 +126,7 @@ int board_mmc_init(bd_t *bis)
 
 		ret_sd = s5p_mmc_init(2, 4);
 		if (ret_sd)
-			error("MMC: Failed to init SD card (MMC:2).\n");
+			pr_err("MMC: Failed to init SD card (MMC:2).\n");
 	}
 
 	return ret & ret_sd;

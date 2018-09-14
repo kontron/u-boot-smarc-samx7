@@ -1,15 +1,16 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2002
  * Sysgo Real-Time Solutions, GmbH <www.elinos.com>
  * Marius Groeger <mgroeger@sysgo.de>
  *
  * Copyright (C) 2001  Erik Mouw (J.A.K.Mouw@its.tudelft.nl)
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <command.h>
+#include <dm/device.h>
+#include <dm/root.h>
 #include <errno.h>
 #include <fdt_support.h>
 #include <image.h>
@@ -26,15 +27,6 @@ DECLARE_GLOBAL_DATA_PTR;
 
 #define COMMAND_LINE_OFFSET 0x9000
 
-int arch_fixup_fdt(void *blob)
-{
-	return 0;
-}
-
-__weak void board_quiesce_devices(void)
-{
-}
-
 void bootm_announce_and_cleanup(void)
 {
 	printf("\nStarting kernel ...\n\n");
@@ -46,6 +38,13 @@ void bootm_announce_and_cleanup(void)
 #ifdef CONFIG_BOOTSTAGE_REPORT
 	bootstage_report();
 #endif
+
+	/*
+	 * Call remove function of all devices with a removal flag set.
+	 * This may be useful for last-stage operations, like cancelling
+	 * of DMA operation or releasing device internal buffers.
+	 */
+	dm_remove_devices_flags(DM_REMOVE_ACTIVE_ALL);
 }
 
 #if defined(CONFIG_OF_LIBFDT) && !defined(CONFIG_OF_NO_KERNEL)

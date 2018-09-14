@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+ OR BSD-2-Clause
 /*
  * Copyright 2013 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+ BSD-2-Clause
  *
  * 64-bit and little-endian target only until we need to support a different
  * arch that needs this.
@@ -27,9 +26,11 @@ static void debug(const char *fmt, ...)
 {
 	va_list args;
 
-	va_start(args, fmt);
-	if (debug_en)
+	if (debug_en) {
+		va_start(args, fmt);
 		vprintf(fmt, args);
+		va_end(args);
+	}
 }
 
 static bool supported_rela(Elf64_Rela *rela)

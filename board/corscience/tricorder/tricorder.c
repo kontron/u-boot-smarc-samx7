@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2012
  * Corscience GmbH & Co. KG, <www.corscience.de>
@@ -7,8 +8,6 @@
  *
  * Derived from Devkit8000 code by
  * Frederik Kriewitz <frederik@kriewitz.eu>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 #include <common.h>
 #include <twl4030.h>
@@ -140,14 +139,14 @@ void set_muxconf_regs(void)
 	MUX_TRICORDER();
 }
 
-#if defined(CONFIG_GENERIC_MMC) && !(defined(CONFIG_SPL_BUILD))
+#if defined(CONFIG_MMC)
 int board_mmc_init(bd_t *bis)
 {
 	return omap_mmc_init(0, 0, 0, -1, -1);
 }
 #endif
 
-#if defined(CONFIG_GENERIC_MMC)
+#if defined(CONFIG_MMC)
 void board_mmc_power_init(void)
 {
 	twl4030_power_mmc_init(0);

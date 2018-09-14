@@ -141,7 +141,7 @@
 			};
 
 			ap_pinctl: ap-pinctl@6F4000 {
-				compatible = "marvell,armada-ap806-pinctrl";
+				compatible = "marvell,ap806-pinctrl";
 				bank-name ="apn-806";
 				reg = <0x6F4000 0x10>;
 				pin-count = <20>;
@@ -156,6 +156,14 @@
 							 8 9 10 >;
 					marvell,function = <1>;
 				};
+			};
+
+			ap_gpio0: gpio@6F5040 {
+				compatible = "marvell,orion-gpio";
+				reg = <0x6F5040 0x40>;
+				ngpios = <20>;
+				gpio-controller;
+				#gpio-cells = <2>;
 			};
 
 			xor@400000 {

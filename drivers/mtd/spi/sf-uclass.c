@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2014 Google, Inc
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -46,7 +45,7 @@ struct spi_flash *spi_flash_probe(unsigned int bus, unsigned int cs,
 
 void spi_flash_free(struct spi_flash *flash)
 {
-	device_remove(flash->spi->dev);
+	device_remove(flash->spi->dev, DM_REMOVE_NORMAL);
 }
 
 int spi_flash_probe_bus_cs(unsigned int busnum, unsigned int cs,

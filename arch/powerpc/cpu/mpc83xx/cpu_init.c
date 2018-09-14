@@ -1,13 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2004-2009 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <mpc83xx.h>
 #include <ioports.h>
 #include <asm/io.h>
+#include <asm/processor.h>
 #ifdef CONFIG_USB_EHCI_FSL
 #include <usb/ehci-ci.h>
 #endif

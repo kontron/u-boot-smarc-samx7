@@ -1,6 +1,5 @@
+# SPDX-License-Identifier: GPL-2.0+
 # Copyright (c) 2011 The Chromium OS Authors.
-#
-# SPDX-License-Identifier:	GPL-2.0+
 #
 
 from __future__ import print_function
@@ -212,7 +211,12 @@ def CreatePatmanConfigFile(config_fname):
         print("Couldn't create patman config file\n")
         raise
 
-    print("[alias]\nme: %s <%s>" % (name, email), file=f)
+    print('''[alias]
+me: %s <%s>
+
+[bounces]
+nxp = Zhikang Zhang <zhikang.zhang@nxp.com>
+''' % (name, email), file=f)
     f.close();
 
 def _UpdateDefaults(parser, config):
@@ -259,7 +263,7 @@ def _ReadAliasFile(fname):
                 line = line.strip()
                 if not line or line.startswith('#'):
                     continue
-                words = line.split(' ', 2)
+                words = line.split(None, 2)
                 if len(words) < 3 or words[0] != 'alias':
                     if not bad_line:
                         bad_line = "%s:%d:Invalid line '%s'" % (fname, linenum,
@@ -268,6 +272,36 @@ def _ReadAliasFile(fname):
                 alias[words[1]] = [s.strip() for s in words[2].split(',')]
         if bad_line:
             print(bad_line)
+
+def _ReadBouncesFile(fname):
+    """Read in the bounces file if it exists
+
+    Args:
+        fname: Filename to read.
+    """
+    if os.path.exists(fname):
+        with open(fname) as fd:
+            for line in fd:
+                if line.startswith('#'):
+                    continue
+                bounces.add(line.strip())
+
+def GetItems(config, section):
+    """Get the items from a section of the config.
+
+    Args:
+        config: _ProjectConfigParser object containing settings
+        section: name of section to retrieve
+
+    Returns:
+        List of (name, value) tuples for the section
+    """
+    try:
+        return config.items(section)
+    except ConfigParser.NoSectionError as e:
+        return []
+    except:
+        raise
 
 def Setup(parser, project_name, config_fname=''):
     """Set up the settings module by reading config files.
@@ -290,13 +324,18 @@ def Setup(parser, project_name, config_fname=''):
 
     config.read(config_fname)
 
-    for name, value in config.items('alias'):
+    for name, value in GetItems(config, 'alias'):
         alias[name] = value.split(',')
+
+    _ReadBouncesFile('doc/bounces')
+    for name, value in GetItems(config, 'bounces'):
+        bounces.add(value)
 
     _UpdateDefaults(parser, config)
 
 # These are the aliases we understand, indexed by alias. Each member is a list.
 alias = {}
+bounces = set()
 
 if __name__ == "__main__":
     import doctest

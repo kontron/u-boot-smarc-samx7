@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2002
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /* for now: just dummy functions to satisfy the linker */
@@ -107,7 +106,7 @@ phys_addr_t noncached_alloc(size_t size, size_t align)
 }
 #endif /* CONFIG_SYS_NONCACHED_MEMORY */
 
-#if defined(CONFIG_SYS_THUMB_BUILD)
+#if CONFIG_IS_ENABLED(SYS_THUMB_BUILD)
 void invalidate_l2_cache(void)
 {
 	unsigned int val = 0;

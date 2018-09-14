@@ -1,11 +1,13 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Based on acpi.c from coreboot
  *
  * Copyright (C) 2015, Saket Sinha <saket.sinha89@gmail.com>
  * Copyright (C) 2016, Bin Meng <bmeng.cn@gmail.com>
- *
- * SPDX-License-Identifier: GPL-2.0+
  */
+
+#ifndef __ASM_ACPI_TABLE_H__
+#define __ASM_ACPI_TABLE_H__
 
 #define RSDP_SIG		"RSD PTR "	/* RSDP pointer signature */
 #define OEM_ID			"U-BOOT"	/* U-Boot */
@@ -178,9 +180,8 @@ struct __packed acpi_fadt {
 	u32 flags;
 	struct acpi_gen_regaddr reset_reg;
 	u8 reset_value;
-	u8 res3;
-	u8 res4;
-	u8 res5;
+	u16 arm_boot_arch;
+	u8 minor_revision;
 	u32 x_firmware_ctl_l;
 	u32 x_firmware_ctl_h;
 	u32 x_dsdt_l;
@@ -315,5 +316,19 @@ int acpi_create_madt_irqoverride(struct acpi_madt_irqoverride *irqoverride,
 int acpi_create_madt_lapic_nmi(struct acpi_madt_lapic_nmi *lapic_nmi,
 			       u8 cpu, u16 flags, u8 lint);
 u32 acpi_fill_madt(u32 current);
+int acpi_create_mcfg_mmconfig(struct acpi_mcfg_mmconfig *mmconfig, u32 base,
+			      u16 seg_nr, u8 start, u8 end);
+u32 acpi_fill_mcfg(u32 current);
 void acpi_create_gnvs(struct acpi_global_nvs *gnvs);
 ulong write_acpi_tables(ulong start);
+
+/**
+ * acpi_get_rsdp_addr() - get ACPI RSDP table address
+ *
+ * This routine returns the ACPI RSDP table address in the system memory.
+ *
+ * @return:	ACPI RSDP table address
+ */
+ulong acpi_get_rsdp_addr(void);
+
+#endif /* __ASM_ACPI_TABLE_H__ */

@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright (C) 2013, 2014 Markus Niebel <Markus.Niebel@tq-group.com>
+ * Copyright (C) 2013, 2014, 2017 Markus Niebel <Markus.Niebel@tq-group.com>
  *
- * Configuration settings for the TQ Systems TQMa6<Q,S> module.
- *
- * SPDX-License-Identifier:	GPL-2.0+
+ * Configuration settings for the TQ Systems TQMa6<Q,D,DL,S> module.
  */
 
 #ifndef __CONFIG_H
@@ -18,24 +17,18 @@
 /* #endif */
 
 /* place code in last 4 MiB of RAM */
-#if defined(CONFIG_MX6DL) || defined(CONFIG_MX6S)
-#define CONFIG_SYS_TEXT_BASE		0x2fc00000
-#elif defined(CONFIG_MX6Q) || defined(CONFIG_MX6D)
-#define CONFIG_SYS_TEXT_BASE		0x4fc00000
-#endif
 
 #include "mx6_common.h"
 
-#if defined(CONFIG_MX6DL) || defined(CONFIG_MX6S)
+#if defined(CONFIG_TQMA6S)
 #define PHYS_SDRAM_SIZE			(512u * SZ_1M)
-#elif defined(CONFIG_MX6Q) || defined(CONFIG_MX6D)
-#define PHYS_SDRAM_SIZE			(1024u * SZ_1M)
+#elif defined(CONFIG_TQMA6DL)
+#define PHYS_SDRAM_SIZE			(SZ_1G)
+#elif defined(CONFIG_TQMA6Q)
+#define PHYS_SDRAM_SIZE			(SZ_1G)
 #endif
 
 #define CONFIG_MXC_UART
-
-/* SPI */
-#define CONFIG_MXC_SPI
 
 /* SPI Flash */
 
@@ -55,19 +48,11 @@
 #define CONFIG_I2C_MULTI_BUS
 #define CONFIG_SYS_I2C_SPEED		100000
 
-/* I2C SYSMON (LM75) */
-#define CONFIG_DTT_LM75
-#define CONFIG_DTT_MAX_TEMP		70
-#define CONFIG_DTT_MIN_TEMP		-30
-#define CONFIG_DTT_HYSTERESIS	3
-#define CONFIG_CMD_DTT
-
 /* I2C EEPROM (M24C64) */
 #define CONFIG_SYS_I2C_EEPROM_ADDR			0x50
 #define CONFIG_SYS_I2C_EEPROM_ADDR_LEN			2
 #define CONFIG_SYS_I2C_EEPROM_PAGE_WRITE_BITS		5 /* 32 Bytes */
 #define CONFIG_SYS_I2C_EEPROM_PAGE_WRITE_DELAY_MS	20
-#define CONFIG_CMD_EEPROM
 
 #define CONFIG_POWER
 #define CONFIG_POWER_I2C
@@ -79,23 +64,14 @@
 #define CONFIG_SYS_FSL_ESDHC_ADDR	0
 
 /* USB Configs */
-#define CONFIG_USB_EHCI
-#define CONFIG_USB_EHCI_MX6
-#define CONFIG_USB_HOST_ETHER
-#define CONFIG_USB_ETHER_SMSC95XX
 #define CONFIG_MXC_USB_PORTSC	(PORT_PTS_UTMI | PORT_PTS_PTW)
 #define CONFIG_USB_MAX_CONTROLLER_COUNT	2
 #define CONFIG_EHCI_HCD_INIT_AFTER_RESET	/* For OTG port */
 
 #define CONFIG_FEC_MXC
 #define IMX_FEC_BASE			ENET_BASE_ADDR
-#define CONFIG_PHYLIB
-#define CONFIG_MII
 
 #define CONFIG_ARP_TIMEOUT		200UL
-
-/* Command definition */
-#define CONFIG_CMD_BMODE
 
 #define CONFIG_ENV_SIZE			(SZ_8K)
 /* Size of malloc() pool */
@@ -103,7 +79,6 @@
 
 #if defined(CONFIG_TQMA6X_MMC_BOOT)
 
-#define CONFIG_ENV_IS_IN_MMC
 #define TQMA6_UBOOT_OFFSET		SZ_1K
 #define TQMA6_UBOOT_SECTOR_START	0x2
 #define TQMA6_UBOOT_SECTOR_COUNT	0x7fe
@@ -178,7 +153,6 @@
 #define TQMA6_UBOOT_SIZE		(TQMA6_UBOOT_SECTOR_SIZE * \
 					 TQMA6_UBOOT_SECTOR_COUNT)
 
-#define CONFIG_ENV_IS_IN_SPI_FLASH
 #define CONFIG_SYS_REDUNDAND_ENVIRONMENT
 #define CONFIG_ENV_OFFSET		(TQMA6_UBOOT_SIZE)
 #define CONFIG_ENV_SECT_SIZE		TQMA6_SPI_FLASH_SECTOR_SIZE
@@ -347,10 +321,7 @@
 	"panicboot=echo No boot device !!! reset\0"                            \
 	TQMA6_EXTRA_BOOTDEV_ENV_SETTINGS                                      \
 
-#define CONFIG_STACKSIZE		(128u * SZ_1K)
-
 /* Physical Memory Map */
-#define CONFIG_NR_DRAM_BANKS		1
 #define PHYS_SDRAM			MMDC0_ARB_BASE_ADDR
 
 #define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM
@@ -376,8 +347,5 @@
 #endif
 
 /* Support at least the sensor on TQMa6 SOM */
-#if !defined(CONFIG_DTT_SENSORS)
-#define CONFIG_DTT_SENSORS		{ 0 }
-#endif
 
 #endif /* __CONFIG_H */

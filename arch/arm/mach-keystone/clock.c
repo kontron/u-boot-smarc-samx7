@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Keystone2: pll initialization
  *
  * (C) Copyright 2012-2014
  *     Texas Instruments Incorporated, <www.ti.com>
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
@@ -284,7 +283,7 @@ static unsigned long pll_freq_get(int pll)
 	u32 tmp, reg;
 
 	if (pll == MAIN_PLL) {
-		ret = external_clk[sys_clk];
+		ret = get_external_clk(sys_clk);
 		if (pllctl_reg_read(pll, ctl) & PLLCTL_PLLEN_MASK) {
 			/* PLL mode */
 			tmp = __raw_readl(KS2_MAINPLLCTL0);
@@ -302,23 +301,23 @@ static unsigned long pll_freq_get(int pll)
 	} else {
 		switch (pll) {
 		case PASS_PLL:
-			ret = external_clk[pa_clk];
+			ret = get_external_clk(pa_clk);
 			reg = KS2_PASSPLLCTL0;
 			break;
 		case TETRIS_PLL:
-			ret = external_clk[tetris_clk];
+			ret = get_external_clk(tetris_clk);
 			reg = KS2_ARMPLLCTL0;
 			break;
 		case DDR3A_PLL:
-			ret = external_clk[ddr3a_clk];
+			ret = get_external_clk(ddr3a_clk);
 			reg = KS2_DDR3APLLCTL0;
 			break;
 		case DDR3B_PLL:
-			ret = external_clk[ddr3b_clk];
+			ret = get_external_clk(ddr3b_clk);
 			reg = KS2_DDR3BPLLCTL0;
 			break;
 		case UART_PLL:
-			ret = external_clk[uart_clk];
+			ret = get_external_clk(uart_clk);
 			reg = KS2_UARTPLLCTL0;
 			break;
 		default:

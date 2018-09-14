@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -23,11 +22,18 @@
 #ifdef CONFIG_U_QE
 #include <fsl_qe.h>
 #endif
-#ifdef CONFIG_FSL_LS_PPA
 #include <asm/arch/ppa.h>
-#endif
 
 DECLARE_GLOBAL_DATA_PTR;
+
+int board_early_init_f(void)
+{
+	fsl_lsch2_early_init_f();
+
+	return 0;
+}
+
+#ifndef CONFIG_SPL_BUILD
 
 int checkboard(void)
 {
@@ -63,20 +69,6 @@ int checkboard(void)
 	puts("SERDES Reference Clocks:\n");
 	sd1refclk_sel = CPLD_READ(sd1refclk_sel);
 	printf("SD1_CLK1 = %s, SD1_CLK2 = %s\n", freq[sd1refclk_sel], freq[0]);
-
-	return 0;
-}
-
-int dram_init(void)
-{
-	gd->ram_size = initdram(0);
-
-	return 0;
-}
-
-int board_early_init_f(void)
-{
-	fsl_lsch2_early_init_f();
 
 	return 0;
 }
@@ -222,3 +214,5 @@ u16 flash_read16(void *addr)
 
 	return (((val) >> 8) & 0x00ff) | (((val) << 8) & 0xff00);
 }
+
+#endif

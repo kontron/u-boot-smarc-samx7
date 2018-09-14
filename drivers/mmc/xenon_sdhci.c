@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Driver for Marvell SOC Platform Group Xenon SDHC as a platform device
  *
@@ -11,14 +12,12 @@
  *
  * Ported to from Marvell 2015.01 to mainline U-Boot 2017.01:
  * Stefan Roese <sr@denx.de>
- *
- * SPDX-License-Identifier:	GPL-2.0
  */
 
 #include <common.h>
 #include <dm.h>
 #include <fdtdec.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <malloc.h>
 #include <sdhci.h>
 
@@ -159,7 +158,7 @@ static int xenon_mmc_phy_init(struct sdhci_host *host)
 	}
 
 	if (time <= 0) {
-		error("Failed to enable MMC internal clock in time\n");
+		pr_err("Failed to enable MMC internal clock in time\n");
 		return -ETIMEDOUT;
 	}
 
@@ -187,7 +186,7 @@ static int xenon_mmc_phy_init(struct sdhci_host *host)
 	}
 
 	if (time <= 0) {
-		error("Failed to init MMC PHY in time\n");
+		pr_err("Failed to init MMC PHY in time\n");
 		return -ETIMEDOUT;
 	}
 
@@ -422,7 +421,8 @@ static int xenon_sdhci_probe(struct udevice *dev)
 
 	host->ops = &xenon_sdhci_ops;
 
-	ret = sdhci_setup_cfg(&plat->cfg, host, XENON_MMC_MAX_CLK, 0);
+	host->max_clk = XENON_MMC_MAX_CLK;
+	ret = sdhci_setup_cfg(&plat->cfg, host, 0, 0);
 	if (ret)
 		return ret;
 
@@ -451,10 +451,10 @@ static int xenon_sdhci_ofdata_to_platdata(struct udevice *dev)
 	const char *name;
 
 	host->name = dev->name;
-	host->ioaddr = (void *)dev_get_addr(dev);
+	host->ioaddr = (void *)devfdt_get_addr(dev);
 
-	if (of_device_is_compatible(dev, "marvell,armada-3700-sdhci"))
-		priv->pad_ctrl_reg = (void *)dev_get_addr_index(dev, 1);
+	if (device_is_compatible(dev, "marvell,armada-3700-sdhci"))
+		priv->pad_ctrl_reg = (void *)devfdt_get_addr_index(dev, 1);
 
 	name = fdt_getprop(gd->fdt_blob, dev_of_offset(dev), "marvell,pad-type",
 			   NULL);

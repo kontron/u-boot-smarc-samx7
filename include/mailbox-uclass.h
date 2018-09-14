@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (c) 2016, NVIDIA CORPORATION.
- *
- * SPDX-License-Identifier: GPL-2.0
  */
 
 #ifndef _MAILBOX_UCLASS_H
@@ -36,7 +35,7 @@ struct mbox_ops {
 	 * @return 0 if OK, or a negative error code.
 	 */
 	int (*of_xlate)(struct mbox_chan *chan,
-			struct fdtdec_phandle_args *args);
+			struct ofnode_phandle_args *args);
 	/**
 	 * request - Request a translated channel.
 	 *

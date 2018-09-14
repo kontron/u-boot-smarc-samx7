@@ -1,20 +1,21 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Based on acpi.c from coreboot
  *
  * Copyright (C) 2015, Saket Sinha <saket.sinha89@gmail.com>
  * Copyright (C) 2016, Bin Meng <bmeng.cn@gmail.com>
- *
- * SPDX-License-Identifier: GPL-2.0+
  */
 
 #include <common.h>
 #include <cpu.h>
 #include <dm.h>
 #include <dm/uclass-internal.h>
+#include <version.h>
 #include <asm/acpi/global_nvs.h>
 #include <asm/acpi_table.h>
-#include <asm/io.h>
+#include <asm/ioapic.h>
 #include <asm/lapic.h>
+#include <asm/mpspec.h>
 #include <asm/tables.h>
 #include <asm/arch/global_nvs.h>
 
@@ -23,6 +24,9 @@
  * to a C array AmlCode[] (see dsdt.c).
  */
 extern const unsigned char AmlCode[];
+
+/* ACPI RSDP address to be used in boot parameters */
+static ulong acpi_rsdp_addr;
 
 static void acpi_write_rsdp(struct acpi_rsdp *rsdp, struct acpi_rsdt *rsdt,
 			    struct acpi_xsdt *xsdt)
@@ -60,6 +64,7 @@ void acpi_fill_header(struct acpi_table_header *header, char *signature)
 	memcpy(header->signature, signature, 4);
 	memcpy(header->oem_id, OEM_ID, 6);
 	memcpy(header->oem_table_id, OEM_TABLE_ID, 8);
+	header->oem_revision = U_BOOT_BUILD_DATE;
 	memcpy(header->aslc_id, ASLC_ID, 4);
 }
 
@@ -239,6 +244,33 @@ int acpi_create_madt_lapic_nmi(struct acpi_madt_lapic_nmi *lapic_nmi,
 	return lapic_nmi->length;
 }
 
+static int acpi_create_madt_irq_overrides(u32 current)
+{
+	struct acpi_madt_irqoverride *irqovr;
+	u16 sci_flags = MP_IRQ_TRIGGER_LEVEL | MP_IRQ_POLARITY_HIGH;
+	int length = 0;
+
+	irqovr = (void *)current;
+	length += acpi_create_madt_irqoverride(irqovr, 0, 0, 2, 0);
+
+	irqovr = (void *)(current + length);
+	length += acpi_create_madt_irqoverride(irqovr, 0, 9, 9, sci_flags);
+
+	return length;
+}
+
+__weak u32 acpi_fill_madt(u32 current)
+{
+	current += acpi_create_madt_lapics(current);
+
+	current += acpi_create_madt_ioapic((struct acpi_madt_ioapic *)current,
+			io_apic_read(IO_APIC_ID) >> 24, IO_APIC_ADDR, 0);
+
+	current += acpi_create_madt_irq_overrides(current);
+
+	return current;
+}
+
 static void acpi_create_madt(struct acpi_madt *madt)
 {
 	struct acpi_table_header *header = &(madt->header);
@@ -262,8 +294,8 @@ static void acpi_create_madt(struct acpi_madt *madt)
 	header->checksum = table_compute_checksum((void *)madt, header->length);
 }
 
-static int acpi_create_mcfg_mmconfig(struct acpi_mcfg_mmconfig *mmconfig,
-				     u32 base, u16 seg_nr, u8 start, u8 end)
+int acpi_create_mcfg_mmconfig(struct acpi_mcfg_mmconfig *mmconfig, u32 base,
+			      u16 seg_nr, u8 start, u8 end)
 {
 	memset(mmconfig, 0, sizeof(*mmconfig));
 	mmconfig->base_address_l = base;
@@ -275,7 +307,7 @@ static int acpi_create_mcfg_mmconfig(struct acpi_mcfg_mmconfig *mmconfig,
 	return sizeof(struct acpi_mcfg_mmconfig);
 }
 
-static u32 acpi_fill_mcfg(u32 current)
+__weak u32 acpi_fill_mcfg(u32 current)
 {
 	current += acpi_create_mcfg_mmconfig
 		((struct acpi_mcfg_mmconfig *)current,
@@ -304,28 +336,8 @@ static void acpi_create_mcfg(struct acpi_mcfg *mcfg)
 	header->checksum = table_compute_checksum((void *)mcfg, header->length);
 }
 
-static void enter_acpi_mode(int pm1_cnt)
-{
-	/*
-	 * PM1_CNT register bit0 selects the power management event to be
-	 * either an SCI or SMI interrupt. When this bit is set, then power
-	 * management events will generate an SCI interrupt. When this bit
-	 * is reset power management events will generate an SMI interrupt.
-	 *
-	 * Per ACPI spec, it is the responsibility of the hardware to set
-	 * or reset this bit. OSPM always preserves this bit position.
-	 *
-	 * U-Boot does not support SMI. And we don't have plan to support
-	 * anything running in SMM within U-Boot. To create a legacy-free
-	 * system, and expose ourselves to OSPM as working under ACPI mode
-	 * already, turn this bit on.
-	 */
-	outw(PM1_CNT_SCI_EN, pm1_cnt);
-}
-
 /*
- * QEMU's version of write_acpi_tables is defined in
- * arch/x86/cpu/qemu/acpi_table.c
+ * QEMU's version of write_acpi_tables is defined in drivers/misc/qfw.c
  */
 ulong write_acpi_tables(ulong start)
 {
@@ -428,13 +440,13 @@ ulong write_acpi_tables(ulong start)
 
 	debug("current = %x\n", current);
 
+	acpi_rsdp_addr = (unsigned long)rsdp;
 	debug("ACPI: done\n");
 
-	/*
-	 * Other than waiting for OSPM to request us to switch to ACPI mode,
-	 * do it by ourselves, since SMI will not be triggered.
-	 */
-	enter_acpi_mode(fadt->pm1a_cnt_blk);
-
 	return current;
+}
+
+ulong acpi_get_rsdp_addr(void)
+{
+	return acpi_rsdp_addr;
 }

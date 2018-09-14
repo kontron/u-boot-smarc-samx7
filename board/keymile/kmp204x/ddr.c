@@ -1,11 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013 Keymile AG
  * Valentin Longchamp <valentin.longchamp@keymile.com>
  *
  * Copyright 2009-2011 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
-  */
+ */
 
 #include <common.h>
 #include <i2c.h>
@@ -13,6 +12,8 @@
 #include <asm/mmu.h>
 #include <fsl_ddr_sdram.h>
 #include <fsl_ddr_dimm_params.h>
+
+DECLARE_GLOBAL_DATA_PTR;
 
 void fsl_ddr_board_options(memctl_options_t *popts,
 				dimm_params_t *pdimm,
@@ -48,7 +49,7 @@ void fsl_ddr_board_options(memctl_options_t *popts,
 	popts->ddr_cdr1 = DDR_CDR1_DHC_EN | DDR_CDR_ODT_75ohm;
 }
 
-phys_size_t initdram(int board_type)
+int dram_init(void)
 {
 	phys_size_t dram_size = 0;
 
@@ -60,5 +61,7 @@ phys_size_t initdram(int board_type)
 	dram_size *= 0x100000;
 
 	debug("    DDR: ");
-	return dram_size;
+	gd->ram_size = dram_size;
+
+	return 0;
 }

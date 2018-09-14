@@ -1,10 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /**
  * (C) Copyright 2014, Cavium Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
 **/
 
 #include <common.h>
+#include <dm.h>
 #include <malloc.h>
 #include <errno.h>
 #include <linux/compiler.h>
@@ -13,7 +13,6 @@
 #include <asm/armv8/mmu.h>
 
 #if !CONFIG_IS_ENABLED(OF_CONTROL)
-#include <dm/platdata.h>
 #include <dm/platform_data/serial_pl01x.h>
 
 static const struct pl01x_serial_platdata serial0 = {

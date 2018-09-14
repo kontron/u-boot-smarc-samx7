@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2016 Rockchip Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -176,7 +175,7 @@ static int rk_lvds_ofdata_to_platdata(struct udevice *dev)
 	const void *blob = gd->fdt_blob;
 	int node = dev_of_offset(dev);
 	int ret;
-	priv->regs = (void *)dev_get_addr(dev);
+	priv->regs = (void *)devfdt_get_addr(dev);
 	priv->grf = syscon_get_first_range(ROCKCHIP_SYSCON_GRF);
 
 	ret = fdtdec_get_int(blob, node, "rockchip,output", -1);

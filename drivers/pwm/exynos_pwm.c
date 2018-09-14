@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2016 Google Inc.
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
@@ -11,8 +10,6 @@
 #include <asm/arch/clk.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/pwm.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 struct exynos_pwm_priv {
 	struct s5p_timer *regs;
@@ -94,7 +91,7 @@ static int exynos_pwm_ofdata_to_platdata(struct udevice *dev)
 {
 	struct exynos_pwm_priv *priv = dev_get_priv(dev);
 
-	priv->regs = (struct s5p_timer *)dev_get_addr(dev);
+	priv->regs = (struct s5p_timer *)devfdt_get_addr(dev);
 
 	return 0;
 }

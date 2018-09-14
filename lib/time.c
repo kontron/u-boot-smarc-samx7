@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2000-2009
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -36,6 +35,23 @@ unsigned long notrace timer_read_counter(void)
 	return readl(CONFIG_SYS_TIMER_COUNTER);
 #endif
 }
+
+ulong timer_get_boot_us(void)
+{
+	ulong count = timer_read_counter();
+
+#if CONFIG_SYS_TIMER_RATE == 1000000
+	return count;
+#elif CONFIG_SYS_TIMER_RATE > 1000000
+	return lldiv(count, CONFIG_SYS_TIMER_RATE / 1000000);
+#elif defined(CONFIG_SYS_TIMER_RATE)
+	return (unsigned long long)count * 1000000 / CONFIG_SYS_TIMER_RATE;
+#else
+	/* Assume the counter is in microseconds */
+	return count;
+#endif
+}
+
 #else
 extern unsigned long __weak timer_read_counter(void);
 #endif

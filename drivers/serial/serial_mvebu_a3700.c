@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2016 Stefan Roese <sr@denx.de>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -105,7 +104,7 @@ static int mvebu_serial_ofdata_to_platdata(struct udevice *dev)
 {
 	struct mvebu_platdata *plat = dev_get_platdata(dev);
 
-	plat->base = dev_get_addr_ptr(dev);
+	plat->base = devfdt_get_addr_ptr(dev);
 
 	return 0;
 }

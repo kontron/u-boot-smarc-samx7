@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * MPC823 and PXA LCD Controller
  *
@@ -6,8 +7,6 @@
  *
  * (C) Copyright 2001
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _LCD_H_
@@ -40,9 +39,7 @@ void lcd_setcolreg(ushort regno, ushort red, ushort green, ushort blue);
  */
 void lcd_set_flush_dcache(int flush);
 
-#if defined CONFIG_MPC823
-#include <mpc823_lcd.h>
-#elif defined(CONFIG_CPU_PXA25X) || defined(CONFIG_CPU_PXA27X) || \
+#if defined(CONFIG_CPU_PXA25X) || defined(CONFIG_CPU_PXA27X) || \
 	defined CONFIG_CPU_MONAHANS
 #include <pxa_lcd.h>
 #elif defined(CONFIG_ATMEL_LCD) || defined(CONFIG_ATMEL_HLCD)

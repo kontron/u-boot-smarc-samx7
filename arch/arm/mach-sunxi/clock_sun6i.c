@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * sun6i specific clock code
  *
@@ -6,8 +7,6 @@
  * Tom Cubie <tangliang@allwinnertech.com>
  *
  * (C) Copyright 2013 Luke Kenneth Casson Leighton <lkcl@lkcl.net>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -22,7 +21,7 @@ void clock_init_safe(void)
 	struct sunxi_ccm_reg * const ccm =
 		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
 
-#if !defined(CONFIG_MACH_SUN8I_H3) && !defined(CONFIG_MACH_SUN50I)
+#if !defined(CONFIG_MACH_SUNXI_H3_H5) && !defined(CONFIG_MACH_SUN50I)
 	struct sunxi_prcm_reg * const prcm =
 		(struct sunxi_prcm_reg *)SUNXI_PRCM_BASE;
 
@@ -33,6 +32,11 @@ void clock_init_safe(void)
 		PRCM_PLL_CTRL_LDO_DIGITAL_EN | PRCM_PLL_CTRL_LDO_ANALOG_EN |
 		PRCM_PLL_CTRL_EXT_OSC_EN | PRCM_PLL_CTRL_LDO_OUT_L(1140));
 	clrbits_le32(&prcm->pll_ctrl1, PRCM_PLL_CTRL_LDO_KEY_MASK);
+#endif
+
+#if defined(CONFIG_MACH_SUN8I_R40) || defined(CONFIG_MACH_SUN50I)
+	/* Set PLL lock enable bits and switch to old lock mode */
+	writel(GENMASK(12, 0), &ccm->pll_lock_ctrl);
 #endif
 
 	clock_set_pll1(408000000);
@@ -46,19 +50,32 @@ void clock_init_safe(void)
 	writel(MBUS_CLK_DEFAULT, &ccm->mbus0_clk_cfg);
 	if (IS_ENABLED(CONFIG_MACH_SUN6I))
 		writel(MBUS_CLK_DEFAULT, &ccm->mbus1_clk_cfg);
+
+#if defined(CONFIG_MACH_SUN8I_R40) && defined(CONFIG_SUNXI_AHCI)
+	setbits_le32(&ccm->sata_pll_cfg, CCM_SATA_PLL_DEFAULT);
+	setbits_le32(&ccm->ahb_reset0_cfg, 0x1 << AHB_GATE_OFFSET_SATA);
+	setbits_le32(&ccm->ahb_gate0, 0x1 << AHB_GATE_OFFSET_SATA);
+	setbits_le32(&ccm->sata_clk_cfg, CCM_SATA_CTRL_ENABLE);
+#endif
 }
 #endif
 
 void clock_init_sec(void)
 {
-#ifdef CONFIG_MACH_SUN8I_H3
+#ifdef CONFIG_MACH_SUNXI_H3_H5
 	struct sunxi_ccm_reg * const ccm =
 		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
+	struct sunxi_prcm_reg * const prcm =
+		(struct sunxi_prcm_reg *)SUNXI_PRCM_BASE;
 
 	setbits_le32(&ccm->ccu_sec_switch,
 		     CCM_SEC_SWITCH_MBUS_NONSEC |
 		     CCM_SEC_SWITCH_BUS_NONSEC |
 		     CCM_SEC_SWITCH_PLL_NONSEC);
+	setbits_le32(&prcm->prcm_sec_switch,
+		     PRCM_SEC_SWITCH_APB0_CLK_NONSEC |
+		     PRCM_SEC_SWITCH_PLL_CFG_NONSEC |
+		     PRCM_SEC_SWITCH_PWR_GATE_NONSEC);
 #endif
 }
 
@@ -145,6 +162,22 @@ void clock_set_pll3(unsigned int clk)
 	       &ccm->pll3_cfg);
 }
 
+#ifdef CONFIG_SUNXI_DE2
+void clock_set_pll3_factors(int m, int n)
+{
+	struct sunxi_ccm_reg * const ccm =
+		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
+
+	/* PLL3 rate = 24000000 * n / m */
+	writel(CCM_PLL3_CTRL_EN | CCM_PLL3_CTRL_INTEGER_MODE |
+	       CCM_PLL3_CTRL_N(n) | CCM_PLL3_CTRL_M(m),
+	       &ccm->pll3_cfg);
+
+	while (!(readl(&ccm->pll3_cfg) & CCM_PLL3_CTRL_LOCK))
+		;
+}
+#endif
+
 void clock_set_pll5(unsigned int clk, bool sigma_delta_enable)
 {
 	struct sunxi_ccm_reg * const ccm =
@@ -152,7 +185,7 @@ void clock_set_pll5(unsigned int clk, bool sigma_delta_enable)
 	const int max_n = 32;
 	int k = 1, m = 2;
 
-#ifdef CONFIG_MACH_SUN8I_H3
+#ifdef CONFIG_MACH_SUNXI_H3_H5
 	clrsetbits_le32(&ccm->pll5_tuning_cfg, CCM_PLL5_TUN_LOCK_TIME_MASK |
 			CCM_PLL5_TUN_INIT_FREQ_MASK,
 			CCM_PLL5_TUN_LOCK_TIME(2) | CCM_PLL5_TUN_INIT_FREQ(16));
@@ -217,7 +250,31 @@ done:
 }
 #endif
 
-#if defined(CONFIG_MACH_SUN8I_A33) || defined(CONFIG_MACH_SUN50I)
+#ifdef CONFIG_SUNXI_DE2
+void clock_set_pll10(unsigned int clk)
+{
+	struct sunxi_ccm_reg * const ccm =
+		(struct sunxi_ccm_reg *)SUNXI_CCM_BASE;
+	const int m = 2; /* 12 MHz steps */
+
+	if (clk == 0) {
+		clrbits_le32(&ccm->pll10_cfg, CCM_PLL10_CTRL_EN);
+		return;
+	}
+
+	/* PLL10 rate = 24000000 * n / m */
+	writel(CCM_PLL10_CTRL_EN | CCM_PLL10_CTRL_INTEGER_MODE |
+	       CCM_PLL10_CTRL_N(clk / (24000000 / m)) | CCM_PLL10_CTRL_M(m),
+	       &ccm->pll10_cfg);
+
+	while (!(readl(&ccm->pll10_cfg) & CCM_PLL10_CTRL_LOCK))
+		;
+}
+#endif
+
+#if defined(CONFIG_MACH_SUN8I_A33) || \
+    defined(CONFIG_MACH_SUN8I_R40) || \
+    defined(CONFIG_MACH_SUN50I)
 void clock_set_pll11(unsigned int clk, bool sigma_delta_enable)
 {
 	struct sunxi_ccm_reg * const ccm =

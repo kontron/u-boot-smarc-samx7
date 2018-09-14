@@ -1,13 +1,13 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2011 The Chromium OS Authors.
  * (C) Copyright 2008
  * Graeme Russ, graeme.russ@gmail.com.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <fdtdec.h>
+#include <usb.h>
 #include <asm/io.h>
 #include <asm/msr.h>
 #include <asm/mtrr.h>
@@ -29,7 +29,7 @@ int arch_cpu_init(void)
 	return x86_cpu_init_f();
 }
 
-int board_early_init_f(void)
+int checkcpu(void)
 {
 	return 0;
 }
@@ -76,17 +76,10 @@ int last_stage_init(void)
 	if (gd->flags & GD_FLG_COLD_BOOT)
 		timestamp_add_to_bootstage();
 
+	/* start usb so that usb keyboard can be used as input device */
+	usb_init();
+
 	board_final_cleanup();
 
-	return 0;
-}
-
-int misc_init_r(void)
-{
-	return 0;
-}
-
-int arch_misc_init(void)
-{
 	return 0;
 }

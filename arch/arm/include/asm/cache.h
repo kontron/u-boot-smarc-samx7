@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2009
  * Marvell Semiconductor <www.marvell.com>
  * Written-by: Prafulla Wadaskar <prafulla@marvell.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _ASM_CACHE_H
@@ -16,7 +15,7 @@
 /*
  * Invalidate L2 Cache using co-proc instruction
  */
-#ifdef CONFIG_SYS_THUMB_BUILD
+#if CONFIG_IS_ENABLED(SYS_THUMB_BUILD)
 void invalidate_l2_cache(void);
 #else
 static inline void invalidate_l2_cache(void)

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2008-2011
  * Graeme Russ, <graeme.russ@gmail.com>
@@ -15,8 +16,6 @@
  *
  * Part of this file is adapted from coreboot
  * src/arch/x86/lib/cpu.c
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -25,6 +24,9 @@
 #include <errno.h>
 #include <malloc.h>
 #include <syscon.h>
+#include <asm/acpi.h>
+#include <asm/acpi_s3.h>
+#include <asm/acpi_table.h>
 #include <asm/control_regs.h>
 #include <asm/coreboot_tables.h>
 #include <asm/cpu.h>
@@ -74,35 +76,9 @@ int x86_init_cache(void)
 }
 int init_cache(void) __attribute__((weak, alias("x86_init_cache")));
 
-int do_reset(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
-{
-	printf("resetting ...\n");
-
-	/* wait 50 ms */
-	udelay(50000);
-	disable_interrupts();
-	reset_cpu(0);
-
-	/*NOTREACHED*/
-	return 0;
-}
-
 void  flush_cache(unsigned long dummy1, unsigned long dummy2)
 {
 	asm("wbinvd\n");
-}
-
-__weak void reset_cpu(ulong addr)
-{
-	/* Do a hard reset through the chipset's reset control register */
-	outb(SYS_RST | RST_CPU, IO_PORT_RESET);
-	for (;;)
-		cpu_hlt();
-}
-
-void x86_full_reset(void)
-{
-	outb(FULL_RST | SYS_RST | RST_CPU, IO_PORT_RESET);
 }
 
 /* Define these functions to allow ehch-hcd to function */
@@ -141,8 +117,8 @@ const char *cpu_vendor_name(int vendor)
 {
 	const char *name;
 	name = "<invalid cpu vendor>";
-	if ((vendor < (ARRAY_SIZE(x86_vendor_name))) &&
-	    (x86_vendor_name[vendor] != 0))
+	if (vendor < ARRAY_SIZE(x86_vendor_name) &&
+	    x86_vendor_name[vendor])
 		name = x86_vendor_name[vendor];
 
 	return name;
@@ -179,6 +155,11 @@ int default_print_cpuinfo(void)
 	       cpu_has_64bit() ? "x86_64" : "x86",
 	       cpu_vendor_name(gd->arch.x86_vendor), gd->arch.x86_device);
 
+#ifdef CONFIG_HAVE_ACPI_RESUME
+	debug("ACPI previous sleep state: %s\n",
+	      acpi_ss_string(gd->arch.prev_sleep_state));
+#endif
+
 	return 0;
 }
 
@@ -187,7 +168,7 @@ void show_boot_progress(int val)
 	outb(val, POST_PORT);
 }
 
-#ifndef CONFIG_SYS_COREBOOT
+#if !defined(CONFIG_SYS_COREBOOT) && !defined(CONFIG_EFI_STUB)
 /*
  * Implement a weak default function for boards that optionally
  * need to clean up the system before jumping to the kernel.
@@ -198,9 +179,31 @@ __weak void board_final_cleanup(void)
 
 int last_stage_init(void)
 {
-	write_tables();
+	struct acpi_fadt __maybe_unused *fadt;
 
 	board_final_cleanup();
+
+#ifdef CONFIG_HAVE_ACPI_RESUME
+	fadt = acpi_find_fadt();
+
+	if (fadt && gd->arch.prev_sleep_state == ACPI_S3)
+		acpi_resume(fadt);
+#endif
+
+	write_tables();
+
+#ifdef CONFIG_GENERATE_ACPI_TABLE
+	fadt = acpi_find_fadt();
+
+	/* Don't touch ACPI hardware on HW reduced platforms */
+	if (fadt && !(fadt->flags & ACPI_FADT_HW_REDUCED_ACPI)) {
+		/*
+		 * Other than waiting for OSPM to request us to switch to ACPI
+		 * mode, do it by ourselves, since SMI will not be triggered.
+		 */
+		enter_acpi_mode(fadt->pm1a_cnt_blk);
+	}
+#endif
 
 	return 0;
 }
@@ -263,6 +266,18 @@ int reserve_arch(void)
 #ifdef CONFIG_SEABIOS
 	high_table_reserve();
 #endif
+
+#ifdef CONFIG_HAVE_ACPI_RESUME
+	acpi_s3_reserve();
+
+#ifdef CONFIG_HAVE_FSP
+	/*
+	 * Save stack address to CMOS so that at next S3 boot,
+	 * we can use it as the stack address for fsp_contiue()
+	 */
+	fsp_save_s3_stack();
+#endif /* CONFIG_HAVE_FSP */
+#endif /* CONFIG_HAVE_ACPI_RESUME */
 
 	return 0;
 }

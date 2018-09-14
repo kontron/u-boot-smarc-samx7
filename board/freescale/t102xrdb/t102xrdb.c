@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2014 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:     GPL-2.0+
  */
 
 #include <common.h>
@@ -167,6 +166,13 @@ unsigned long get_board_ddr_clk(void)
 	return CONFIG_DDR_CLK_FREQ;
 }
 
+#ifdef CONFIG_TARGET_T1024RDB
+void board_reset(void)
+{
+	CPLD_WRITE(reset_ctl1, CPLD_LBMAP_RESET);
+}
+#endif
+
 int misc_init_r(void)
 {
 	return 0;
@@ -179,8 +185,8 @@ int ft_board_setup(void *blob, bd_t *bd)
 
 	ft_cpu_setup(blob, bd);
 
-	base = getenv_bootm_low();
-	size = getenv_bootm_size();
+	base = env_get_bootm_low();
+	size = env_get_bootm_size();
 
 	fdt_fixup_memory(blob, (u64)base, (u64)size);
 

@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2008 - 2013 Tensilica Inc.
  * (C) Copyright 2014 - 2016 Cadence Design Systems Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -45,5 +44,10 @@ int print_cpuinfo(void)
 int arch_cpu_init(void)
 {
 	gd->ram_size = CONFIG_SYS_SDRAM_SIZE;
+	return 0;
+}
+
+int dram_init(void)
+{
 	return 0;
 }

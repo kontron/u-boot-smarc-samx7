@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2016 Cadence Design Systems Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
-#include <asm/relocate.h>
+#include <relocate.h>
 #include <asm/sections.h>
 #include <asm/string.h>
 

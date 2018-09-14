@@ -1,6 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2011 The Chromium OS Authors.
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -343,7 +343,7 @@ static int tegra_lcd_ofdata_to_platdata(struct udevice *dev)
 	int rgb;
 	int ret;
 
-	priv->disp = (struct disp_ctlr *)dev_get_addr(dev);
+	priv->disp = (struct disp_ctlr *)devfdt_get_addr(dev);
 	if (!priv->disp) {
 		debug("%s: No display controller address\n", __func__);
 		return -EINVAL;

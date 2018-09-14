@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Qualcomm GPIO driver
  *
  * (C) Copyright 2015 Mateusz Kulikowski <mateusz.kulikowski@gmail.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -97,7 +96,7 @@ static int msm_gpio_probe(struct udevice *dev)
 {
 	struct msm_gpio_bank *priv = dev_get_priv(dev);
 
-	priv->base = dev_get_addr(dev);
+	priv->base = devfdt_get_addr(dev);
 
 	return priv->base == FDT_ADDR_T_NONE ? -EINVAL : 0;
 }

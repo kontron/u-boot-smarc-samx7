@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2005
  * Wolfgang Denk, DENX Software Engineering, wd@denx.de.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -66,7 +65,7 @@ int board_early_init_r (void) {
 /**************************************************************************
  * DRAM initalization and size detection
  */
-phys_size_t initdram (int board_type)
+int dram_init(void)
 {
 	long bank_size;
 	long size;
@@ -112,7 +111,9 @@ phys_size_t initdram (int board_type)
 		if(size < DDR_MAX_SIZE_PER_CS) break;
 	}
 
-	return size;
+	gd->ram_size = size;
+
+	return 0;
 }
 
 /**************************************************************************

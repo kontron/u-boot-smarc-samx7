@@ -1,10 +1,9 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2007-2009 Michal Simek
  * (C) Copyright 2003 Xilinx Inc.
  *
  * Michal SIMEK <monstr@monstr.eu>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -598,7 +597,7 @@ static int emaclite_ofdata_to_platdata(struct udevice *dev)
 	struct xemaclite *emaclite = dev_get_priv(dev);
 	int offset = 0;
 
-	pdata->iobase = (phys_addr_t)dev_get_addr(dev);
+	pdata->iobase = (phys_addr_t)devfdt_get_addr(dev);
 	emaclite->regs = (struct emaclite_regs *)ioremap_nocache(pdata->iobase,
 								 0x10000);
 

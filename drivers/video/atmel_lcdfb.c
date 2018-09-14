@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Driver for AT91/AT32 LCD Controller
  *
  * Copyright (C) 2007 Atmel Corporation
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -150,11 +149,7 @@ static void atmel_fb_init(ulong addr, struct display_timing *timing, int bpix,
 			    value << ATMEL_LCDC_CLKVAL_OFFSET);
 
 	/* Initialize control register 2 */
-#ifdef CONFIG_AVR32
-	value = ATMEL_LCDC_MEMOR_BIG | ATMEL_LCDC_CLKMOD_ALWAYSACTIVE;
-#else
 	value = ATMEL_LCDC_MEMOR_LITTLE | ATMEL_LCDC_CLKMOD_ALWAYSACTIVE;
-#endif
 	if (tft)
 		value |= ATMEL_LCDC_DISTYPE_TFT;
 

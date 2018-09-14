@@ -1,13 +1,12 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2007 - 2013 Tensilica Inc.
  * (C) Copyright 2014 - 2016 Cadence Design Systems Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <command.h>
-#include <dm/platdata.h>
+#include <dm.h>
 #include <dm/platform_data/net_ethoc.h>
 #include <linux/ctype.h>
 #include <linux/string.h>
@@ -48,10 +47,12 @@ int checkboard(void)
 	return 0;
 }
 
-void dram_init_banksize(void)
+int dram_init_banksize(void)
 {
 	gd->bd->bi_memstart = PHYSADDR(CONFIG_SYS_SDRAM_BASE);
 	gd->bd->bi_memsize = CONFIG_SYS_SDRAM_SIZE;
+
+	return 0;
 }
 
 int board_postclk_init(void)
@@ -84,14 +85,14 @@ int misc_init_r(void)
 	 * Default MAC address comes from CONFIG_ETHADDR + DIP switches 1-6.
 	 */
 
-	char *s = getenv("ethaddr");
+	char *s = env_get("ethaddr");
 	if (s == 0) {
 		unsigned int x;
 		char s[] = __stringify(CONFIG_ETHBASE);
 		x = (*(volatile u32 *)CONFIG_SYS_FPGAREG_DIPSW)
 			& FPGAREG_MAC_MASK;
 		sprintf(&s[15], "%02x", x);
-		setenv("ethaddr", s);
+		env_set("ethaddr", s);
 	}
 #endif /* CONFIG_CMD_NET */
 

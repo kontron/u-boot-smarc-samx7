@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2008
  * Sergei Poselenov, Emcraft Systems, sposelenov@emcraft.com.
@@ -6,8 +7,6 @@
  * Copyright 2004 Freescale Semiconductor.
  * (C) Copyright 2002,2003 Motorola,Inc.
  * Xianghua Xiao <X.Xiao@motorola.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -20,14 +19,7 @@
 /* High Level Configuration Options */
 #define CONFIG_SOCRATES		1
 
-#define	CONFIG_SYS_TEXT_BASE	0xfff80000
-
 #define CONFIG_PCI_INDIRECT_BRIDGE
-
-#define CONFIG_TSEC_ENET		/* tsec ethernet support	*/
-
-#define CONFIG_MISC_INIT_R	1	/* Call misc_init_r		*/
-#define CONFIG_BOARD_EARLY_INIT_R 1	/* Call board_early_init_r	*/
 
 /*
  * Only possible on E500 Version 2 or newer cores.
@@ -152,7 +144,6 @@
 
 #define CONFIG_SYS_NAND_BASE		(CONFIG_SYS_FPGA_BASE + 0x70)
 #define CONFIG_SYS_MAX_NAND_DEVICE	1
-#define CONFIG_CMD_NAND
 
 /* LIME GDC */
 #define CONFIG_SYS_LIME_BASE		0xc8000000
@@ -177,7 +168,6 @@
 
 /* Serial Port */
 
-#define CONFIG_CONS_INDEX     1
 #define CONFIG_SYS_NS16550_SERIAL
 #define CONFIG_SYS_NS16550_REG_SIZE	1
 #define CONFIG_SYS_NS16550_CLK		get_bus_freq(0)
@@ -185,13 +175,8 @@
 #define CONFIG_SYS_NS16550_COM1	(CONFIG_SYS_CCSRBAR+0x4500)
 #define CONFIG_SYS_NS16550_COM2	(CONFIG_SYS_CCSRBAR+0x4600)
 
-#define CONFIG_BAUDRATE         115200
-
 #define CONFIG_SYS_BAUDRATE_TABLE  \
 	{300, 600, 1200, 2400, 4800, 9600, 19200, 38400,115200}
-
-#define CONFIG_CMDLINE_EDITING	1	/* add command line history	*/
-#define CONFIG_AUTO_COMPLETE	1	/* add autocompletion support */
 
 /*
  * I2C
@@ -212,13 +197,6 @@
 /* I2C W83782G HW-Monitoring IC */
 #define CONFIG_SYS_I2C_W83782G_ADDR	0x28	/* W83782G address 		*/
 
-/* I2C temp sensor */
-/* Socrates uses Maxim's	DS75, which is compatible with LM75 */
-#define CONFIG_DTT_LM75		1
-#define CONFIG_DTT_SENSORS	{4}		/* Sensor addresses	*/
-#define CONFIG_SYS_DTT_MAX_TEMP	125
-#define CONFIG_SYS_DTT_LOW_TEMP	-55
-#define CONFIG_SYS_DTT_HYSTERESIS	3
 #define CONFIG_SYS_EEPROM_PAGE_WRITE_BITS	4
 
 /*
@@ -240,7 +218,6 @@
 #undef CONFIG_PCI_SCAN_SHOW		/* show pci devices on startup	*/
 #endif	/* CONFIG_PCI */
 
-#define CONFIG_MII		1	/* MII PHY management */
 #define CONFIG_TSEC1	1
 #define CONFIG_TSEC1_NAME	"TSEC0"
 #define CONFIG_TSEC3	1
@@ -257,7 +234,6 @@
 
 /* Options are: TSEC[0,1] */
 #define CONFIG_ETHPRIME		"TSEC0"
-#define CONFIG_PHY_GIGE		1	/* Include GbE speed/duplex detection */
 
 #define CONFIG_HAS_ETH0
 #define CONFIG_HAS_ETH1
@@ -265,7 +241,6 @@
 /*
  * Environment
  */
-#define CONFIG_ENV_IS_IN_FLASH	1
 #define CONFIG_ENV_SECT_SIZE	0x20000 /* 128K(one sector) for env	*/
 #define CONFIG_ENV_ADDR		(CONFIG_SYS_MONITOR_BASE - CONFIG_ENV_SECT_SIZE)
 #define CONFIG_ENV_SIZE		0x4000
@@ -281,41 +256,13 @@
  * BOOTP options
  */
 #define CONFIG_BOOTP_BOOTFILESIZE
-#define CONFIG_BOOTP_BOOTPATH
-#define CONFIG_BOOTP_GATEWAY
-#define CONFIG_BOOTP_HOSTNAME
-
-/*
- * Command line configuration.
- */
-#define CONFIG_CMD_BMP
-#define CONFIG_CMD_DATE
-#define CONFIG_CMD_DTT
-#undef CONFIG_CMD_EEPROM
-#define CONFIG_CMD_SDRAM
-#define CONFIG_CMD_REGINFO
-
-#if defined(CONFIG_PCI)
-    #define CONFIG_CMD_PCI
-#endif
 
 #undef CONFIG_WATCHDOG			/* watchdog disabled		*/
 
 /*
  * Miscellaneous configurable options
  */
-#define CONFIG_SYS_LONGHELP			/* undef to save memory		*/
 #define CONFIG_SYS_LOAD_ADDR	0x2000000	/* default load address		*/
-
-#if defined(CONFIG_CMD_KGDB)
-    #define CONFIG_SYS_CBSIZE	1024		/* Console I/O Buffer Size	*/
-#else
-    #define CONFIG_SYS_CBSIZE	256		/* Console I/O Buffer Size	*/
-#endif
-
-#define CONFIG_SYS_PBSIZE (CONFIG_SYS_CBSIZE+sizeof(CONFIG_SYS_PROMPT)+16) /* Print Buf Size	*/
-#define CONFIG_SYS_MAXARGS	16		/* max number of command args	*/
-#define CONFIG_SYS_BARGSIZE	CONFIG_SYS_CBSIZE	/* Boot Argument Buffer Size	*/
 
 /*
  * For booting Linux, the board info and command line data
@@ -334,8 +281,6 @@
 #define CONFIG_PREBOOT	"echo;"	\
 	"echo Welcome on the ABB Socrates Board;" \
 	"echo"
-
-#undef	CONFIG_BOOTARGS		/* the boot command will set bootargs	*/
 
 #define	CONFIG_EXTRA_ENV_SETTINGS					\
 	"netdev=eth0\0"							\

@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0 */
 /*
  * Copyright (c) 2016, NVIDIA CORPORATION.
- *
- * SPDX-License-Identifier: GPL-2.0
  */
 
 #ifndef _RESET_UCLASS_H
@@ -11,7 +10,7 @@
 
 #include <reset.h>
 
-struct fdtdec_phandle_args;
+struct ofnode_phandle_args;
 struct udevice;
 
 /**
@@ -38,7 +37,7 @@ struct reset_ops {
 	 * @return 0 if OK, or a negative error code.
 	 */
 	int (*of_xlate)(struct reset_ctl *reset_ctl,
-			struct fdtdec_phandle_args *args);
+			struct ofnode_phandle_args *args);
 	/**
 	 * request - Request a translated reset control.
 	 *

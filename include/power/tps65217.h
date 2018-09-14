@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2011-2013
  * Texas Instruments, <www.ti.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  *
  * For more details, please see the TRM at http://www.ti.com/product/tps65217a
  */
@@ -38,6 +37,7 @@ enum {
 	TPS65217_DEFLS1,
 	TPS65217_DEFLS2,
 	TPS65217_ENABLE,
+	TPS65217_RESERVED0, /* no 0x17 register available */
 	TPS65217_DEFUVLO,
 	TPS65217_SEQ1,
 	TPS65217_SEQ2,

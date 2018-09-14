@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2007-2008 Semihalf
  *
  * Written by: Rafal Jaworowski <raj@semihalf.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <config.h>
@@ -43,10 +42,13 @@ struct stor_spec {
 
 static struct stor_spec specs[ENUM_MAX] = { { 0, 0, 0, 0, NULL }, };
 
+#ifndef CONFIG_SYS_MMC_MAX_DEVICE
+#define CONFIG_SYS_MMC_MAX_DEVICE	1
+#endif
 
 void dev_stor_init(void)
 {
-#if defined(CONFIG_CMD_IDE)
+#if defined(CONFIG_IDE)
 	specs[ENUM_IDE].max_dev = CONFIG_SYS_IDE_MAXDEVICE;
 	specs[ENUM_IDE].enum_started = 0;
 	specs[ENUM_IDE].enum_ended = 0;
@@ -60,7 +62,7 @@ void dev_stor_init(void)
 	specs[ENUM_MMC].type = DEV_TYP_STOR | DT_STOR_MMC;
 	specs[ENUM_MMC].name = "mmc";
 #endif
-#if defined(CONFIG_CMD_SATA)
+#if defined(CONFIG_SATA)
 	specs[ENUM_SATA].max_dev = CONFIG_SYS_SATA_MAX_DEVICE;
 	specs[ENUM_SATA].enum_started = 0;
 	specs[ENUM_SATA].enum_ended = 0;
@@ -331,10 +333,14 @@ lbasize_t dev_read_stor(void *cookie, void *buf, lbasize_t len, lbastart_t start
 	if (!dev_stor_is_valid(type, dd))
 		return 0;
 
+#ifdef CONFIG_BLK
+	return blk_dread(dd, start, len, buf);
+#else
 	if ((dd->block_read) == NULL) {
 		debugf("no block_read() for device 0x%08x\n", cookie);
 		return 0;
 	}
 
 	return dd->block_read(dd, start, len, buf);
+#endif	/* defined(CONFIG_BLK) */
 }

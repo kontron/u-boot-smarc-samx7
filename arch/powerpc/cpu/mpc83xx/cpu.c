@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2004-2007 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 /*
@@ -15,7 +14,7 @@
 #include <command.h>
 #include <mpc83xx.h>
 #include <asm/processor.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 #include <tsec.h>
 #include <netdev.h>
 #include <fsl_esdhc.h>
@@ -33,6 +32,7 @@ int checkcpu(void)
 	u32 pvr = get_pvr();
 	u32 spridr;
 	char buf[32];
+	int ret;
 	int i;
 
 	const struct cpu_type {
@@ -60,6 +60,10 @@ int checkcpu(void)
 	};
 
 	immr = (immap_t *)CONFIG_SYS_IMMR;
+
+	ret = prt_83xx_rsr();
+	if (ret)
+		return ret;
 
 	puts("CPU:   ");
 

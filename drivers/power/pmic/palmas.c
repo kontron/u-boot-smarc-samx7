@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2016 Texas Instruments Incorporated, <www.ti.com>
  * Keerthy <j-keerthy@ti.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -15,8 +14,6 @@
 #include <power/palmas.h>
 #include <dm/device.h>
 
-DECLARE_GLOBAL_DATA_PTR;
-
 static const struct pmic_child_info pmic_children_info[] = {
 	{ .prefix = "ldo", .driver = PALMAS_LDO_DRIVER },
 	{ .prefix = "smps", .driver = PALMAS_SMPS_DRIVER },
@@ -27,7 +24,7 @@ static int palmas_write(struct udevice *dev, uint reg, const uint8_t *buff,
 			  int len)
 {
 	if (dm_i2c_write(dev, reg, buff, len)) {
-		error("write error to device: %p register: %#x!", dev, reg);
+		pr_err("write error to device: %p register: %#x!", dev, reg);
 		return -EIO;
 	}
 
@@ -37,7 +34,7 @@ static int palmas_write(struct udevice *dev, uint reg, const uint8_t *buff,
 static int palmas_read(struct udevice *dev, uint reg, uint8_t *buff, int len)
 {
 	if (dm_i2c_read(dev, reg, buff, len)) {
-		error("read error from device: %p register: %#x!", dev, reg);
+		pr_err("read error from device: %p register: %#x!", dev, reg);
 		return -EIO;
 	}
 
@@ -46,17 +43,15 @@ static int palmas_read(struct udevice *dev, uint reg, uint8_t *buff, int len)
 
 static int palmas_bind(struct udevice *dev)
 {
-	int pmic_node = -1, regulators_node;
-	const void *blob = gd->fdt_blob;
+	ofnode pmic_node = ofnode_null(), regulators_node;
+	ofnode subnode;
 	int children;
-	int node = dev_of_offset(dev);
-	int subnode, len;
 
-	fdt_for_each_subnode(subnode, blob, node) {
+	dev_for_each_subnode(subnode, dev) {
 		const char *name;
 		char *temp;
 
-		name = fdt_get_name(blob, subnode, &len);
+		name = ofnode_get_name(subnode);
 		temp = strstr(name, "pmic");
 		if (temp) {
 			pmic_node = subnode;
@@ -64,14 +59,14 @@ static int palmas_bind(struct udevice *dev)
 		}
 	}
 
-	if (pmic_node <= 0) {
+	if (!ofnode_valid(pmic_node)) {
 		debug("%s: %s pmic subnode not found!", __func__, dev->name);
 		return -ENXIO;
 	}
 
-	regulators_node = fdt_subnode_offset(blob, pmic_node, "regulators");
+	regulators_node = ofnode_find_subnode(pmic_node, "regulators");
 
-	if (regulators_node <= 0) {
+	if (!ofnode_valid(regulators_node)) {
 		debug("%s: %s reg subnode not found!", __func__, dev->name);
 		return -ENXIO;
 	}

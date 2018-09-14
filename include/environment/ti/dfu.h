@@ -1,10 +1,12 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (C) 2016 Texas Instruments Incorporated - http://www.ti.com
  *
  * Environment variable definitions for DFU on TI boards.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
+
+#ifndef __TI_DFU_H
+#define __TI_DFU_H
 
 #define DFU_ALT_INFO_MMC \
 	"dfu_alt_info_mmc=" \
@@ -12,9 +14,10 @@
 	"rootfs part 0 2;" \
 	"MLO fat 0 1;" \
 	"MLO.raw raw 0x100 0x100;" \
-	"u-boot.img.raw raw 0x300 0x400;" \
-	"spl-os-args.raw raw 0x80 0x80;" \
-	"spl-os-image.raw raw 0x900 0x2000;" \
+	"u-boot.img.raw raw 0x300 0x1000;" \
+	"u-env.raw raw 0x1300 0x200;" \
+	"spl-os-args.raw raw 0x1500 0x200;" \
+	"spl-os-image.raw raw 0x1700 0x6900;" \
 	"spl-os-args fat 0 1;" \
 	"spl-os-image fat 0 1;" \
 	"u-boot.img fat 0 1;" \
@@ -28,8 +31,9 @@
 	"MLO fat 1 1;" \
 	"MLO.raw raw 0x100 0x100;" \
 	"u-boot.img.raw raw 0x300 0x1000;" \
-	"spl-os-args.raw raw 0x80 0x80;" \
-	"spl-os-image.raw raw 0x900 0x2000;" \
+	"u-env.raw raw 0x1300 0x200;" \
+	"spl-os-args.raw raw 0x1500 0x200;" \
+	"spl-os-image.raw raw 0x1700 0x6900;" \
 	"spl-os-args fat 1 1;" \
 	"spl-os-image fat 1 1;" \
 	"u-boot.img fat 1 1;" \
@@ -73,3 +77,5 @@
 	"u-boot-env raw 0x1C0000 0x010000;" \
 	"u-boot-env.backup raw 0x1D0000 0x010000;" \
 	"kernel raw 0x1E0000 0x800000\0"
+
+#endif /* __TI_DFU_H */

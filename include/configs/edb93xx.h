@@ -29,13 +29,11 @@
 #define CONFIG_CMDLINE_TAG		1
 #define CONFIG_INITRD_TAG		1
 #define CONFIG_SETUP_MEMORY_TAGS	1
-#define CONFIG_BOOTARGS		"root=/dev/nfs console=ttyAM0,115200 ip=dhcp"
 #define CONFIG_BOOTFILE		"edb93xx.img"
 
 #define CONFIG_SYS_LDSCRIPT	"board/cirrus/edb93xx/u-boot.lds"
 
 #ifdef CONFIG_EDB9301
-#define CONFIG_EP9301
 #define CONFIG_MACH_TYPE		MACH_TYPE_EDB9301
 #define CONFIG_ENV_SECT_SIZE		0x00020000
 #elif defined(CONFIG_EDB9302)
@@ -74,24 +72,12 @@
 #define CONFIG_EP93XX		1		/* This is a Cirrus Logic 93xx SoC */
 
 #define CONFIG_SYS_CLK_FREQ	14745600	/* EP93xx has a 14.7456 clock */
-#undef CONFIG_USE_IRQ				/* Don't need IRQ/FIQ */
 
 /* Monitor configuration */
-#undef CONFIG_CMD_DATE
-#define CONFIG_CMD_JFFS2
 
-#define CONFIG_SYS_LONGHELP			/* Enable "long" help in mon */
 #define CONFIG_SYS_CBSIZE		1024	/* Console I/O buffer size */
-/* Print buffer size */
-#define CONFIG_SYS_PBSIZE	(CONFIG_SYS_CBSIZE+sizeof(CONFIG_SYS_PROMPT)+16)
-/* Boot argument buffer size */
-#define CONFIG_SYS_BARGSIZE	CONFIG_SYS_CBSIZE
-#define CONFIG_SYS_MAXARGS	16		/* Max number of command args */
 
 /* Serial port hardware configuration */
-#define CONFIG_PL010_SERIAL
-#define CONFIG_CONS_INDEX		0
-#define CONFIG_BAUDRATE			115200
 #define CONFIG_SYS_BAUDRATE_TABLE	{9600, 19200, 38400, 57600, \
                         115200, 230400}
 #define CONFIG_SYS_SERIAL0		0x808C0000
@@ -107,8 +93,6 @@
 /* Network hardware configuration */
 #define CONFIG_DRIVER_EP93XX_MAC
 #define CONFIG_MII_SUPPRESS_PREAMBLE
-#define CONFIG_MII
-#define CONFIG_PHY_ADDR		1
 #undef CONFIG_NETCONSOLE
 
 /* SDRAM configuration */
@@ -152,7 +136,6 @@
 #endif
 
 #define CONFIG_SYS_SDRAM_BASE		PHYS_SDRAM_1
-#define CONFIG_NR_DRAM_BANKS		8
 
 #define CONFIG_SYS_INIT_SP_ADDR \
     (CONFIG_SYS_SDRAM_BASE + 32*1024 - GENERATED_GBL_DATA_SIZE)
@@ -162,12 +145,6 @@
 
 /* Run-time memory allocatons */
 #define CONFIG_SYS_GBL_DATA_SIZE	128
-#define CONFIG_STACKSIZE		(128 * 1024)
-
-#if defined(CONFIG_USE_IRQ)
-#define CONFIG_STACKSIZE_IRQ	(4 * 1024)
-#define CONFIG_STACKSIZE_FIQ	(4 * 1024)
-#endif
 
 #define CONFIG_SYS_MALLOC_LEN		(512 * 1024)
 
@@ -200,7 +177,6 @@
 #define CONFIG_SYS_MAX_FLASH_BANKS	1
 #define CONFIG_SYS_MAX_FLASH_SECT	(256+8)
 
-#define CONFIG_SYS_TEXT_BASE		0x60000000
 #define PHYS_FLASH_1			CONFIG_SYS_TEXT_BASE
 #define CONFIG_SYS_FLASH_BASE		CONFIG_SYS_TEXT_BASE
 
@@ -208,7 +184,6 @@
 #define CONFIG_SYS_MONITOR_LEN		(256 * 1024)
 
 #define CONFIG_ENV_OVERWRITE		/* Vendor params unprotected */
-#define CONFIG_ENV_IS_IN_FLASH
 
 #define CONFIG_ENV_ADDR			0x60040000
 #define CONFIG_ENV_ADDR_REDUND		(CONFIG_ENV_ADDR + CONFIG_ENV_SECT_SIZE)

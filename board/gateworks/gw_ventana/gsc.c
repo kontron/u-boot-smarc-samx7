@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2013 Gateworks Corporation
  *
  * Author: Tim Harvey <tharvey@gateworks.com>
- *
- * SPDX-License-Identifier: GPL-2.0+
  */
 
 #include <linux/errno.h>
@@ -137,6 +136,10 @@ int gsc_info(int verbose)
 		break;
 	case '5': /* GW55xx */
 		break;
+	case '6': /* GW560x */
+		read_hwmon("VDD_IO4",  GSC_HWMON_VDD_IO4, 3);
+		read_hwmon("VDD_GPS",  GSC_HWMON_VDD_IO3, 3);
+		break;
 	}
 	return 0;
 }
@@ -168,7 +171,7 @@ int gsc_boot_wd_disable(void)
 	return 1;
 }
 
-#ifdef CONFIG_CMD_GSC
+#if defined(CONFIG_CMD_GSC) && !defined(CONFIG_SPL_BUILD)
 static int do_gsc_sleep(cmd_tbl_t *cmdtp, int flag, int argc,
 			char * const argv[])
 {

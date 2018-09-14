@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2013 SAMSUNG Electronics
  * Rajeshwari Shinde <rajeshwari.s@samsung.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -108,7 +107,7 @@ int dram_init(void)
 	return 0;
 }
 
-void dram_init_banksize(void)
+int dram_init_banksize(void)
 {
 	unsigned int i;
 	unsigned long addr, size;
@@ -120,6 +119,8 @@ void dram_init_banksize(void)
 		gd->bd->bi_dram[i].start = addr;
 		gd->bd->bi_dram[i].size = size;
 	}
+
+	return 0;
 }
 
 static int board_uart_init(void)
@@ -248,7 +249,7 @@ int board_eth_init(bd_t *bis)
 	return 0;
 }
 
-#ifdef CONFIG_GENERIC_MMC
+#ifdef CONFIG_MMC
 static int init_mmc(void)
 {
 #ifdef CONFIG_MMC_SDHCI
@@ -349,8 +350,8 @@ void reset_misc(void)
 	if (node < 0)
 		return;
 
-	gpio_request_by_name_nodev(gd->fdt_blob, node, "reset-gpio", 0, &gpio,
-				   GPIOD_IS_OUT);
+	gpio_request_by_name_nodev(offset_to_ofnode(node), "reset-gpio", 0,
+				   &gpio, GPIOD_IS_OUT);
 
 	if (dm_gpio_is_valid(&gpio)) {
 		/*

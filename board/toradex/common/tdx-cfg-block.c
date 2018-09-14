@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2016 Toradex, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -23,6 +22,7 @@
 #include <malloc.h>
 #include <mmc.h>
 #include <nand.h>
+#include <asm/mach-types.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -91,6 +91,13 @@ const char * const toradex_modules[] = {
 	[33] = "Colibri iMX7 Dual 512MB",
 	[34] = "Apalis TK1 2GB",
 	[35] = "Apalis iMX6 Dual 1GB IT",
+	[36] = "Colibri iMX6ULL 256MB",
+	[37] = "Apalis iMX8 QuadMax 4GB Wi-Fi / Bluetooth",
+	[38] = "Colibri iMX8X",
+	[39] = "Colibri iMX7 Dual 1GB (eMMC)",
+	[40] = "Colibri iMX6ULL 512MB Wi-Fi / Bluetooth IT",
+	[41] = "Colibri iMX7 Dual 512MB EPDC",
+	[42] = "Apalis TK1 4GB",
 };
 
 #ifdef CONFIG_TDX_CFG_BLOCK_IS_IN_MMC
@@ -110,7 +117,7 @@ static int tdx_cfg_block_mmc_storage(u8 *config_block, int write)
 		ret = -ENODEV;
 		goto out;
 	}
-	if (part != mmc->block_dev.hwpart) {
+	if (part != mmc_get_blk_desc(mmc)->hwpart) {
 		if (blk_select_hwpart_devnum(IF_TYPE_MMC, dev, part)) {
 			puts("MMC partition switch failed\n");
 			ret = -ENODEV;
@@ -128,8 +135,6 @@ static int tdx_cfg_block_mmc_storage(u8 *config_block, int write)
 			ret = -EIO;
 			goto out;
 		}
-		/* Flush cache after read */
-		flush_cache((ulong)(unsigned char *)config_block, 512);
 	} else {
 		/* Just writing one 512 byte block */
 		if (blk_dwrite(mmc_get_blk_desc(mmc), blk_start, 1,
@@ -151,10 +156,15 @@ out:
 static int read_tdx_cfg_block_from_nand(unsigned char *config_block)
 {
 	size_t size = TDX_CFG_BLOCK_MAX_SIZE;
+	struct mtd_info *mtd = get_nand_dev_by_index(0);
+
+	if (!mtd)
+		return -ENODEV;
 
 	/* Read production parameter config block from NAND page */
-	return nand_read_skip_bad(nand_info[0], CONFIG_TDX_CFG_BLOCK_OFFSET,
-			 &size, NULL, TDX_CFG_BLOCK_MAX_SIZE, config_block);
+	return nand_read_skip_bad(mtd, CONFIG_TDX_CFG_BLOCK_OFFSET,
+				  &size, NULL, TDX_CFG_BLOCK_MAX_SIZE,
+				  config_block);
 }
 
 static int write_tdx_cfg_block_to_nand(unsigned char *config_block)
@@ -162,7 +172,8 @@ static int write_tdx_cfg_block_to_nand(unsigned char *config_block)
 	size_t size = TDX_CFG_BLOCK_MAX_SIZE;
 
 	/* Write production parameter config block to NAND page */
-	return nand_write_skip_bad(nand_info[0], CONFIG_TDX_CFG_BLOCK_OFFSET,
+	return nand_write_skip_bad(get_nand_dev_by_index(0),
+				   CONFIG_TDX_CFG_BLOCK_OFFSET,
 				   &size, NULL, TDX_CFG_BLOCK_MAX_SIZE,
 				   config_block, WITH_WR_VERIFY);
 }
@@ -274,7 +285,7 @@ static int get_cfgblock_interactive(void)
 	len = cli_readline(message);
 	it = console_buffer[0];
 
-	soc = getenv("soc");
+	soc = env_get("soc");
 	if (!strcmp("mx6", soc)) {
 #ifdef CONFIG_MACH_TYPE
 		if (it == 'y' || it == 'Y')
@@ -425,7 +436,8 @@ static int do_cfgblock_create(cmd_tbl_t *cmdtp, int flag, int argc,
 		 * empty (config block invalid...)
 		 */
 		printf("NAND erase block %d need to be erased before creating a Toradex config block\n",
-		       CONFIG_TDX_CFG_BLOCK_OFFSET / nand_info[0]->erasesize);
+		       CONFIG_TDX_CFG_BLOCK_OFFSET /
+		       get_nand_dev_by_index(0)->erasesize);
 		goto out;
 #elif defined(CONFIG_TDX_CFG_BLOCK_IS_IN_NOR)
 		/*

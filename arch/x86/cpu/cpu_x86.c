@@ -1,7 +1,6 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2015, Bin Meng <bmeng.cn@gmail.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -41,10 +40,14 @@ int cpu_x86_get_vendor(struct udevice *dev, char *buf, int size)
 
 int cpu_x86_get_desc(struct udevice *dev, char *buf, int size)
 {
+	char *ptr;
+
 	if (size < CPU_MAX_NAME_LEN)
 		return -ENOSPC;
 
-	cpu_get_name(buf);
+	ptr = cpu_get_name(buf);
+	if (ptr != buf)
+		strcpy(buf, ptr);
 
 	return 0;
 }

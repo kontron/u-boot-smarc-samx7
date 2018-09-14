@@ -1,10 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright 2015 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
+#include <dm.h>
 #include <fsl_validate.h>
 #include <fsl_secboot_err.h>
 #include <fsl_sfp.h>
@@ -22,7 +22,7 @@
 #include <asm/fsl_pamu.h>
 #endif
 
-#ifdef CONFIG_LS102XA
+#ifdef CONFIG_ARCH_LS1021A
 #include <asm/arch/immap_ls102xa.h>
 #endif
 
@@ -79,8 +79,14 @@ int fsl_setenv_chain_of_trust(void)
 	 * bootdelay = 0 (To disable Boot Prompt)
 	 * bootcmd = CONFIG_CHAIN_BOOT_CMD (Validate and execute Boot script)
 	 */
-	setenv("bootdelay", "0");
-	setenv("bootcmd", CONFIG_CHAIN_BOOT_CMD);
+	env_set("bootdelay", "0");
+
+#ifdef CONFIG_ARM
+	env_set("secureboot", "y");
+#else
+	env_set("bootcmd", CONFIG_CHAIN_BOOT_CMD);
+#endif
+
 	return 0;
 }
 #endif

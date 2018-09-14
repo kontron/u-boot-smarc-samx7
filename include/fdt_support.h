@@ -1,8 +1,7 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2007
  * Gerald Van Baren, Custom IDEAS, vanbaren@cideas.com
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __FDT_SUPPORT_H
@@ -10,7 +9,7 @@
 
 #ifdef CONFIG_OF_LIBFDT
 
-#include <libfdt.h>
+#include <linux/libfdt.h>
 
 u32 fdt_getprop_u32_default_node(const void *fdt, int off, int cell,
 				const char *prop, const u32 dflt);
@@ -133,6 +132,24 @@ void fdt_fixup_crypto_node(void *blob, int sec_rev);
 static inline void fdt_fixup_crypto_node(void *blob, int sec_rev) {}
 #endif
 
+/**
+ * Record information about a processed loadable in /fit-images (creating
+ * /fit-images if necessary).
+ *
+ * @param blob		FDT blob to update
+ * @param index	        index of this loadable
+ * @param name          name of the loadable
+ * @param load_addr     address the loadable was loaded to
+ * @param size          number of bytes loaded
+ * @param entry_point   entry point (if specified, otherwise pass -1)
+ * @param type          type (if specified, otherwise pass NULL)
+ * @param os            os-type (if specified, otherwise pass NULL)
+ * @return 0 if ok, or -1 or -FDT_ERR_... on error
+ */
+int fdt_record_loadable(void *blob, u32 index, const char *name,
+			uintptr_t load_addr, u32 size, uintptr_t entry_point,
+			const char *type, const char *os);
+
 #ifdef CONFIG_PCI
 #include <pci.h>
 int fdt_pci_dma_ranges(void *blob, int phb_off, struct pci_controller *hose);
@@ -188,11 +205,16 @@ int fdt_increase_size(void *fdt, int add_len);
 
 int fdt_fixup_nor_flash_size(void *blob);
 
+struct node_info;
 #if defined(CONFIG_FDT_FIXUP_PARTITIONS)
-void fdt_fixup_mtdparts(void *fdt, void *node_info, int node_info_size);
+void fdt_fixup_mtdparts(void *fdt, const struct node_info *node_info,
+			int node_info_size);
 #else
-static inline void fdt_fixup_mtdparts(void *fdt, void *node_info,
-					int node_info_size) {}
+static inline void fdt_fixup_mtdparts(void *fdt,
+				      const struct node_info *node_info,
+				      int node_info_size)
+{
+}
 #endif
 
 void fdt_del_node_and_alias(void *blob, const char *alias);
@@ -207,7 +229,7 @@ int fdt_add_edid(void *blob, const char *compat, unsigned char *buf);
 
 int fdt_verify_alias_address(void *fdt, int anode, const char *alias,
 			      u64 addr);
-u64 fdt_get_base_address(void *fdt, int node);
+u64 fdt_get_base_address(const void *fdt, int node);
 int fdt_read_range(void *fdt, int node, int n, uint64_t *child_addr,
 		   uint64_t *addr, uint64_t *len);
 
@@ -248,7 +270,7 @@ static inline int fdt_status_fail_by_alias(void *fdt, const char *alias)
 }
 
 /* Helper to read a big number; size is in cells (not bytes) */
-static inline u64 of_read_number(const fdt32_t *cell, int size)
+static inline u64 fdt_read_number(const fdt32_t *cell, int size)
 {
 	u64 r = 0;
 	while (size--)
@@ -256,7 +278,7 @@ static inline u64 of_read_number(const fdt32_t *cell, int size)
 	return r;
 }
 
-void of_bus_default_count_cells(const void *blob, int parentoffset,
+void fdt_support_default_count_cells(const void *blob, int parentoffset,
 					int *addrc, int *sizec);
 int ft_verify_fdt(void *fdt);
 int arch_fixup_memory_node(void *blob);
@@ -264,10 +286,28 @@ int arch_fixup_memory_node(void *blob);
 int fdt_setup_simplefb_node(void *fdt, int node, u64 base_address, u32 width,
 			    u32 height, u32 stride, const char *format);
 
+int fdt_overlay_apply_verbose(void *fdt, void *fdto);
+
+/**
+ * fdt_get_cells_len() - Get the length of a type of cell in top-level nodes
+ *
+ * Returns the length of the cell type in bytes (4 or 8).
+ *
+ * @blob: Pointer to device tree blob
+ * @nr_cells_name: Name to lookup, e.g. "#address-cells"
+ */
+int fdt_get_cells_len(const void *blob, char *nr_cells_name);
+
 #endif /* ifdef CONFIG_OF_LIBFDT */
 
 #ifdef USE_HOSTCC
 int fdtdec_get_int(const void *blob, int node, const char *prop_name,
 		int default_val);
+#endif
+#ifdef CONFIG_FMAN_ENET
+int fdt_update_ethernet_dt(void *blob);
+#endif
+#ifdef CONFIG_FSL_MC_ENET
+void fdt_fixup_board_enet(void *blob);
 #endif
 #endif /* ifndef __FDT_SUPPORT_H */

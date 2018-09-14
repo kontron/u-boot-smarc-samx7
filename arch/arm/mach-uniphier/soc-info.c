@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2017 Socionext Inc.
  *   Author: Masahiro Yamada <yamada.masahiro@socionext.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <linux/io.h>
@@ -26,7 +25,7 @@ unsigned int uniphier_get_soc_id(void)
 
 unsigned int uniphier_get_soc_model(void)
 {
-	return __uniphier_get_revision_field(0x3, 8);
+	return __uniphier_get_revision_field(0x7, 8);
 }
 
 unsigned int uniphier_get_soc_revision(void)

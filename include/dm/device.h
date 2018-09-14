@@ -1,22 +1,23 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright (c) 2013 Google, Inc
  *
  * (C) Copyright 2012
  * Pavel Herrmann <morpheus.ibis@gmail.com>
  * Marek Vasut <marex@denx.de>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _DM_DEVICE_H
 #define _DM_DEVICE_H
 
+#include <dm/ofnode.h>
 #include <dm/uclass-id.h>
 #include <fdtdec.h>
 #include <linker_lists.h>
 #include <linux/compat.h>
 #include <linux/kernel.h>
 #include <linux/list.h>
+#include <linux/printk.h>
 
 struct driver_info;
 
@@ -46,6 +47,41 @@ struct driver_info;
 
 #define DM_FLAG_OF_PLATDATA		(1 << 8)
 
+/*
+ * Call driver remove function to stop currently active DMA transfers or
+ * give DMA buffers back to the HW / controller. This may be needed for
+ * some drivers to do some final stage cleanup before the OS is called
+ * (U-Boot exit)
+ */
+#define DM_FLAG_ACTIVE_DMA		(1 << 9)
+
+/*
+ * Call driver remove function to do some final configuration, before
+ * U-Boot exits and the OS is started
+ */
+#define DM_FLAG_OS_PREPARE		(1 << 10)
+
+/*
+ * One or multiple of these flags are passed to device_remove() so that
+ * a selective device removal as specified by the remove-stage and the
+ * driver flags can be done.
+ */
+enum {
+	/* Normal remove, remove all devices */
+	DM_REMOVE_NORMAL     = 1 << 0,
+
+	/* Remove devices with active DMA */
+	DM_REMOVE_ACTIVE_DMA = DM_FLAG_ACTIVE_DMA,
+
+	/* Remove devices which need some final OS preparation steps */
+	DM_REMOVE_OS_PREPARE = DM_FLAG_OS_PREPARE,
+
+	/* Add more use cases here */
+
+	/* Remove devices with any active flag */
+	DM_REMOVE_ACTIVE_ALL = DM_REMOVE_ACTIVE_DMA | DM_REMOVE_OS_PREPARE,
+};
+
 /**
  * struct udevice - An instance of a driver
  *
@@ -68,7 +104,7 @@ struct driver_info;
  * @platdata: Configuration data for this device
  * @parent_platdata: The parent bus's configuration data for this device
  * @uclass_platdata: The uclass's configuration data for this device
- * @of_offset: Device tree node offset for this device (- for none)
+ * @node: Reference to device tree node for this device
  * @driver_data: Driver data word for the entry that matched this device with
  *		its driver
  * @parent: Parent of this device, or NULL for the top level device
@@ -94,7 +130,7 @@ struct udevice {
 	void *platdata;
 	void *parent_platdata;
 	void *uclass_platdata;
-	int of_offset;
+	ofnode node;
 	ulong driver_data;
 	struct udevice *parent;
 	void *priv;
@@ -123,12 +159,17 @@ struct udevice {
 
 static inline int dev_of_offset(const struct udevice *dev)
 {
-	return dev->of_offset;
+	return ofnode_to_offset(dev->node);
 }
 
 static inline void dev_set_of_offset(struct udevice *dev, int of_offset)
 {
-	dev->of_offset = of_offset;
+	dev->node = offset_to_ofnode(of_offset);
+}
+
+static inline bool dev_has_of_node(struct udevice *dev)
+{
+	return ofnode_valid(dev->node);
 }
 
 /**
@@ -161,7 +202,7 @@ struct udevice_id {
  * it.
  *
  * @name: Device name
- * @id: Identiies the uclass we belong to
+ * @id: Identifies the uclass we belong to
  * @of_match: List of compatible strings to match, and any identifying data
  * for each.
  * @bind: Called to bind a device to its driver
@@ -432,18 +473,33 @@ int device_get_child_by_of_offset(struct udevice *parent, int of_offset,
 				  struct udevice **devp);
 
 /**
- * device_get_global_by_of_offset() - Get a device based on FDT offset
+ * device_find_global_by_ofnode() - Get a device based on ofnode
  *
- * Locates a device by its device tree offset, searching globally throughout
+ * Locates a device by its device tree ofnode, searching globally throughout
+ * the all driver model devices.
+ *
+ * The device is NOT probed
+ *
+ * @node: Device tree ofnode to find
+ * @devp: Returns pointer to device if found, otherwise this is set to NULL
+ * @return 0 if OK, -ve on error
+ */
+
+int device_find_global_by_ofnode(ofnode node, struct udevice **devp);
+
+/**
+ * device_get_global_by_ofnode() - Get a device based on ofnode
+ *
+ * Locates a device by its device tree ofnode, searching globally throughout
  * the all driver model devices.
  *
  * The device is probed to activate it ready for use.
  *
- * @of_offset: Device tree offset to find
+ * @node: Device tree ofnode to find
  * @devp: Returns pointer to device if found, otherwise this is set to NULL
  * @return 0 if OK, -ve on error
  */
-int device_get_global_by_of_offset(int of_offset, struct udevice **devp);
+int device_get_global_by_ofnode(ofnode node, struct udevice **devp);
 
 /**
  * device_find_first_child() - Find the first child of a device
@@ -462,77 +518,6 @@ int device_find_first_child(struct udevice *parent, struct udevice **devp);
  * @return 0
  */
 int device_find_next_child(struct udevice **devp);
-
-/**
- * dev_get_addr() - Get the reg property of a device
- *
- * @dev: Pointer to a device
- *
- * @return addr
- */
-fdt_addr_t dev_get_addr(struct udevice *dev);
-
-/**
- * dev_get_addr_ptr() - Return pointer to the address of the reg property
- *                      of a device
- *
- * @dev: Pointer to a device
- *
- * @return Pointer to addr, or NULL if there is no such property
- */
-void *dev_get_addr_ptr(struct udevice *dev);
-
-/**
- * dev_map_physmem() - Read device address from reg property of the
- *                     device node and map the address into CPU address
- *                     space.
- *
- * @dev: Pointer to device
- * @size: size of the memory to map
- *
- * @return  mapped address, or NULL if the device does not have reg
- *          property.
- */
-void *dev_map_physmem(struct udevice *dev, unsigned long size);
-
-/**
- * dev_get_addr_index() - Get the indexed reg property of a device
- *
- * @dev: Pointer to a device
- * @index: the 'reg' property can hold a list of <addr, size> pairs
- *	   and @index is used to select which one is required
- *
- * @return addr
- */
-fdt_addr_t dev_get_addr_index(struct udevice *dev, int index);
-
-/**
- * dev_get_addr_size_index() - Get the indexed reg property of a device
- *
- * Returns the address and size specified in the 'reg' property of a device.
- *
- * @dev: Pointer to a device
- * @index: the 'reg' property can hold a list of <addr, size> pairs
- *	   and @index is used to select which one is required
- * @size: Pointer to size varible - this function returns the size
- *        specified in the 'reg' property here
- *
- * @return addr
- */
-fdt_addr_t dev_get_addr_size_index(struct udevice *dev, int index,
-				   fdt_size_t *size);
-
-/**
- * dev_get_addr_name() - Get the reg property of a device, indexed by name
- *
- * @dev: Pointer to a device
- * @name: the 'reg' property can hold a list of <addr, size> pairs, with the
- *	  'reg-names' property providing named-based identification. @index
- *	  indicates the value to search for in 'reg-names'.
- *
- * @return addr
- */
-fdt_addr_t dev_get_addr_name(struct udevice *dev, const char *name);
 
 /**
  * device_has_children() - check if a device has any children
@@ -593,7 +578,7 @@ int device_set_name(struct udevice *dev, const char *name);
 void device_set_name_alloced(struct udevice *dev);
 
 /**
- * of_device_is_compatible() - check if the device is compatible with the compat
+ * device_is_compatible() - check if the device is compatible with the compat
  *
  * This allows to check whether the device is comaptible with the compat.
  *
@@ -602,7 +587,7 @@ void device_set_name_alloced(struct udevice *dev);
  *		device
  * @return true if OK, false if the compatible is not found
  */
-bool of_device_is_compatible(struct udevice *dev, const char *compat);
+bool device_is_compatible(struct udevice *dev, const char *compat);
 
 /**
  * of_machine_is_compatible() - check if the machine is compatible with
@@ -909,25 +894,75 @@ static inline void devm_kfree(struct udevice *dev, void *ptr)
 
 #endif /* ! CONFIG_DEVRES */
 
-/**
- * dm_set_translation_offset() - Set translation offset
- * @offs: Translation offset
- *
- * Some platforms need a special address translation. Those
- * platforms (e.g. mvebu in SPL) can configure a translation
- * offset in the DM by calling this function. It will be
- * added to all addresses returned in dev_get_addr().
+/*
+ * REVISIT:
+ * remove the following after resolving conflicts with <linux/compat.h>
  */
-void dm_set_translation_offset(fdt_addr_t offs);
+#ifdef dev_dbg
+#undef dev_dbg
+#endif
+#ifdef dev_vdbg
+#undef dev_vdbg
+#endif
+#ifdef dev_info
+#undef dev_info
+#endif
+#ifdef dev_err
+#undef dev_err
+#endif
+#ifdef dev_warn
+#undef dev_warn
+#endif
 
-/**
- * dm_get_translation_offset() - Get translation offset
- *
- * This function returns the translation offset that can
- * be configured by calling dm_set_translation_offset().
- *
- * @return translation offset for the device address (0 as default).
+/*
+ * REVISIT:
+ * print device name like Linux
  */
-fdt_addr_t dm_get_translation_offset(void);
+#define dev_printk(dev, fmt, ...)				\
+({								\
+	printk(fmt, ##__VA_ARGS__);				\
+})
+
+#define __dev_printk(level, dev, fmt, ...)			\
+({								\
+	if (level < CONFIG_VAL(LOGLEVEL))			\
+		dev_printk(dev, fmt, ##__VA_ARGS__);		\
+})
+
+#define dev_emerg(dev, fmt, ...) \
+	__dev_printk(0, dev, fmt, ##__VA_ARGS__)
+#define dev_alert(dev, fmt, ...) \
+	__dev_printk(1, dev, fmt, ##__VA_ARGS__)
+#define dev_crit(dev, fmt, ...) \
+	__dev_printk(2, dev, fmt, ##__VA_ARGS__)
+#define dev_err(dev, fmt, ...) \
+	__dev_printk(3, dev, fmt, ##__VA_ARGS__)
+#define dev_warn(dev, fmt, ...) \
+	__dev_printk(4, dev, fmt, ##__VA_ARGS__)
+#define dev_notice(dev, fmt, ...) \
+	__dev_printk(5, dev, fmt, ##__VA_ARGS__)
+#define dev_info(dev, fmt, ...) \
+	__dev_printk(6, dev, fmt, ##__VA_ARGS__)
+
+#ifdef DEBUG
+#define dev_dbg(dev, fmt, ...) \
+	__dev_printk(7, dev, fmt, ##__VA_ARGS__)
+#else
+#define dev_dbg(dev, fmt, ...)					\
+({								\
+	if (0)							\
+		__dev_printk(7, dev, fmt, ##__VA_ARGS__);	\
+})
+#endif
+
+#ifdef VERBOSE_DEBUG
+#define dev_vdbg	dev_dbg
+#else
+#define dev_vdbg(dev, fmt, ...)					\
+({								\
+	if (0)							\
+		__dev_printk(7, dev, fmt, ##__VA_ARGS__);	\
+})
+#endif
 
 #endif

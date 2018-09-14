@@ -1,9 +1,8 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2009 SAMSUNG Electronics
  * Minkyu Kang <mk7.kang@samsung.com>
  * Portions Copyright (C) 2011-2012 NVIDIA Corporation
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __TEGRA_MMC_H_
@@ -107,6 +106,8 @@ struct tegra_mmc {
 
 #define TEGRA_MMC_CLKCON_SDCLK_FREQ_SEL_SHIFT			8
 #define TEGRA_MMC_CLKCON_SDCLK_FREQ_SEL_MASK			(0xff << 8)
+
+#define TEGRA_MMC_MISCON_ENABLE_EXT_LOOPBACK			(1 << 17)
 
 #define TEGRA_MMC_SWRST_SW_RESET_FOR_ALL			(1 << 0)
 #define TEGRA_MMC_SWRST_SW_RESET_FOR_CMD_LINE			(1 << 1)

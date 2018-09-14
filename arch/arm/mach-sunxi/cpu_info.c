@@ -1,9 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2007-2011
  * Allwinner Technology Co., Ltd. <www.allwinnertech.com>
  * Tom Cubie <tangliang@allwinnertech.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -87,10 +86,18 @@ int print_cpuinfo(void)
 	printf("CPU:   Allwinner A83T (SUN8I %04x)\n", sunxi_get_sram_id());
 #elif defined CONFIG_MACH_SUN8I_H3
 	printf("CPU:   Allwinner H3 (SUN8I %04x)\n", sunxi_get_sram_id());
+#elif defined CONFIG_MACH_SUN8I_R40
+	printf("CPU:   Allwinner R40 (SUN8I %04x)\n", sunxi_get_sram_id());
+#elif defined CONFIG_MACH_SUN8I_V3S
+	printf("CPU:   Allwinner V3s (SUN8I %04x)\n", sunxi_get_sram_id());
 #elif defined CONFIG_MACH_SUN9I
 	puts("CPU:   Allwinner A80 (SUN9I)\n");
 #elif defined CONFIG_MACH_SUN50I
 	puts("CPU:   Allwinner A64 (SUN50I)\n");
+#elif defined CONFIG_MACH_SUN50I_H5
+	puts("CPU:   Allwinner H5 (SUN50I)\n");
+#elif defined CONFIG_MACH_SUN50I_H6
+	puts("CPU:   Allwinner H6 (SUN50I)\n");
 #else
 #warning Please update cpu_info.c with correct CPU information
 	puts("CPU:   SUNXI Family\n");

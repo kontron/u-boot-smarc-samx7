@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * (C) Copyright 2010
  * Texas Instruments, <www.ti.com>
@@ -8,8 +9,6 @@
  * Derived from OMAP3 work by
  *	Richard Woodruff <r-woodruff2@ti.com>
  *	Syed Mohammed Khasim <x0khasim@ti.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef _OMAP4_H_
@@ -100,7 +99,6 @@ struct s32ktimer {
 
 #define DEVICE_TYPE_SHIFT (0x8)
 #define DEVICE_TYPE_MASK (0x7 << DEVICE_TYPE_SHIFT)
-#define DEVICE_GP 0x3
 
 #endif /* __ASSEMBLY__ */
 

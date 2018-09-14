@@ -1,11 +1,10 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2016 Rockchip Electronics Co., Ltd
  *
  * Based on kernel drivers/regulator/pwm-regulator.c
  * Copyright (C) 2014 - STMicroelectronics Inc.
  * Author: Lee Jones <lee.jones@linaro.org>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -13,9 +12,6 @@
 #include <errno.h>
 #include <pwm.h>
 #include <power/regulator.h>
-#include <libfdt.h>
-#include <fdt_support.h>
-#include <fdtdec.h>
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -24,15 +20,21 @@ struct pwm_regulator_info {
 	int pwm_id;
 	/* the period of one PWM cycle */
 	int period_ns;
+	/*
+	 * the polarity of one PWM
+	 * 0: normal polarity
+	 * 1: inverted polarity
+	 */
+	bool polarity;
 	struct udevice *pwm;
 	/* initialize voltage of regulator */
-	unsigned int init_voltage;
+	int init_voltage;
 	/* the maximum voltage of regulator */
-	unsigned int max_voltage;
+	int max_voltage;
 	/* the minimum voltage of regulator */
-	unsigned int min_voltage;
+	int min_voltage;
 	/* the current voltage of regulator */
-	unsigned int volt_uV;
+	int volt_uV;
 };
 
 static int pwm_regulator_enable(struct udevice *dev, bool enable)
@@ -49,7 +51,7 @@ static int pwm_voltage_to_duty_cycle_percentage(struct udevice *dev, int req_uV)
 	int max_uV = priv->max_voltage;
 	int diff = max_uV - min_uV;
 
-	return 100 - (((req_uV * 100) - (min_uV * 100)) / diff);
+	return ((req_uV * 100) - (min_uV * 100)) / diff;
 }
 
 static int pwm_regulator_get_voltage(struct udevice *dev)
@@ -67,48 +69,46 @@ static int pwm_regulator_set_voltage(struct udevice *dev, int uvolt)
 
 	duty_cycle = pwm_voltage_to_duty_cycle_percentage(dev, uvolt);
 
+	ret = pwm_set_invert(priv->pwm, priv->pwm_id, priv->polarity);
+	if (ret) {
+		dev_err(dev, "Failed to init PWM\n");
+		return ret;
+	}
+
 	ret = pwm_set_config(priv->pwm, priv->pwm_id,
-			(priv->period_ns / 100) * duty_cycle, priv->period_ns);
+			priv->period_ns, (priv->period_ns / 100) * duty_cycle);
 	if (ret) {
 		dev_err(dev, "Failed to configure PWM\n");
 		return ret;
 	}
 
-	ret = pwm_set_enable(priv->pwm, priv->pwm_id, true);
-	if (ret) {
-		dev_err(dev, "Failed to enable PWM\n");
-		return ret;
-	}
 	priv->volt_uV = uvolt;
+
 	return ret;
 }
 
 static int pwm_regulator_ofdata_to_platdata(struct udevice *dev)
 {
 	struct pwm_regulator_info *priv = dev_get_priv(dev);
-	struct fdtdec_phandle_args args;
-	const void *blob = gd->fdt_blob;
-	int node = dev_of_offset(dev);
+	struct ofnode_phandle_args args;
 	int ret;
 
-	ret = fdtdec_parse_phandle_with_args(blob, node, "pwms", "#pwm-cells",
-					     0, 0, &args);
+	ret = dev_read_phandle_with_args(dev, "pwms", "#pwm-cells", 0, 0, &args);
 	if (ret) {
 		debug("%s: Cannot get PWM phandle: ret=%d\n", __func__, ret);
 		return ret;
 	}
-	/* TODO: pwm_id here from device tree if needed */
 
 	priv->period_ns = args.args[1];
+	priv->polarity = args.args[2];
 
-	priv->init_voltage = fdtdec_get_int(blob, node,
-			"regulator-init-microvolt", -1);
+	priv->init_voltage = dev_read_u32_default(dev, "regulator-init-microvolt", -1);
 	if (priv->init_voltage < 0) {
 		printf("Cannot find regulator pwm init_voltage\n");
 		return -EINVAL;
 	}
 
-	ret = uclass_get_device_by_of_offset(UCLASS_PWM, args.node, &priv->pwm);
+	ret = uclass_get_device_by_ofnode(UCLASS_PWM, args.node, &priv->pwm);
 	if (ret) {
 		debug("%s: Cannot get PWM: ret=%d\n", __func__, ret);
 		return ret;
@@ -131,8 +131,6 @@ static int pwm_regulator_probe(struct udevice *dev)
 
 	if (priv->init_voltage)
 		pwm_regulator_set_voltage(dev, priv->init_voltage);
-
-	pwm_regulator_enable(dev, 1);
 
 	return 0;
 }

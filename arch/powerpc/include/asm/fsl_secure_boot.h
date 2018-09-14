@@ -1,7 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  * Copyright 2010-2011 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __FSL_SECURE_BOOT_H
@@ -99,10 +98,7 @@
 #define CONFIG_SPL_UBOOT_KEY_HASH	NULL
 #endif /* ifdef CONFIG_SPL_BUILD */
 
-#define CONFIG_CMD_ESBC_VALIDATE
-#define CONFIG_CMD_BLOB
 #define CONFIG_FSL_SEC_MON
-#define CONFIG_SHA_PROG_HW_ACCEL
 
 #ifndef CONFIG_SPL_BUILD
 /*

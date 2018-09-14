@@ -1,11 +1,11 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (C) 2016, Bin Meng <bmeng.cn@gmail.com>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <vbe.h>
+#include <asm/acpi_s3.h>
 #include <asm/coreboot_tables.h>
 #include <asm/e820.h>
 
@@ -19,7 +19,11 @@ int high_table_reserve(void)
 	gd->arch.high_table_ptr = gd->start_addr_sp;
 
 	/* clear the memory */
-	memset((void *)gd->arch.high_table_ptr, 0, CONFIG_HIGH_TABLE_SIZE);
+#ifdef CONFIG_HAVE_ACPI_RESUME
+	if (gd->arch.prev_sleep_state != ACPI_S3)
+#endif
+		memset((void *)gd->arch.high_table_ptr, 0,
+		       CONFIG_HIGH_TABLE_SIZE);
 
 	gd->start_addr_sp &= ~0xf;
 
@@ -95,7 +99,7 @@ void write_coreboot_table(u32 addr, struct memory_area *cfg_tables)
 	struct cb_record *cbr;
 	struct cb_memory *mem;
 	struct cb_memory_range *map;
-	struct e820entry e820[32];
+	struct e820_entry e820[32];
 	struct cb_framebuffer *fb;
 	struct vesa_mode_info *vesa;
 	int i, num;

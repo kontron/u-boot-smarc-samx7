@@ -1,8 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
+ * Copyright 2017 NXP
  * Copyright 2014-2015 Freescale Semiconductor, Inc.
  * Layerscape PCIe driver
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -12,6 +12,10 @@
 #include <errno.h>
 #include <malloc.h>
 #include <dm.h>
+#if defined(CONFIG_FSL_LSCH2) || defined(CONFIG_FSL_LSCH3) || \
+	defined(CONFIG_ARM)
+#include <asm/arch/clock.h>
+#endif
 #include "pcie_layerscape.h"
 
 DECLARE_GLOBAL_DATA_PTR;
@@ -167,6 +171,28 @@ static void ls_pcie_setup_atu(struct ls_pcie *pcie)
 	pci_get_regions(pcie->bus, &io, &mem, &pref);
 	idx = PCIE_ATU_REGION_INDEX1 + 1;
 
+	/* Fix the pcie memory map for LS2088A series SoCs */
+	svr = (svr >> SVR_VAR_PER_SHIFT) & 0xFFFFFE;
+	if (svr == SVR_LS2088A || svr == SVR_LS2084A ||
+	    svr == SVR_LS2048A || svr == SVR_LS2044A ||
+	    svr == SVR_LS2081A || svr == SVR_LS2041A) {
+		if (io)
+			io->phys_start = (io->phys_start &
+					 (PCIE_PHYS_SIZE - 1)) +
+					 LS2088A_PCIE1_PHYS_ADDR +
+					 LS2088A_PCIE_PHYS_SIZE * pcie->idx;
+		if (mem)
+			mem->phys_start = (mem->phys_start &
+					 (PCIE_PHYS_SIZE - 1)) +
+					 LS2088A_PCIE1_PHYS_ADDR +
+					 LS2088A_PCIE_PHYS_SIZE * pcie->idx;
+		if (pref)
+			pref->phys_start = (pref->phys_start &
+					 (PCIE_PHYS_SIZE - 1)) +
+					 LS2088A_PCIE1_PHYS_ADDR +
+					 LS2088A_PCIE_PHYS_SIZE * pcie->idx;
+	}
+
 	if (io)
 		/* ATU : OUTBOUND : IO */
 		ls_pcie_atu_outbound_set(pcie, idx++,
@@ -214,82 +240,48 @@ static int ls_pcie_addr_valid(struct ls_pcie *pcie, pci_dev_t bdf)
 	return 0;
 }
 
-void *ls_pcie_conf_address(struct ls_pcie *pcie, pci_dev_t bdf,
-				   int offset)
+int ls_pcie_conf_address(struct udevice *bus, pci_dev_t bdf,
+			 uint offset, void **paddress)
 {
-	struct udevice *bus = pcie->bus;
+	struct ls_pcie *pcie = dev_get_priv(bus);
 	u32 busdev;
 
-	if (PCI_BUS(bdf) == bus->seq)
-		return pcie->dbi + offset;
+	if (ls_pcie_addr_valid(pcie, bdf))
+		return -EINVAL;
 
-	busdev = PCIE_ATU_BUS(PCI_BUS(bdf)) |
+	if (PCI_BUS(bdf) == bus->seq) {
+		*paddress = pcie->dbi + offset;
+		return 0;
+	}
+
+	busdev = PCIE_ATU_BUS(PCI_BUS(bdf) - bus->seq) |
 		 PCIE_ATU_DEV(PCI_DEV(bdf)) |
 		 PCIE_ATU_FUNC(PCI_FUNC(bdf));
 
 	if (PCI_BUS(bdf) == bus->seq + 1) {
 		ls_pcie_cfg0_set_busdev(pcie, busdev);
-		return pcie->cfg0 + offset;
+		*paddress = pcie->cfg0 + offset;
 	} else {
 		ls_pcie_cfg1_set_busdev(pcie, busdev);
-		return pcie->cfg1 + offset;
+		*paddress = pcie->cfg1 + offset;
 	}
+	return 0;
 }
 
 static int ls_pcie_read_config(struct udevice *bus, pci_dev_t bdf,
 			       uint offset, ulong *valuep,
 			       enum pci_size_t size)
 {
-	struct ls_pcie *pcie = dev_get_priv(bus);
-	void *address;
-
-	if (ls_pcie_addr_valid(pcie, bdf)) {
-		*valuep = pci_get_ff(size);
-		return 0;
-	}
-
-	address = ls_pcie_conf_address(pcie, bdf, offset);
-
-	switch (size) {
-	case PCI_SIZE_8:
-		*valuep = readb(address);
-		return 0;
-	case PCI_SIZE_16:
-		*valuep = readw(address);
-		return 0;
-	case PCI_SIZE_32:
-		*valuep = readl(address);
-		return 0;
-	default:
-		return -EINVAL;
-	}
+	return pci_generic_mmap_read_config(bus, ls_pcie_conf_address,
+					    bdf, offset, valuep, size);
 }
 
 static int ls_pcie_write_config(struct udevice *bus, pci_dev_t bdf,
 				uint offset, ulong value,
 				enum pci_size_t size)
 {
-	struct ls_pcie *pcie = dev_get_priv(bus);
-	void *address;
-
-	if (ls_pcie_addr_valid(pcie, bdf))
-		return 0;
-
-	address = ls_pcie_conf_address(pcie, bdf, offset);
-
-	switch (size) {
-	case PCI_SIZE_8:
-		writeb(value, address);
-		return 0;
-	case PCI_SIZE_16:
-		writew(value, address);
-		return 0;
-	case PCI_SIZE_32:
-		writel(value, address);
-		return 0;
-	default:
-		return -EINVAL;
-	}
+	return pci_generic_mmap_write_config(bus, ls_pcie_conf_address,
+					     bdf, offset, value, size);
 }
 
 /* Clear multi-function bit */
@@ -409,6 +401,11 @@ static void ls_pcie_ep_setup_bars(void *bar_base)
 	ls_pcie_ep_setup_bar(bar_base, 4, PCIE_BAR4_SIZE);
 }
 
+static void ls_pcie_ep_enable_cfg(struct ls_pcie *pcie)
+{
+	ctrl_writel(pcie, PCIE_CONFIG_READY, PCIE_PF_CONFIG);
+}
+
 static void ls_pcie_setup_ep(struct ls_pcie *pcie)
 {
 	u32 sriov;
@@ -432,6 +429,8 @@ static void ls_pcie_setup_ep(struct ls_pcie *pcie)
 		ls_pcie_ep_setup_bars(pcie->dbi + PCIE_NO_SRIOV_BAR_BASE);
 		ls_pcie_ep_setup_atu(pcie);
 	}
+
+	ls_pcie_ep_enable_cfg(pcie);
 }
 
 static int ls_pcie_probe(struct udevice *dev)
@@ -442,7 +441,9 @@ static int ls_pcie_probe(struct udevice *dev)
 	u8 header_type;
 	u16 link_sta;
 	bool ep_mode;
+	uint svr;
 	int ret;
+	fdt_size_t cfg_size;
 
 	pcie->bus = dev;
 
@@ -493,6 +494,22 @@ static int ls_pcie_probe(struct udevice *dev)
 	if (ret) {
 		printf("%s: resource \"config\" not found\n", dev->name);
 		return ret;
+	}
+
+	/*
+	 * Fix the pcie memory map address and PF control registers address
+	 * for LS2088A series SoCs
+	 */
+	svr = get_svr();
+	svr = (svr >> SVR_VAR_PER_SHIFT) & 0xFFFFFE;
+	if (svr == SVR_LS2088A || svr == SVR_LS2084A ||
+	    svr == SVR_LS2048A || svr == SVR_LS2044A ||
+	    svr == SVR_LS2081A || svr == SVR_LS2041A) {
+		cfg_size = fdt_resource_size(&pcie->cfg_res);
+		pcie->cfg_res.start = LS2088A_PCIE1_PHYS_ADDR +
+					LS2088A_PCIE_PHYS_SIZE * pcie->idx;
+		pcie->cfg_res.end = pcie->cfg_res.start + cfg_size;
+		pcie->ctrl = pcie->lut + 0x40000;
 	}
 
 	pcie->cfg0 = map_physmem(pcie->cfg_res.start,

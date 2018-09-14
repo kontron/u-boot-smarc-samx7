@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * Copyright (c) 2009 Daniel Mack <daniel@caiaq.de>
  * Copyright (C) 2010 Freescale Semiconductor, Inc.
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
@@ -14,9 +13,10 @@
 #include <asm/io.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/clock.h>
-#include <asm/imx-common/iomux-v3.h>
-#include <asm/imx-common/sys_proto.h>
+#include <asm/mach-imx/iomux-v3.h>
+#include <asm/mach-imx/sys_proto.h>
 #include <dm.h>
+#include <asm/mach-types.h>
 #include <power/regulator.h>
 
 #include "ehci.h"
@@ -145,13 +145,12 @@ static int usb_phy_enable(int index, struct usb_ehci *ehci)
 
 	/* Stop then Reset */
 	clrbits_le32(usb_cmd, UCMD_RUN_STOP);
-	ret = wait_for_bit(__func__, usb_cmd, UCMD_RUN_STOP, false, 10000,
-			   false);
+	ret = wait_for_bit_le32(usb_cmd, UCMD_RUN_STOP, false, 10000, false);
 	if (ret)
 		return ret;
 
 	setbits_le32(usb_cmd, UCMD_RESET);
-	ret = wait_for_bit(__func__, usb_cmd, UCMD_RESET, false, 10000, false);
+	ret = wait_for_bit_le32(usb_cmd, UCMD_RESET, false, 10000, false);
 	if (ret)
 		return ret;
 
@@ -465,7 +464,7 @@ static const struct ehci_ops mx6_ehci_ops = {
 static int ehci_usb_phy_mode(struct udevice *dev)
 {
 	struct usb_platdata *plat = dev_get_platdata(dev);
-	void *__iomem addr = (void *__iomem)dev_get_addr(dev);
+	void *__iomem addr = (void *__iomem)devfdt_get_addr(dev);
 	void *__iomem phy_ctrl, *__iomem phy_status;
 	const void *blob = gd->fdt_blob;
 	int offset = dev_of_offset(dev), phy_off;
@@ -535,7 +534,7 @@ static int ehci_usb_ofdata_to_platdata(struct udevice *dev)
 static int ehci_usb_probe(struct udevice *dev)
 {
 	struct usb_platdata *plat = dev_get_platdata(dev);
-	struct usb_ehci *ehci = (struct usb_ehci *)dev_get_addr(dev);
+	struct usb_ehci *ehci = (struct usb_ehci *)devfdt_get_addr(dev);
 	struct ehci_mx6_priv_data *priv = dev_get_priv(dev);
 	enum usb_init_type type = plat->init_type;
 	struct ehci_hccr *hccr;

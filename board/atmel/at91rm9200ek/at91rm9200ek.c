@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2010 Andreas Bießmann <andreas@biessmann.org>
  *
@@ -6,12 +7,11 @@
  * (C) Copyright 2002
  * Sysgo Real-Time Solutions, GmbH <www.elinos.com>
  * Marius Groeger <mgroeger@sysgo.de>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <netdev.h>
+#include <asm/mach-types.h>
 #include <asm/arch/hardware.h>
 #include <asm/arch/at91_pio.h>
 #include <asm/arch/at91_common.h>

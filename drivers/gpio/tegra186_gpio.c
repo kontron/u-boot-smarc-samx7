@@ -1,8 +1,7 @@
+// SPDX-License-Identifier: GPL-2.0
 /*
  * Copyright (c) 2010-2016, NVIDIA CORPORATION.
  * (based on tegra_gpio.c)
- *
- * SPDX-License-Identifier: GPL-2.0
  */
 
 #include <common.h>
@@ -16,8 +15,6 @@
 #include <dm/device-internal.h>
 #include <dt-bindings/gpio/gpio.h>
 #include "tegra186_gpio_priv.h"
-
-DECLARE_GLOBAL_DATA_PTR;
 
 struct tegra186_gpio_port_data {
 	const char *name;
@@ -139,7 +136,7 @@ static int tegra186_gpio_get_function(struct udevice *dev, unsigned offset)
 }
 
 static int tegra186_gpio_xlate(struct udevice *dev, struct gpio_desc *desc,
-			    struct fdtdec_phandle_args *args)
+			       struct ofnode_phandle_args *args)
 {
 	int gpio, port, ret;
 
@@ -179,9 +176,9 @@ static int tegra186_gpio_bind(struct udevice *parent)
 	if (parent_plat)
 		return 0;
 
-	regs = (uint32_t *)dev_get_addr_name(parent, "gpio");
+	regs = (uint32_t *)devfdt_get_addr_name(parent, "gpio");
 	if (regs == (uint32_t *)FDT_ADDR_T_NONE)
-		return -ENODEV;
+		return -EINVAL;
 
 	for (port = 0; port < ctlr_data->port_count; port++) {
 		struct tegra186_gpio_platdata *plat;

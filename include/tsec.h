@@ -1,3 +1,4 @@
+/* SPDX-License-Identifier: GPL-2.0+ */
 /*
  *  tsec.h
  *
@@ -7,8 +8,6 @@
  * (C) Copyright 2003, Motorola, Inc.
  * maintained by Xianghua Xiao (x.xiao@motorola.com)
  * author Andy Fleming
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #ifndef __TSEC_H
@@ -20,7 +19,7 @@
 
 #ifndef CONFIG_DM_ETH
 
-#ifdef CONFIG_LS102XA
+#ifdef CONFIG_ARCH_LS1021A
 #define TSEC_SIZE		0x40000
 #define TSEC_MDIO_OFFSET	0x40000
 #else

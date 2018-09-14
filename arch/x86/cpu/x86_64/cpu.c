@@ -1,14 +1,11 @@
+// SPDX-License-Identifier: GPL-2.0+
 /*
  * (C) Copyright 2016 Google, Inc
  * Written by Simon Glass <sjg@chromium.org>
- *
- * SPDX-License-Identifier:	GPL-2.0+
  */
 
 #include <common.h>
 #include <debug_uart.h>
-
-DECLARE_GLOBAL_DATA_PTR;
 
 /* Global declaration of gd */
 struct global_data *global_data_ptr;
@@ -63,6 +60,11 @@ int x86_mp_init(void)
 }
 
 int misc_init_r(void)
+{
+	return 0;
+}
+
+int checkcpu(void)
 {
 	return 0;
 }
