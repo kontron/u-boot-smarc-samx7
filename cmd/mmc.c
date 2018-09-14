@@ -884,6 +884,9 @@ static cmd_tbl_t cmd_mmc[] = {
 #if CONFIG_IS_ENABLED(MMC_HW_PARTITIONING)
 	U_BOOT_CMD_MKENT(hwpartition, 28, 0, do_mmc_hwpartition, "", ""),
 #endif
+#ifdef CONFIG_CMD_MMC_RAW_ECSD
+	U_BOOT_CMD_MKENT(raw_ecsd, 4, 0, do_mmc_raw_ecsd_ops, "", ""),
+#endif
 #ifdef CONFIG_SUPPORT_EMMC_BOOT
 	U_BOOT_CMD_MKENT(bootbus, 5, 0, do_mmc_bootbus, "", ""),
 	U_BOOT_CMD_MKENT(bootpart-resize, 4, 0, do_mmc_boot_resize, "", ""),

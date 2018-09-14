@@ -56,7 +56,6 @@ int board_spi_cs_gpio(unsigned bus, unsigned cs)
          return (bus == 2 && cs == 0) ? (IMX_GPIO_NR(6, 22)) : -1;
 }
 
-#ifdef CONFIG_MXC_SPI
 static void setup_spi(void)
 {
          imx_iomux_v3_setup_multiple_pads(ecspi3_pads, ARRAY_SIZE(ecspi3_pads));
