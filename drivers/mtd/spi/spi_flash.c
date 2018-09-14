@@ -1026,6 +1026,14 @@ static int macronix_quad_enable(struct spi_flash *flash)
 
 	return ret;
 }
+
+/*
+ * Read flash status
+ */
+int stm_read_status(struct spi_flash *flash, u8 *status)
+{
+	return read_sr(flash, status);
+}
 #endif
 
 #if defined(CONFIG_SPI_FLASH_SPANSION) || defined(CONFIG_SPI_FLASH_WINBOND)
