@@ -10,7 +10,7 @@
 #include <asm/arch-mx7/mx7-ddr.h>
 #include <asm/arch/sys_proto.h>
 #include <asm/gpio.h>
-#include <asm/imx-common/iomux-v3.h>
+#include <asm/mach-imx/iomux-v3.h>
 #include <asm/io.h>
 #include <linux/sizes.h>
 #include <common.h>
@@ -24,7 +24,7 @@
 #include <i2c.h>
 #include <environment.h>
 #include <search.h>
-#include <asm/imx-common/mxc_i2c.h>
+#include <asm/mach-imx/mxc_i2c.h>
 #include <asm/arch/crm_regs.h>
 #include <usb.h>
 #include <usb/ehci-ci.h>
@@ -268,7 +268,7 @@ static int setup_fec(void)
 		 IOMUXC_GPR_GPR1_GPR_ENET1_CLK_DIR_MASK    |
 		 IOMUXC_GPR_GPR1_GPR_ENET2_CLK_DIR_MASK), 0);
 
-	return set_clk_enet(ENET_125MHz);
+	return set_clk_enet(ENET_125MHZ);
 }
 
 
@@ -470,28 +470,28 @@ static void set_boot_sel(void)
 
 	switch (boot_sel) {
 		case 0:
-			setenv("boot_sel", "carrier_sata");
+			env_set("boot_sel", "carrier_sata");
 			break;
 		case 1:
-			setenv("boot_sel", "carrier_sd");
+			env_set("boot_sel", "carrier_sd");
 			break;
 		case 2:
-			setenv("boot_sel", "carrier_mmc");
+			env_set("boot_sel", "carrier_mmc");
 			break;
 		case 3:
-			setenv("boot_sel", "carrier_spi");
+			env_set("boot_sel", "carrier_spi");
 			break;
 		case 4:
-			setenv("boot_sel", "module_device");
+			env_set("boot_sel", "module_device");
 			break;
 		case 5:
-			setenv("boot_sel", "remote");
+			env_set("boot_sel", "remote");
 			break;
 		case 6:
-			setenv("boot_sel", "module_mmc");
+			env_set("boot_sel", "module_mmc");
 			break;
 		case 7:
-			setenv("boot_sel", "module_spi");
+			env_set("boot_sel", "module_spi");
 			break;
 	}
 }
@@ -516,31 +516,31 @@ int misc_init_r(void)
 
 	/* set PCIE present signal according to environment settings */
 	if (is_cpu_type(MXC_CPU_MX7D)) {
-		if (getenv_yesno("pcie_a_prsnt"))
+		if (env_get_yesno("pcie_a_prsnt"))
 			gpio_direction_output(IMX_GPIO_NR(3,16), 0);
 		else
 			gpio_direction_output(IMX_GPIO_NR(3,16), 1);
 
-		if (getenv_yesno("pcie_b_prsnt"))
+		if (env_get_yesno("pcie_b_prsnt"))
 			gpio_direction_output(IMX_GPIO_NR(3,22), 0);
 		else
 			gpio_direction_output(IMX_GPIO_NR(3,22), 1);
 
-		if (getenv_yesno("pcie_c_prsnt"))
+		if (env_get_yesno("pcie_c_prsnt"))
 			gpio_direction_output(IMX_GPIO_NR(6,15), 0);
 		else
 			gpio_direction_output(IMX_GPIO_NR(6,15), 1);
 	}
 
 	/* fix IOMUX configuration of PWM1_OUT for use as GPIO line if variable set */
-	if (getenv_yesno("pwm_out_disable"))
+	if (env_get_yesno("pwm_out_disable"))
 		use_pwm1_out_as_gpio();
 
-	setenv ("core_variant", "unknown");
+	env_set ("core_variant", "unknown");
 	if (is_cpu_type(MXC_CPU_MX7D))
-		setenv ("core_variant", "d");
+		env_set ("core_variant", "d");
 	if (is_cpu_type(MXC_CPU_MX7S))
-		setenv ("core_variant", "s");
+		env_set ("core_variant", "s");
 
 	/* snvs_lpgpr_set(0x12345678); */
 
@@ -566,7 +566,7 @@ int board_late_init(void)
 #ifndef CONFIG_SPL_BUILD
 	ulong board_rev;
 
-	board_rev = getenv_ulong("board_rev", 10, 1);
+	board_rev = env_get_ulong("board_rev", 10, 1);
 	if (board_rev == 0) {
 		u32 reg;
 		struct mxc_ccm_anatop_reg *ccm_anatop
@@ -611,8 +611,8 @@ int ft_board_setup(void *blob, bd_t *bd)
 	char str_ok[] = "okay";
 
 	u64 freq = mxc_get_clock(MXC_DDR_CLK);
-	phys_addr_t base = getenv_bootm_low();
-	phys_size_t size = getenv_bootm_size();
+	phys_addr_t base = env_get_bootm_low();
+	phys_size_t size = env_get_bootm_size();
 
 	debug("/memory device tree settings: base=0x%08x, size=0x%08x\n",
 	      (u32)base, (u32)size);
@@ -649,7 +649,7 @@ int ft_board_setup(void *blob, bd_t *bd)
 		goto err;
 
 	/* check pwm_out_disable and enable pwm if needed */
-	if (!getenv_yesno("pwm_out_disable")) {
+	if (!env_get_yesno("pwm_out_disable")) {
 		fdt_find_and_setprop(blob, "/pwm-fan", "status",
 		                     str_ok, sizeof(str_ok), 0);
 		fdt_find_and_setprop(blob, str_pwm1, "status",

@@ -31,4 +31,6 @@ config KEX_EEP_BOOTCOUNTER
 	bool "KEU EEPROM boot counter support"
 	default y
 
+source "board/kontron/common/Kconfig"
+
 endif

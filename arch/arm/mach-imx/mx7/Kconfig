@@ -67,6 +67,7 @@ config TARGET_SMX7
 	select MX7D
 	select DM
 	select DM_THERMAL
+	imply CMD_DM
 
 endchoice
 
@@ -75,6 +76,7 @@ config SYS_SOC
 
 source "board/compulab/cl-som-imx7/Kconfig"
 source "board/freescale/mx7dsabresd/Kconfig"
+source "board/kontron/smx7/Kconfig"
 source "board/technexion/pico-imx7d/Kconfig"
 source "board/toradex/colibri_imx7/Kconfig"
 source "board/warp7/Kconfig"

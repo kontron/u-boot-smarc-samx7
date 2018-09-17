@@ -32,7 +32,7 @@
 #define _FSL_BITACCESS_H  1
 
 #include <stdint.h>
-#include <stdlib.h>
+/* #include <stdlib.h> */
 
 /* IO definitions (access restrictions to peripheral registers) */
 #ifdef __cplusplus
