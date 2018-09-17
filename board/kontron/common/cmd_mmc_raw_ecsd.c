@@ -171,7 +171,7 @@ int do_mmc_raw_ecsd_init (struct mmc *mmc)
 
 	mmc_set_bus_width(mmc, 1);
 
-	mmc_set_clock(mmc, 1);
+	mmc_set_clock(mmc, mmc->clock, MMC_CLK_ENABLE);
 
 	/* Reset the Card */
 	err = mmc_go_idle(mmc);
@@ -282,7 +282,7 @@ int do_mmc_raw_ecsd_read (struct mmc *mmc, int regnum)
 		} else {
 			printf ("0x%x\n", ext_csd [regnum]);
 			sprintf (env_var_tmp, "%x",ext_csd[regnum]);
-			setenv  ("raw_ecsd_tmp", env_var_tmp);
+			env_set  ("raw_ecsd_tmp", env_var_tmp);
 			return (ext_csd [regnum]);
 		}
 	}

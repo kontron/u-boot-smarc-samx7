@@ -24,7 +24,6 @@
 #include <i2c.h>
 #include "emb_eep.h"
 #include "crc.h"
-#define CONFIG_EMB_EEP_I2C_EEPROM
 
 #ifdef CONFIG_EMB_EEP_I2C_EEPROM
 
@@ -391,10 +390,10 @@ static void emb_eep_default_ethaddr (void)
 {
 	char *e_ethaddr;
 
-	e_ethaddr = getenv("ethaddr");
+	e_ethaddr = env_get("ethaddr");
 	if (e_ethaddr == NULL) {
 		printf ("WARNING: ethaddr not found in environment, using default value\n");
-		setenv  ("ethaddr", D_ETHADDR);
+		env_set  ("ethaddr", D_ETHADDR);
 	}
 }
 
@@ -412,7 +411,7 @@ static void emb_eep_import_ethaddr (emb_eep_info *vpdi, const char *eth_x_addr, 
 		return;
 	}
 	
-	e_ethaddr = getenv((char*)eth_x_addr);
+	e_ethaddr = env_get((char*)eth_x_addr);
 
 	if (v_ethaddr == NULL) {
 		printf ("WARNING: %s not found in embedded EEPROM\n", eth_x_addr);
@@ -424,7 +423,7 @@ static void emb_eep_import_ethaddr (emb_eep_info *vpdi, const char *eth_x_addr, 
 		if (!strcmp(d_ethaddr, e_ethaddr)) {
 			printf ("Embedded EEPROM: Overwrite default %s to %s\n",
 			        eth_x_addr, v_ethaddr);
-			setenv((char*)eth_x_addr, v_ethaddr);
+			env_set((char*)eth_x_addr, v_ethaddr);
 			return;
 		}
 		else {
@@ -437,7 +436,7 @@ static void emb_eep_import_ethaddr (emb_eep_info *vpdi, const char *eth_x_addr, 
 	}
 
 	debug ("Setenv %s\n", eth_x_addr);
-	setenv((char*)eth_x_addr, v_ethaddr);
+	env_set((char*)eth_x_addr, v_ethaddr);
 }
 
 
@@ -508,7 +507,7 @@ void emb_eep_init_r(int eeprom_num_serial, int eeprom_num_eth, int num_of_macs)
 		*/
 		val = emb_eep_find_string_in_dmi (eeprom_num_serial, 2, 4);
 		if (val != NULL)
-			setenv("serial#", val);
+			env_set("serial#", val);
 	}
 
 	vpdi->eeprom_num = eeprom_num_eth;
