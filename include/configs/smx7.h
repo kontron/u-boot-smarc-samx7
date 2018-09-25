@@ -1,12 +1,12 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright (C) 2015 Freescale Semiconductor, Inc.
+ * Copyright (C) 2017 Kontron Europe GmbH
  *
- * Configuration settings for the Freescale i.MX7D SABRESD board.
+ * Configuration settings for the Kontron SMARC SMX7 board.
  */
 
-#ifndef __MX7D_SABRESD_CONFIG_H
-#define __MX7D_SABRESD_CONFIG_H
+#ifndef __SMX7_CONFIG_H
+#define __SMX7_CONFIG_H
 
 #ifdef CONFIG_SPL
 #include "imx7_spl.h"
@@ -71,6 +71,7 @@
 /******************************************************************************
  * MMC Config
  */
+#define CONFIG_FSL_ESDHC
 #define CONFIG_SYS_FSL_ESDHC_ADDR       0
 
 #ifdef CONFIG_SPL_BUILD
@@ -95,6 +96,7 @@
 #define CONFIG_SYS_MXC_I2C3_SPEED       100000
 #define CONFIG_SYS_I2C_MXC_I2C4         /* enable I2C bus 4 */
 #define CONFIG_SYS_MXC_I2C4_SPEED       100000
+
 #define CONFIG_SUPPORT_EMMC_BOOT	/* eMMC specific */
 #define CONFIG_SYS_MMC_IMG_LOAD_PART	1
 
