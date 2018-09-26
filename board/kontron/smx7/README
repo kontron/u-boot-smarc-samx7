@@ -67,3 +67,9 @@ The resulting bootloader image will be u-boot-with-spl.imx. In bootloader defaul
 environment the 'uboot_update' script is defined that can be used to update a
 given bootloader image via TFTP network connection.
 
+It is possible to pass a release version when building. To achieve this, the
+IDENT_RELEASE macro has to be defined. This can be done with the following
+build step:
+
+# IDENT_RELEASE=<release_string> make u-boot-with-spl.imx
+

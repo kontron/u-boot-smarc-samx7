@@ -35,6 +35,13 @@
 /* #include "../common/emb_vpd.h" */
 #include "../common/emb_eep.h"
 
+#define IDENT_STRING		"Kontron SMX7 SMARC 2.0 Module   Release "
+
+#ifndef IDENT_RELEASE
+#define IDENT_RELEASE		"develop"
+#endif
+
+const char version_string[] = U_BOOT_VERSION_STRING "\n" IDENT_STRING IDENT_RELEASE;
 
 extern void BOARD_InitPins(void);
 extern void BOARD_FixupPins(void);
@@ -498,6 +505,8 @@ static void set_boot_sel(void)
 
 int misc_init_r(void)
 {
+	env_set("version", IDENT_STRING IDENT_RELEASE);
+
 	attach_usb_hub();
 	imx_set_usb_hsic_power();
 	set_boot_sel();
@@ -591,7 +600,7 @@ int board_late_init(void)
 
 int checkboard(void)
 {
-	printf("Board: Kontron SMX7 SMARC 2.0 Module\n");
+	printf("Board: " IDENT_STRING IDENT_RELEASE "\n");
 
 	return 0;
 }
