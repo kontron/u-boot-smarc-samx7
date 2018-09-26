@@ -12,7 +12,7 @@
 #include "imx7_spl.h"
 
 #define CONFIG_SPL_SPI_LOAD
-#define CONFIG_SYS_SPI_U_BOOT_OFFS      0x11000
+#define CONFIG_SYS_SPI_U_BOOT_OFFS      0x11400
 #endif
 
 #include "mx7_common.h"
