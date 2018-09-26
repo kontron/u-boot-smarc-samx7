@@ -748,7 +748,7 @@ uint64_t getBootCounter (int eeprom_num)
 
 #ifdef CONFIG_SPL_BUILD
 #include <spl.h>
-#include <libfdt.h>
+#include <linux/libfdt.h>
 
 int spl_start_uboot(void)
 {
