@@ -824,11 +824,22 @@ static void spl_dram_init(void)
 	struct iomuxc_gpr_base_regs *const iomuxc_gpr_regs
 		= (struct iomuxc_gpr_base_regs *) IOMUXC_GPR_BASE_ADDR;
 	struct ddrc *const ddrc_regs = (struct ddrc *)DDRC_IPS_BASE_ADDR;
+	struct src *const src_regs = (struct src *)SRC_BASE_ADDR;
 	unsigned long ram_size_found;
 	int i;
 
 	/* ddr_init(mx7d_dcd_table, ARRAY_SIZE(mx7d_dcd_table)); */
 	writel(0x0f400005, &iomuxc_gpr_regs->gpr[1]);
+
+	/*
+	 * Make sure that both aresetn/core_ddrc_rstn and preset/PHY reset
+	 * bits are set after WDOG reset event. DDRC_PRST can only be
+	 * released when DDRC clock inputs are stable for at least 30 cycles.
+	 */
+	writel(SRC_DDRC_RCR_DDRC_CORE_RST_MASK |
+	       SRC_DDRC_RCR_DDRC_PRST_MASK, &src_regs->ddrc_rcr);
+	udelay(500);
+
 	for (i=0 ; i<3 ; i++) {
 		switch (i) {
 		case 1: /* memory size 1GiB */
