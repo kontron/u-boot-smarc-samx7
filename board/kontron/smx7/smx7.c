@@ -600,7 +600,8 @@ int board_late_init(void)
 
 int checkboard(void)
 {
-	printf("Board: " IDENT_STRING IDENT_RELEASE "\n");
+	/* show this information immediatly after U-Boot start message */
+	/* printf("Board: " IDENT_STRING IDENT_RELEASE "\n"); */
 
 	return 0;
 }
