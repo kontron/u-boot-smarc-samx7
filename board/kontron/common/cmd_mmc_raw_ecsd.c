@@ -151,91 +151,27 @@ void mmc_set_bus_width(struct mmc *mmc, uint width)
 	mmc_set_ios(mmc);
 }
 
-int do_mmc_raw_ecsd_init (struct mmc *mmc)
+static struct mmc *do_mmc_raw_ecsd_init (int dev, bool force_init)
 {
-	int err;
-	struct mmc_cmd cmd;
-
-	if (mmc_getcd(mmc) == 0) {
-		mmc->has_init = 0;
-		printf("MMC: no card present\n");
-		return -ENOMEDIUM;
-	}
-
-	err = mmc_init(mmc);
-
-	if (err) {
-		printf ("mmc->init returned error %d\n", err);
-		return err;
-	}
-
-	mmc_set_bus_width(mmc, 1);
-
-	mmc_set_clock(mmc, mmc->clock, MMC_CLK_ENABLE);
-
-	/* Reset the Card */
-	err = mmc_go_idle(mmc);
-	if (err) {
-		printf ("mmc_go_idle failed with err %d\n", err);
-		return err;
-	}
-
-	/* The internal partition reset to user partition(0) at every CMD0 */
-	mmc->block_dev.hwpart = 0;
-
-	err = mmc_send_op_cond(mmc);
-
-	if (err) {
-		printf("Card did not respond to voltage select!\n");
-		return -EOPNOTSUPP;
-	}
-
-	/* Put the Card in Identify Mode */
-	cmd.cmdidx = mmc_host_is_spi(mmc) ? MMC_CMD_SEND_CID :
-		MMC_CMD_ALL_SEND_CID; /* cmd not supported in spi */
-	cmd.resp_type = MMC_RSP_R2;
-	cmd.cmdarg = 0;
-
-	err = mmc_send_cmd(mmc, &cmd, NULL);
-
-	if (err) {
-		printf ("Error after Identify Mode\n");
-		return err;
-	}
-
-	memcpy(mmc->cid, cmd.response, 16);
-
 	/*
-	 * For MMC cards, set the Relative Address.
-	 * For SD cards, get the Relatvie Address.
-	 * This also puts the cards into Standby State
+	 * Actually this is a copy from mmc_init function, which is defined
+	 * static in cmd/mmc.c
 	 */
-	if (!mmc_host_is_spi(mmc)) { /* cmd not supported in spi */
-		cmd.cmdidx = SD_CMD_SEND_RELATIVE_ADDR;
-		cmd.cmdarg = mmc->rca << 16;
-		cmd.resp_type = MMC_RSP_R6;
+	struct mmc *mmc;
 
-		err = mmc_send_cmd(mmc, &cmd, NULL);
-
-		if (err) {
-			printf ("Error after SD_CMD_SEND_RELATIVE_ADDR\n");
-			return err;
-		}
-
-		if (IS_SD(mmc))
-			mmc->rca = (cmd.response[0] >> 16) & 0xffff;
+	mmc = find_mmc_device(dev);
+	if (!mmc) {
+		printf("no mmc device at slot %x\n", dev);
+		return NULL;
 	}
 
-	if (err) {
+	if (force_init)
 		mmc->has_init = 0;
-	}
-	else
-		mmc->has_init = 1;
+	if (mmc_init(mmc))
+		return NULL;
 
-
-	return err;
+	return mmc;
 }
-
 
 int do_mmc_raw_ecsd_read (struct mmc *mmc, int regnum)
 {
@@ -311,17 +247,16 @@ int do_mmc_raw_ecsd_ops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[
 			
 		dev = simple_strtoul(argv[2], NULL, 10);
 
-		mmc = find_mmc_device(dev);
-		if (!mmc) {
-			printf("no mmc device at slot %x\n", dev);
-			return 1;
+		mmc = do_mmc_raw_ecsd_init (dev, true); /* force init */
+		if (!mmc)
+			return CMD_RET_FAILURE;
+
+		if (IS_SD(mmc)) {
+			printf("Raw ECSD command only supported on eMMC\n");
+			return CMD_RET_FAILURE;
 		}
-		/* force init */
-		mmc->has_init = 0;
 
-		err = do_mmc_raw_ecsd_init (mmc);
-
-		return err;
+		return 0;
 
 		
 	} else if (strcmp(argv[1], "read") == 0) {
