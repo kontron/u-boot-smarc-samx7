@@ -1,0 +1,108 @@
+Kontron SMARC AMX6 Module Overview
+----------------------------------
+- Freescale i.MX6 ARM CPU
+  * Cortex-A9 Core
+  * Single and DualLite CPU variants supported
+  * Dual and Quad CPU variants supported
+- Up to 2 GiB DDR3 memory
+- 2x Ethernet
+- SPI flash boot device
+- USB 2.0 OTG port
+- USB 2.0 HSIC port
+- RGB and LVDS display support
+
+AMX Memory Map
+--------------
+
+SPI Flash Memory Map
+--------------------
+
+Building AMX6 Bootloader Image
+------------------------------
+
+a) Serial download bootloader image
+
+# make distclean
+# make amx6_defconfig
+# make
+
+b) SPI flash bootloader image
+
+# make distclean
+# make amx6_spl_defconfig
+# make
+
+
+It is possible to pass a release version when building. To achieve this, the
+IDENT_RELEASE macro has to be defined. This can be done with the following
+build step:
+
+# IDENT_RELEASE=<release_string> make u-boot-with-spl.imx
+
+
+Booting the AMX6 Module
+-----------------------
+
+******************************************************************************
+TBD TBD TBD TBD TBD
+BIG RED NOTE: description below is still the original from mx6sabresd board.
+
+The following methods can be used for booting mx6sabresd boards:
+
+1. Booting from SD card
+
+2. Booting from eMMC
+
+3. Booting via Falcon mode (SPL launches the kernel directly)
+
+
+1. Booting from SD card via SPL
+-------------------------------
+
+mx6sabresd_defconfig target supports mx6q/mx6dl/mx6qp sabresd variants.
+
+In order to build it:
+
+$ make mx6sabresd_defconfig
+
+$ make
+
+This will generate the SPL and u-boot.img binaries.
+
+- Flash the SPL binary into the SD card:
+
+$ sudo dd if=SPL of=/dev/sdX bs=1K seek=1 && sync
+
+- Flash the u-boot.img binary into the SD card:
+
+$ sudo dd if=u-boot.img of=/dev/sdX bs=1K seek=69 && sync
+
+
+2. Booting from eMMC
+--------------------
+
+$ make mx6sabresd_defconfig
+
+$ make
+
+This will generate the SPL and u-boot.img binaries.
+
+- Boot first from SD card as shown in the previous section
+
+In U-boot change the eMMC partition config:
+
+=> mmc partconf 2 1 0 0
+
+Mount the eMMC in the host PC:
+
+=> ums 0 mmc 2
+
+- Flash SPL and u-boot.img binaries into the eMMC:
+
+$ sudo dd if=SPL of=/dev/sdX bs=1K seek=1 && sync
+$ sudo dd if=u-boot.img of=/dev/sdX bs=1K seek=69 && sync
+
+Set SW6 to eMMC 8-bit boot: 11010110
+
+TBD TBD TBD TBD TBD
+******************************************************************************
