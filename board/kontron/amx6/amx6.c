@@ -1693,7 +1693,7 @@ int board_late_init (void)
 }
 #endif
 
-int board_sata_available(void)
+int board_sata_enable(void)
 {
 	if(get_board_rev() == MX6S)
 		return 0;
