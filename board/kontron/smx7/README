@@ -35,8 +35,8 @@ QSPI Flash Memory Map
 Start Address	End Address	Size	Description
 0x00000000	0x000001ff	0x200	QSPI header
 0x00000400	0x001bffff	1792k	U-Boot image
-0x001c0000	0x001c1fff	8k	U-Boot environment
-0x001c8000	0x001c9fff	8k	U-Boot redundant environment
+0x000c0000	0x000c1fff	8k	U-Boot environment
+0x000c8000	0x000c9fff	8k	U-Boot redundant environment
 
 Building SMX7 bootloader image
 ------------------------------
