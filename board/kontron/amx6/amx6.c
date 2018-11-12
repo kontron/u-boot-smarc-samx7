@@ -40,10 +40,6 @@
 #include "cesupport.h"
 #endif
 
-#if defined(CONFIG_OF_LIBFDT)
-#include <linux/libfdt.h>
-#endif
-
 #define GATE_UNGATE_CLOCKS
 #define PATCH_FOR_CLOCKS
 
@@ -151,11 +147,9 @@ int dram_init(void)
 
 	/* get the status of the DDR3_ID-pins to determine the RAM-size */
 	gpio_direction_input(IMX_GPIO_NR(6, 7));
-
 	id0 = gpio_get_value(IMX_GPIO_NR(6, 7));
 
 	gpio_direction_input(IMX_GPIO_NR(6, 9));
-
 	id1 = gpio_get_value(IMX_GPIO_NR(6, 9));
 
 
@@ -690,17 +684,6 @@ static void setup_iomux_enet(void)
 	/* iomux_v3_cfg_t enet_reset; */
 
 	SETUP_IOMUX_PADS(enet_pads);
-#if 0
-	if(get_board_rev() == MX6Q) {
-		enet_reset = (MX6Q_PAD_ENET_CRS_DV__GPIO1_IO25 & ~MUX_PAD_CTRL_MASK) | MUX_PAD_CTRL(0x88);
-		imx_iomux_v3_setup_multiple_pads(enet_pads1, ARRAY_SIZE(enet_pads1));
-		imx_iomux_v3_setup_pad(enet_reset);
-	} else if (get_board_rev() == MX6S) {
-		enet_reset = (MX6DL_PAD_ENET_CRS_DV__GPIO1_IO25 & ~MUX_PAD_CTRL_MASK) | MUX_PAD_CTRL(0x88);
-		imx_iomux_v3_setup_multiple_pads(mx6dl_enet_pads1, ARRAY_SIZE(enet_pads1));
-		imx_iomux_v3_setup_pad(enet_reset);
-	}
-#endif
 }
 
 int board_phy_config(struct phy_device *phydev)
@@ -1480,6 +1463,7 @@ void setup_display(ulong lvds_clk)
 int board_early_init_f(void)
 {
 	setup_iomux_uart();
+	setup_iomux_spi();
 
 	return 0;
 }
@@ -1651,7 +1635,7 @@ static int fdt_setup_info_string(void *blob, char *name, char *value)
 extern char *print_if_avail (char *);
 
 int ft_board_setup(void *blob, bd_t *bd) {
-
+#if defined(CONFIG_CMD_KBOARDINFO)
 	/* set up in FDT u-boot version information */
 	fdt_setup_info_string(blob, "O000060,uboot_version", (char *)version_string);
 	fdt_setup_info_string(blob, "O000060,serial_number", getSerNo ());
@@ -1660,6 +1644,7 @@ int ft_board_setup(void *blob, bd_t *bd) {
 	fdt_setup_info_string(blob, "O000060,manufact_date", print_if_avail (getManufacturerDate(1)));
 	fdt_setup_info_string(blob, "O000060,revision", print_if_avail (getRevision(1)));
 	fdt_setup_info_string(blob, "O000060,manufacturer", print_if_avail (getManufacturer(1)));
+#endif
 
 	fdt_fixup_memory(blob, (u64) CONFIG_SYS_SDRAM_BASE, (u64) gd->ram_size);
 	fdt_fixup_ethernet(blob);
@@ -1744,5 +1729,301 @@ int testdram (void)
 
 	printf ("SDRAM test passed.\n");
 	return 0;
+}
+#endif
+
+#ifdef CONFIG_SPL_BUILD
+#include <linux/libfdt.h>
+#include <spl.h>
+#include <asm/arch/mx6-ddr.h>
+/* configure different ddr_sysinfo for mx6q! */
+static struct mx6_ddr_sysinfo mx6q_sysinfo = {
+	.ddr_type = DDR_TYPE_DDR3,
+	.dsize = 2,		/* size of bus (2=64bit) */
+	.cs_density = 32,	/* config for full 4GB range */
+	.ncs = 1,
+	.cs1_mirror = 0,
+	.rtt_nom = 1,		/* RTT_Nom = RZQ/4 */
+	.rtt_wr = 2,
+	.walat = 0,		/* Write additional latency */
+	.ralat = 5,		/* Read additional latency */
+	.mif3_mode = 3,		/* Command prediction working mode */
+	.bi_on = 1,		/* Bank interleaving enabled */
+	.sde_to_rst = 0x10,	/* 14 cycles, 200us (JEDEC default) */
+	.rst_to_cke = 0x23,	/* 33 cycles, 500us (JEDEC default) */
+	.refsel = 1,		/* Refresh cycles at 32KHz */
+	.refr = 3,		/* 4 refresh commands per refresh cycle */
+};
+
+static const struct mx6_ddr3_cfg mem_ddr_2g = {
+	.mem_speed	= 1600,
+	.density	= 2,	/* density 2Gb */
+	.width		= 16,	/* width of DRAM device */
+	.banks		= 8,
+	.rowaddr	= 10,
+	.coladdr	= 14,
+	.pagesz		= 2,
+	.trcd		= 1375,
+	.trcmin		= 4875,
+	.trasmin	= 3500,
+};
+
+static const struct mx6_ddr3_cfg mem_ddr_4g = {
+	.mem_speed	= 1600,
+	.density	= 4,		/* density 4Gb */
+	.width		= 16,
+	.banks		= 8,
+	.rowaddr	= 10,
+	.coladdr	= 15,
+	.pagesz		= 2,
+	.trcd		= 1375,
+	.trcmin		= 4875,
+	.trasmin	= 3500,
+};
+
+static const struct mx6_mmdc_calibration mx6s_calibration = {
+	.p0_mpwldectrl0 =  0x0040003c,
+	.p0_mpwldectrl1 =  0x0032003e,
+	.p0_mpdgctrl0 =    0x42350231,
+	.p0_mpdgctrl1 =    0x021a0218,
+	.p0_mprddlctl =    0x4b4b4e49,
+	.p0_mpwrdlctl =    0x3f3f3035,
+};
+
+static struct mx6_mmdc_calibration mx6dq_calib = {
+	.p0_mpwldectrl0 = 0x0025001f,
+	.p0_mpwldectrl1 = 0x00290027,
+	.p1_mpwldectrl0 = 0x001f002b,
+	.p1_mpwldectrl1 = 0x000f0029,
+	.p0_mpdgctrl0 = 0x42740304,
+	.p0_mpdgctrl1 = 0x026e0265,
+	.p1_mpdgctrl0 = 0x02750306,
+	.p1_mpdgctrl1 = 0x02720244,
+	.p0_mprddlctl = 0x463d4041,
+	.p1_mprddlctl = 0x42413c47,
+	.p0_mpwrdlctl = 0x37414441,
+	.p1_mpwrdlctl = 0x4633473b,
+};
+
+static void ccgr_init(void)
+{
+	struct mxc_ccm_reg *ccm = (struct mxc_ccm_reg *)CCM_BASE_ADDR;
+
+	writel(0x00C03F3F, &ccm->CCGR0);
+	writel(0x0030FC03, &ccm->CCGR1);
+	writel(0x0FFFC000, &ccm->CCGR2);
+	writel(0x3FF00000, &ccm->CCGR3);
+	writel(0x00FFF300, &ccm->CCGR4);
+	writel(0x0F0000C3, &ccm->CCGR5);
+	writel(0x000003FF, &ccm->CCGR6);
+}
+
+const struct mx6dq_iomux_ddr_regs amx6dq_ddr_ioregs = {
+	.dram_dqm0 = 0x00020030,
+	.dram_dqm1 = 0x00020030,
+	.dram_dqm2 = 0x00020030,
+	.dram_dqm3 = 0x00020030,
+	.dram_dqm4 = 0x00020030,
+	.dram_dqm5 = 0x00020030,
+	.dram_dqm6 = 0x00020030,
+	.dram_dqm7 = 0x00020030,
+	.dram_ras = 0x00020030,
+	.dram_cas = 0x00020030,
+	.dram_sdodt0 = 0x00003030,
+	.dram_sdodt1 = 0x00003030,
+	.dram_sdba2 = 0x00000000,
+	.dram_sdcke0 = 0x00003000,
+	.dram_sdcke1 = 0x00003000,
+	.dram_sdclk_0 = 0x00020030,
+	.dram_sdclk_1 = 0x00020030,
+	.dram_sdqs0 = 0x00000030,
+	.dram_sdqs1 = 0x00000030,
+	.dram_sdqs2 = 0x00000030,
+	.dram_sdqs3 = 0x00000030,
+	.dram_sdqs4 = 0x00000030,
+	.dram_sdqs5 = 0x00000030,
+	.dram_sdqs6 = 0x00000030,
+	.dram_sdqs7 = 0x00000030,
+	.dram_reset = 0x00020030,
+};
+
+const struct mx6dq_iomux_grp_regs amx6dq_grp_ioregs = {
+	.grp_addds = 0x00000030,
+	.grp_ddrmode_ctl = 0x00020000,
+	.grp_ddrpke = 0x00000000,
+	.grp_ddrmode = 0x00020000,
+	.grp_b0ds = 0x00000030,
+	.grp_b1ds = 0x00000030,
+	.grp_ctlds = 0x00000030,
+	.grp_ddr_type = 0x000c0000,
+	.grp_b2ds = 0x00000030,
+	.grp_b3ds = 0x00000030,
+	.grp_b4ds = 0x00000030,
+	.grp_b5ds = 0x00000030,
+	.grp_b6ds = 0x00000030,
+	.grp_b7ds = 0x00000030,
+};
+
+static int mx6q_dcd_table[] = {
+	0x020e05b0, 0x00000030,
+	0x020e0524, 0x00000030,
+	0x020e05a8, 0x00000030,
+	0x020e051c, 0x00000030,
+	0x020e0518, 0x00000030,
+	0x020e050c, 0x00000030,
+	0x020e05b8, 0x00000030,
+	0x020e05c0, 0x00000030,
+	0x020e05ac, 0x00020030,
+	0x020e05b4, 0x00020030,
+	0x020e0528, 0x00020030,
+	0x020e0520, 0x00020030,
+	0x020e0514, 0x00020030,
+	0x020e0510, 0x00020030,
+	0x020e05bc, 0x00020030,
+	0x020e05c4, 0x00020030,
+	0x020e056c, 0x00020030,
+	0x020e0578, 0x00020030,
+	0x020e0588, 0x00020030,
+	0x020e0594, 0x00020030,
+	0x020e057c, 0x00020030,
+	0x020e0590, 0x00003000,
+	0x020e0598, 0x00003000,
+	0x020e058c, 0x00000000,
+	0x020e059c, 0x00003030,
+	0x020e05a0, 0x00003030,
+	0x020e0784, 0x00000030,
+	0x020e0788, 0x00000030,
+	0x020e0794, 0x00000030,
+	0x020e079c, 0x00000030,
+	0x020e07a0, 0x00000030,
+	0x020e07a4, 0x00000030,
+	0x020e07a8, 0x00000030,
+	0x020e0748, 0x00000030,
+	0x020e074c, 0x00000030,
+	0x020e0750, 0x00020000,
+	0x020e0758, 0x00000000,
+	0x020e0774, 0x00020000,
+	0x020e078c, 0x00000030,
+	0x020e0798, 0x000C0000,
+	0x021b081c, 0x33333333,
+	0x021b0820, 0x33333333,
+	0x021b0824, 0x33333333,
+	0x021b0828, 0x33333333,
+	0x021b481c, 0x33333333,
+	0x021b4820, 0x33333333,
+	0x021b4824, 0x33333333,
+	0x021b4828, 0x33333333,
+	0x021b0018, 0x00081740,
+	0x021b001c, 0x00008000,
+	0x021b000c, 0x898E7975,
+	0x021b0010, 0xFF538E64,
+	0x021b0014, 0x01FF00DD,
+	0x021b002c, 0x000026D2,
+	0x021b0030, 0x005B0E21,
+	0x021b0008, 0x09444040,
+	0x021b0004, 0x00025576,
+	0x021b0040, 0x0000007F,
+	0x021b0000, 0x841A0000,
+	0x021b001c, 0x04088032,
+	0x021b001c, 0x00008033,
+	0x021b001c, 0x00428031,
+	0x021b001c, 0x09408030,
+	0x021b001c, 0x04008040,
+	0x021b0800, 0xA1390003,
+	0x021b4800, 0xA1390003,
+	0x021b0020, 0x00007800,
+	0x021b0818, 0x00022227,
+	0x021b4818, 0x00022227,
+	0x021b083c, 0x42740304,
+	0x021b0840, 0x026e0265,
+	0x021b483c, 0x02750306,
+	0x021b4840, 0x02720244,
+	0x021b0848, 0x463d4041,
+	0x021b4848, 0x42413c47,
+	0x021b0850, 0x37414441,
+	0x021b4850, 0x4633473b,
+	0x021b080c, 0x0025001f,
+	0x021b0810, 0x00290027,
+	0x021b480c, 0x001f002b,
+	0x021b4810, 0x000f0029,
+	0x021b08b8, 0x00000800,
+	0x021b48b8, 0x00000800,
+	0x021b001c, 0x00000000,
+	0x021b0404, 0x00011006,
+};
+
+static void ddr_init(int *table, int size)
+{
+	int i;
+
+	for (i = 0; i < size / 2 ; i++)
+		writel(table[2 * i + 1], table[2 * i]);
+}
+
+static void spl_dram_init(void)
+{
+	ddr_init(mx6q_dcd_table, ARRAY_SIZE(mx6q_dcd_table));
+
+#if 0
+	switch (get_cpu_type()) {
+		case MXC_CPU_MX6Q:
+		case MXC_CPU_MX6D:
+			mx6dq_dram_iocfg(64, &amx6dq_ddr_ioregs,
+			                 &amx6dq_grp_ioregs);
+			mx6_dram_cfg(&mx6q_sysinfo, &mx6dq_calib, &mem_ddr_4g);
+			break;
+		case MXC_CPU_MX6SOLO:
+		#if 0
+			mx6sdl_dram_iocfg(32, &mx6_ddr_ioregs,
+			                 &mx6_grp_ioregs);
+			mx6_dram_cfg(&sysinfo, &mx6_calibration, &mem_ddr_2g);
+		#endif
+			break;
+		case MXC_CPU_MX6DL:
+		#if 0
+			mx6sdl_dram_iocfg(64, &mx6_ddr_ioregs,
+			                 &mx6_grp_ioregs);
+			mx6_dram_cfg(&sysinfo, &mx6_mmcd_calib, &mem_ddr);
+		#endif
+			break;
+		default:
+			puts("Error: CPU type not supported\n");
+			break;
+	}
+#endif
+}
+
+void board_init_f(ulong dummy)
+{
+	memset((void *)gd, 0, sizeof(struct global_data));
+
+	/* setup AIPS and disable watchdog */
+	arch_cpu_init();
+
+	ccgr_init();
+	/*
+	 * enable AXI cache for VDOA/VPU/IPU and
+	 * set IPU AXI-id0 Qos=0xf(bypass) AXI-id1 Qos=0x7
+	 */
+	gpr_init();
+
+	/* iomux uart and spi setup */
+	board_early_init_f();
+
+	/* setup GP timer */
+	timer_init();
+
+	/* UART clocks enabled and gd valid - init serial console */
+	preloader_console_init();
+
+	SETUP_IOMUX_PADS(ddr3_pads);
+	/* DDR initialization */
+	spl_dram_init();
+
+	/* Clear the BSS. */
+	memset(__bss_start, 0, __bss_end - __bss_start);
+
+	/* load/boot image from boot device */
+	board_init_r(NULL, 0);
 }
 #endif

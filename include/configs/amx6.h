@@ -8,6 +8,13 @@
 #ifndef __AMX6_CONFIG_H
 #define __AMX6_CONFIG_H
 
+#ifdef CONFIG_SPL
+#include "imx6_spl.h"
+
+#define CONFIG_SYS_SPI_U_BOOT_OFFS	0x11400
+#define CONFIG_SPL_TARGET		"u-boot-with-spl.imx"
+#endif
+
 #include "mx6_common.h"
 
 #define CONFIG_MACH_TYPE		4329
@@ -105,6 +112,14 @@
 #define CONFIG_FSL_USDHC
 #define CONFIG_SYS_FSL_ESDHC_ADDR	0
 /* #define CONFIG_SYS_FSL_USDHC_NUM	3 */
+
+#ifdef CONFIG_SPL_BUILD
+#undef CONFIG_CMD_MMC_RAW_ECSD
+#endif
+
+#undef CONFIG_BOOTM_NETBSD
+#undef CONFIG_BOOTM_PLAN9
+#undef CONFIG_BOOTM_RTEMS
 
 
 /******************************************************************************
