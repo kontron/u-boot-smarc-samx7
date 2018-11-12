@@ -13,6 +13,7 @@
 
 #define CONFIG_SPL_SPI_LOAD
 #define CONFIG_SYS_SPI_U_BOOT_OFFS      0x11400
+#define CONFIG_SPL_TARGET		"u-boot-with-spl.imx"
 #endif
 
 #include "mx7_common.h"
