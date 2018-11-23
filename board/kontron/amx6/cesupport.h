@@ -1,6 +1,6 @@
 /* SPDX-License-Identifier: GPL-2.0+ */
 /*
- * Copyright (C) 2012-2918 Kontron Europe GmbH
+ * Copyright (C) 2012-2018 Kontron Europe GmbH
  */
 #ifndef _CESUPPORT_H_
 #define _CESUPPORT_H_
