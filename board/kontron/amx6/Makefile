@@ -10,5 +10,7 @@ endif
 
 
 obj-y  := amx6.o
+obj-$(CONFIG_SPL_BUILD) += amx6_spl.o
+obj-$(CONFIG_VIDEO_IPUV3) += amx6_display.o
 
 obj-$(CONFIG_CMD_IMXOTP) += cmd_imxotp.o imx_otp.o
