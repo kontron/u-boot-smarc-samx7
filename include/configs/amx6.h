@@ -165,7 +165,7 @@
 #define CONFIG_SPLASH_SCREEN_ALIGN
 #define CONFIG_BMP_16BPP
 #define CONFIG_VIDEO_BMP_GZIP
-#define CONFIG_SYS_VIDEO_LOGO_MAX_SIZE  (1 << 20)
+#define CONFIG_SYS_VIDEO_LOGO_MAX_SIZE  (2 << 20)
 #define CONFIG_VIDEO_LOGO
 #define CONFIG_VIDEO_BMP_LOGO	/* Enable attaching to U-Boot image Kontron Logo */
 #endif
