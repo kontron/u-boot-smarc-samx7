@@ -215,7 +215,7 @@ static char * emb_eep_find_entry_in_dmi (int eeprom_num, int dmi_num, int entry_
 			break;
 		case 160:
 			offset_string_index = 12-1;
-			offset_strings = 15;
+			offset_strings = 16;
 			max_strings = 4;
 			break;
 		case 161:

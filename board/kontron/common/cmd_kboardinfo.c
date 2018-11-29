@@ -130,7 +130,6 @@ int do_kboardinfo (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv [])
 		printf ("DMI 160: String 2: %s\n", print_if_avail(emb_eep_find_string_in_dmi (1, 160, 2)));
 		printf ("DMI 160: String 3: %s\n", print_if_avail(emb_eep_find_string_in_dmi (1, 160, 3)));
 		printf ("DMI 160: String 4: %s\n", print_if_avail(emb_eep_find_string_in_dmi (1, 160, 4)));
-		printf ("DMI 160: String 5: %s\n", print_if_avail(emb_eep_find_string_in_dmi (1, 160, 5)));
 #endif
 #ifdef CONFIG_KBOARDINFO_CARRIER
 		printf ("Carrier:\r\n");
@@ -144,7 +143,6 @@ int do_kboardinfo (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv [])
 		printf ("DMI 160: String 2: %s\r\n", print_if_avail(emb_eep_find_string_in_dmi (2, 160, 2)));
 		printf ("DMI 160: String 3: %s\r\n", print_if_avail(emb_eep_find_string_in_dmi (2, 160, 3)));
 		printf ("DMI 160: String 4: %s\r\n", print_if_avail(emb_eep_find_string_in_dmi (2, 160, 4)));
-		printf ("DMI 160: String 5: %s\r\n", print_if_avail(emb_eep_find_string_in_dmi (2, 160, 5)));
 #endif
 	}
 #endif
