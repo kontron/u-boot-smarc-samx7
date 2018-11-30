@@ -40,9 +40,6 @@
 
 #include "amx6_iomux.h"
 
-#define GATE_UNGATE_CLOCKS
-#define PATCH_FOR_CLOCKS
-
 #define IDENT_STRING		"Kontron SMARC-sAMX6   Release "
 
 #ifndef IDENT_RELEASE

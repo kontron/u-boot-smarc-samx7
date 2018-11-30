@@ -16,6 +16,9 @@
 
 #include "amx6_iomux.h"
 
+#define GATE_UNGATE_CLOCKS
+#define PATCH_FOR_CLOCKS
+
 struct display_info_t {
 	int	bus;
 	int	addr;
