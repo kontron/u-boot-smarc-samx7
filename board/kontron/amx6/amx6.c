@@ -753,6 +753,7 @@ char *getMacAddress (int eeprom_num, int eth_num)
 }
 #endif
 
+#if defined(CONFIG_CMD_KBOARDINFO)
 static int fdt_setup_info_string(void *blob, char *name, char *value)
 {
 	int err, nodeoffset;
@@ -781,6 +782,7 @@ static int fdt_setup_info_string(void *blob, char *name, char *value)
 	}
 	return 0;
 }
+#endif
 
 extern char *print_if_avail (char *);
 
