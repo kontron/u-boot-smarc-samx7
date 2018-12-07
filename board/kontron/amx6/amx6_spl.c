@@ -22,10 +22,10 @@ static const unsigned char mx6s_cs_density_lookup[] = {4, 6, 10, 18};
 static struct mx6_ddr_sysinfo amx6sdl_sysinfo = {
 	.ddr_type = DDR_TYPE_DDR3,
 	.dsize = 1,		/* size of bus (1=32bit) */
-	.cs_density = 6,	/* config for 512 MiB range */
+	.cs_density = 32,	/* config for full 4GB range */
 	.ncs = 1,
 	.cs1_mirror = 0,
-	.rtt_nom = 2,		/* RTT_Nom = RZQ/2 */
+	.rtt_nom = 1,		/* RTT_Nom = RZQ/4 */
 	.rtt_wr = 2,
 	.walat = 0,		/* Write additional latency */
 	.ralat = 5,		/* Read additional latency */
@@ -33,17 +33,18 @@ static struct mx6_ddr_sysinfo amx6sdl_sysinfo = {
 	.bi_on = 1,		/* Bank interleaving enabled */
 	.sde_to_rst = 0x10,	/* 14 cycles, 200us (JEDEC default) */
 	.rst_to_cke = 0x23,	/* 33 cycles, 500us (JEDEC default) */
+	.pd_fast_exit = 0,
 	.refsel = 1,		/* Refresh cycles at 32KHz */
-	.refr = 7,		/* 8 refresh commands per refresh cycle */
+	.refr = 3,		/* 4 refresh commands per refresh cycle */
 };
 
-static struct mx6_ddr_sysinfo mx6q_sysinfo = {
+static struct mx6_ddr_sysinfo mx6qdl_sysinfo = {
 	.ddr_type = DDR_TYPE_DDR3,
 	.dsize = 2,		/* size of bus (2=64bit) */
-	.cs_density = 10,	/* config for 1 GiB range */
+	.cs_density = 32,	/* config for full 4GB range */
 	.ncs = 1,
 	.cs1_mirror = 0,
-	.rtt_nom = 2,		/* RTT_Nom = RZQ/2 */
+	.rtt_nom = 1,		/* RTT_Nom = RZQ/2 */
 	.rtt_wr = 2,
 	.walat = 0,		/* Write additional latency */
 	.ralat = 5,		/* Read additional latency */
@@ -51,8 +52,9 @@ static struct mx6_ddr_sysinfo mx6q_sysinfo = {
 	.bi_on = 1,		/* Bank interleaving enabled */
 	.sde_to_rst = 0x10,	/* 14 cycles, 200us (JEDEC default) */
 	.rst_to_cke = 0x23,	/* 33 cycles, 500us (JEDEC default) */
-	.refsel = 1,		/* Refresh cycles at 32KHz */
-	.refr = 7,		/* 8 refresh commands per refresh cycle */
+	.pd_fast_exit = 0,
+	.refsel = 1,		/* Refresh cycles at 64KHz */
+	.refr = 3,		/* 4 refresh commands per refresh cycle */
 };
 
 static struct mx6_ddr3_cfg mem_ddr = {
@@ -69,28 +71,43 @@ static struct mx6_ddr3_cfg mem_ddr = {
 	.SRT		= 0,
 };
 
-static const struct mx6_mmdc_calibration amx6sdl_calibration = {
-	.p0_mpwldectrl0 =  0x0040003c,
-	.p0_mpwldectrl1 =  0x0032003e,
-	.p0_mpdgctrl0 =    0x42350231,
-	.p0_mpdgctrl1 =    0x021a0218,
-	.p0_mprddlctl =    0x4b4b4e49,
-	.p0_mpwrdlctl =    0x3f3f3035,
+static const struct mx6_mmdc_calibration amx6s_calibration = {
+	.p0_mpwldectrl0 =  0x001f004d,
+	.p0_mpwldectrl1 =  0x001f001f,
+	.p0_mpdgctrl0 =    0x020e0208,
+	.p0_mpdgctrl1 =    0x01760178,
+	.p0_mprddlctl =    0x40444d45,
+	.p0_mpwrdlctl =    0x3f3e3f32,
 };
 
 static struct mx6_mmdc_calibration mx6dq_calibration = {
-	.p0_mpwldectrl0 = 0x0025001f,
-	.p0_mpwldectrl1 = 0x00290027,
-	.p1_mpwldectrl0 = 0x001f002b,
-	.p1_mpwldectrl1 = 0x000f0029,
-	.p0_mpdgctrl0 = 0x42740304,
-	.p0_mpdgctrl1 = 0x026e0265,
-	.p1_mpdgctrl0 = 0x02750306,
-	.p1_mpdgctrl1 = 0x02720244,
-	.p0_mprddlctl = 0x463d4041,
-	.p1_mprddlctl = 0x42413c47,
-	.p0_mpwrdlctl = 0x37414441,
-	.p1_mpwrdlctl = 0x4633473b,
+	.p0_mpwldectrl0 = 0x000b0017,
+	.p0_mpwldectrl1 = 0x001f0010,
+	.p1_mpwldectrl0 = 0x000b001c,
+	.p1_mpwldectrl1 = 0x00090010,
+	.p0_mpdgctrl0 = 0x03090318,
+	.p0_mpdgctrl1 = 0x027d027d,
+	.p1_mpdgctrl0 = 0x03100313,
+	.p1_mpdgctrl1 = 0x02730252,
+	.p0_mprddlctl = 0x433b3e41,
+	.p1_mprddlctl = 0x423d3a44,
+	.p0_mpwrdlctl = 0x44444944,
+	.p1_mpwrdlctl = 0x4a414a44,
+};
+
+static struct mx6_mmdc_calibration mx6dl_calibration = {
+	.p0_mpwldectrl0 = 0x001f0049,
+	.p0_mpwldectrl1 = 0x001f001f,
+	.p1_mpwldectrl0 = 0x001f002e,
+	.p1_mpwldectrl1 = 0x001f001f,
+	.p0_mpdgctrl0 = 0x02140211,
+	.p0_mpdgctrl1 = 0x017a0201,
+	.p1_mpdgctrl0 = 0x0205020d,
+	.p1_mpdgctrl1 = 0x0162016f,
+	.p0_mprddlctl = 0x3e464844,
+	.p1_mprddlctl = 0x46494741,
+	.p0_mpwrdlctl = 0x3d3e3a34,
+	.p1_mpwrdlctl = 0x3f3a3a3f,
 };
 
 static void ccgr_init(void)
@@ -208,7 +225,7 @@ static void spl_dram_init(void)
 			debug("Old PCB version: Memory size fix 0x20000000 on Solo CPU\n");
 			mx6sdl_dram_iocfg(64, &amx6sdl_ddr_ioregs,
 			                  &amx6sdl_grp_ioregs);
-			mx6_dram_cfg(&amx6sdl_sysinfo, &amx6sdl_calibration,
+			mx6_dram_cfg(&amx6sdl_sysinfo, &amx6s_calibration,
 			              &mem_ddr);
 		}
 		if (get_board_rev() == MX6DQ) {
@@ -216,7 +233,7 @@ static void spl_dram_init(void)
 			debug("Old PCB version: Memory size fix 0x40000000 on Quad CPU\n");
 			mx6dq_dram_iocfg(64, &amx6dq_ddr_ioregs,
 			                  &amx6dq_grp_ioregs);
-			mx6_dram_cfg(&mx6q_sysinfo, &mx6dq_calibration,
+			mx6_dram_cfg(&mx6qdl_sysinfo, &mx6dq_calibration,
 			              &mem_ddr);
 		}
 		return;
@@ -251,33 +268,25 @@ static void spl_dram_init(void)
 	switch (get_cpu_type()) {
 		case MXC_CPU_MX6Q:
 		case MXC_CPU_MX6D:
-			mx6q_sysinfo.dsize = 2;
-			mx6q_sysinfo.cs_density =
-			  mx6q_cs_density_lookup[ddr3_id];
-			debug("               cs_density=%d\n",
-			       mx6q_sysinfo.cs_density);
+			mx6qdl_sysinfo.dsize = 2;
 			mx6dq_dram_iocfg(64, &amx6dq_ddr_ioregs,
 			                 &amx6dq_grp_ioregs);
-			mx6_dram_cfg(&mx6q_sysinfo, &mx6dq_calibration,
+			mx6_dram_cfg(&mx6qdl_sysinfo, &mx6dq_calibration,
 			              &mem_ddr);
 			break;
 		case MXC_CPU_MX6SOLO:
 			amx6sdl_sysinfo.dsize = 1;
-			amx6sdl_sysinfo.cs_density =
-			  mx6s_cs_density_lookup[ddr3_id];
 			mx6sdl_dram_iocfg(32, &amx6sdl_ddr_ioregs,
 			                 &amx6sdl_grp_ioregs);
-			mx6_dram_cfg(&amx6sdl_sysinfo, &amx6sdl_calibration,
+			mx6_dram_cfg(&amx6sdl_sysinfo, &amx6s_calibration,
 			              &mem_ddr);
 			break;
 		case MXC_CPU_MX6DL:
-			mx6q_sysinfo.dsize = 2;
-			mx6q_sysinfo.cs_density =
-			  mx6q_cs_density_lookup[ddr3_id];
+			mx6qdl_sysinfo.dsize = 2;
 			mem_ddr.mem_speed = 800;
-			mx6sdl_dram_iocfg(32, &amx6sdl_ddr_ioregs,
+			mx6sdl_dram_iocfg(64, &amx6sdl_ddr_ioregs,
 			                 &amx6sdl_grp_ioregs);
-			mx6_dram_cfg(&mx6q_sysinfo, &mx6dq_calibration,
+			mx6_dram_cfg(&mx6qdl_sysinfo, &mx6dl_calibration,
 			              &mem_ddr);
 			break;
 		default:
