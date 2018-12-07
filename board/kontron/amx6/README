@@ -13,9 +13,23 @@ Kontron SMARC AMX6 Module Overview
 
 AMX Memory Map
 --------------
+Bootloader 32 bit address space for Cortex-A9:
+
+Start Address   End Address     Size    Description
+0x00000000      0x00017fff      96k     Boot ROM
+0x00900000      0x0091ffff      128k    OCRAM
+0x02000000      0x020fffff      1M      AIPS-1 periph.
+0x02100000      0x021fffff      1M      AIPS-2 periph.
+0x10000000      0xffffffff      3840M   SDRAM
 
 SPI Flash Memory Map
 --------------------
+
+Start Address   End Address     Size    Description
+0x00000000      0x000003ff      1k      Unused
+0x00000400      0x000bffff      768k    U-Boot image
+0x00c00000      0x00c7ffff      32k     U-boot environment
+0x00c80000      0x00cfffff      32k     U-Boot redundant environment
 
 Building AMX6 Bootloader Image
 ------------------------------
@@ -23,8 +37,12 @@ Building AMX6 Bootloader Image
 a) Serial download bootloader image
 
 # make distclean
-# make amx6_defconfig
+# make amx6_solo_defconfig (for Solo/DualLite module)
+# make amx6_quad_defconfig (for Quad/Dual module)
 # make
+
+This will create the u-boot.imx image file that can be used to boot the
+module in serial download mode.
 
 b) SPI flash bootloader image
 
@@ -32,77 +50,64 @@ b) SPI flash bootloader image
 # make amx6_spl_defconfig
 # make
 
+This will create the final u-boot-with-spl.imx image that already contains
+SPL part.
 
 It is possible to pass a release version when building. To achieve this, the
 IDENT_RELEASE macro has to be defined. This can be done with the following
 build step:
 
-# IDENT_RELEASE=<release_string> make u-boot-with-spl.imx
+# IDENT_RELEASE=<release_string> make
 
 
 Booting the AMX6 Module
 -----------------------
-
-******************************************************************************
-TBD TBD TBD TBD TBD
-BIG RED NOTE: description below is still the original from mx6sabresd board.
-
-The following methods can be used for booting mx6sabresd boards:
-
-1. Booting from SD card
-
-2. Booting from eMMC
-
-3. Booting via Falcon mode (SPL launches the kernel directly)
+AMX6 CPU fuses are configured to boot from SPI flash device. In addition,
+serial download mode via USB OTG port can be used. For serial download boot,
+the serial download bootloader image as described above is used.
 
 
-1. Booting from SD card via SPL
--------------------------------
+Bootloder Update from CLI
+-------------------------
+Provided the board has been booted to bootloader CLI prompt (either from SPI
+flash or using serial download mode), bootloader can be updated as shown
+below.
 
-mx6sabresd_defconfig target supports mx6q/mx6dl/mx6qp sabresd variants.
+1. Load bootloader SPI flash image file into RAM, e.g. from USB thumb device
 
-In order to build it:
+==> usb start
+==> load usb 0 ${loadaddr} u-boot-with-spl.imx
 
-$ make mx6sabresd_defconfig
+2. Update bootloader image in flash
 
-$ make
-
-This will generate the SPL and u-boot.img binaries.
-
-- Flash the SPL binary into the SD card:
-
-$ sudo dd if=SPL of=/dev/sdX bs=1K seek=1 && sync
-
-- Flash the u-boot.img binary into the SD card:
-
-$ sudo dd if=u-boot.img of=/dev/sdX bs=1K seek=69 && sync
+==> sf probe 2
+==> sf erase 0 80000 && sf write ${loadaddr} 400 $filesize
 
 
-2. Booting from eMMC
---------------------
+OS Update using USB Mass Storage Functionality
+----------------------------------------------
+Provided that the AMX6 module has been attached to a host PC vi USB OTG port,
+the 'ums' command from bootloader CLI can be used to present either eMMC or
+SD card as a block device to the host machine. This can be used for
+partitioning and filesystem installation on the module using standard OS
+(linux) commands like fdisk, mkfs, mount etc.
 
-$ make mx6sabresd_defconfig
 
-$ make
+- Attach the eMMC as a block device on the host PC from u-boot CLI:
 
-This will generate the SPL and u-boot.img binaries.
+==> ums 0 mmc 2
 
-- Boot first from SD card as shown in the previous section
 
-In U-boot change the eMMC partition config:
+- Create partition and filesystem on eMMC from host PC:
 
-=> mmc partconf 2 1 0 0
+# sudo fdisk /dev/sdX       - create partition on eMMC from fdisk shell
+# sudo mkfs.ext4 /dev/sdX1
 
-Mount the eMMC in the host PC:
+Note: eMMC device name depends on the host machine used. Be careful to not
+      overwrite host machine internal disk drives.
 
-=> ums 0 mmc 2
+- Mount filesystem and install a rootfs image to eMMC
 
-- Flash SPL and u-boot.img binaries into the eMMC:
+# sudo mount /dev/sdX1 /mnt
+# sudo tar xzpf <rootfsimg.tar.gz> -C /mnt
 
-$ sudo dd if=SPL of=/dev/sdX bs=1K seek=1 && sync
-$ sudo dd if=u-boot.img of=/dev/sdX bs=1K seek=69 && sync
-
-Set SW6 to eMMC 8-bit boot: 11010110
-
-TBD TBD TBD TBD TBD
-******************************************************************************
