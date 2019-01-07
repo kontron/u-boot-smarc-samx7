@@ -63,6 +63,10 @@ DECLARE_GLOBAL_DATA_PTR;
 #define UCMD_RUN_STOP           (1 << 0) /* controller run/stop */
 #define UCMD_RESET		(1 << 1) /* controller reset */
 
+#if defined(CONFIG_MX7)
+#define HSIC_PORT_IDX 2
+#endif
+
 #if defined(CONFIG_MX6)
 static const unsigned phy_bases[] = {
 	USB_PHY0_BASE_ADDR,
@@ -298,6 +302,20 @@ int __weak board_ehci_hcd_init(int port)
 }
 
 /**
+ * board_ehci_hcd_exit - board specific action after 'usb stop'
+ * @port:	usb port (otg/hsic)
+ *
+ * Board specific setup when stopping USB, e.g. to re-attach a dedicated
+ * hub which might be necessary to enable it after linux boot.
+ *
+ * Return: 0 Success
+ */
+int __weak board_ehci_hcd_exit(int port)
+{
+	return 0;
+}
+
+/**
  * board_ehci_power - enables/disables usb vbus voltage
  * @port:      usb otg port
  * @on:        on/off vbus voltage
@@ -349,6 +367,12 @@ int ehci_hcd_init(int index, enum usb_init_type init,
 		(controller_spacing * index));
 	int ret;
 
+	if (is_cpu_type(MXC_CPU_MX7S)) {
+		/* ino USB2 (OTG2) port on i.MX7S */
+		if (index == 1)
+			return -ENODEV;
+	}
+
 	if (index > 3)
 		return -EINVAL;
 
@@ -372,7 +396,12 @@ int ehci_hcd_init(int index, enum usb_init_type init,
 		return 0;
 
 	setbits_le32(&ehci->usbmode, CM_HOST);
-	writel(CONFIG_MXC_USB_PORTSC, &ehci->portsc);
+#if defined(CONFIG_MX7_USB_HSIC_PORTSC)
+	if (index >= HSIC_PORT_IDX)
+		writel(CONFIG_MX7_USB_HSIC_PORTSC, &ehci->portsc);
+	else
+#endif
+		writel(CONFIG_MXC_USB_PORTSC, &ehci->portsc);
 	setbits_le32(&ehci->portsc, USB_EN);
 
 	mdelay(10);
@@ -382,6 +411,8 @@ int ehci_hcd_init(int index, enum usb_init_type init,
 
 int ehci_hcd_stop(int index)
 {
+	board_ehci_hcd_exit(index);
+
 	return 0;
 }
 #else

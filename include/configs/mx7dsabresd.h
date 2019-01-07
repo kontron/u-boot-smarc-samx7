@@ -8,6 +8,13 @@
 #ifndef __MX7D_SABRESD_CONFIG_H
 #define __MX7D_SABRESD_CONFIG_H
 
+#ifdef CONFIG_SPL
+#include "imx7_spl.h"
+
+#define CONFIG_SPL_SPI_LOAD
+#define CONFIG_SYS_SPI_U_BOOT_OFFS      0x11000
+#endif
+
 #include "mx7_common.h"
 
 #define PHYS_SDRAM_SIZE			SZ_1G

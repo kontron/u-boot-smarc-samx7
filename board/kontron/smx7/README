@@ -1,0 +1,75 @@
+Kontron SMARC sAMX7 (SMX7) Module Overview
+------------------------------------------
+- NXP i.MX7 ARM CPU
+  ° Dual or Single Cortex A7-Core
+  ° M4 Coprocessor
+- Up to 2 GiB DDR3L memory
+- 2x Ethernet (1x Ethernet on Solo CPU)
+- 2 to 64 GiB eMMC
+- USDHC interface port
+- QSPI flash boot device
+- 2x USB 2.0 OTG port
+- 5x USB HSIC port via USB hub
+- PCIe 1x on Dual CPU only
+- 4x UART
+- 12x GPIO
+- 2x CAN bus interface
+- MIPI CSI interface
+- LVDS dual channel graphics
+
+SMX7 Memory Map
+---------------
+Bootloader 32 bit address space for Cortex-A7:
+
+Start Address	End Address	Size	Description
+0x00000000	0x00017fff	96k	Boot ROM
+0x00900000	0x0091ffff	128k	OCRAM
+0x30000000	0x30bfffff	12M	AIPS periph.
+0x31000000	0x313fffff	4M	ARM periph.
+0x32000000	0x7fffffff		See RM chapter 2.1.2 Cortex A-7 memory map
+0x80000000	0xffffffff	2G	SDRAM
+
+QSPI Flash Memory Map
+---------------------
+
+Start Address	End Address	Size	Description
+0x00000000	0x000001ff	0x200	QSPI header
+0x00000400	0x001bffff	1792k	U-Boot image
+0x000c0000	0x000c1fff	8k	U-Boot environment
+0x000c8000	0x000c9fff	8k	U-Boot redundant environment
+
+Building SMX7 bootloader image
+------------------------------
+
+There are 2 bootloader flavours for the SMX7, first one is to be used with serial
+downloader boot, the second one is copied to QSPI flash and started from there.
+
+To build SMX7 bootloader, a recent ARM toolchain >= 6.0.0 is recommended. In the
+build shell, the CROSS_COMPILE environment variable has to be set and exported
+accordingly (e.g. export CROSS_COMPILE=arm-unknown-linux-gnueabi-).
+
+a) Serial download bootloader image
+
+# make distclean
+# make smx7_defconfig
+# make
+
+The resulting bootloader image will be u-boot.imx. It can be used with a serial
+download tool (e.g. usb_imx) to boot the module.
+
+b) QSPI flash bootloader image
+
+# make distclean
+# make smx7_spl_defconfig
+# make u-boot-with-spl.imx
+
+The resulting bootloader image will be u-boot-with-spl.imx. In bootloader default
+environment the 'uboot_update' script is defined that can be used to update a
+given bootloader image via TFTP network connection.
+
+It is possible to pass a release version when building. To achieve this, the
+IDENT_RELEASE macro has to be defined. This can be done with the following
+build step:
+
+# IDENT_RELEASE=<release_string> make u-boot-with-spl.imx
+
