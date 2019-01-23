@@ -16,9 +16,6 @@
 
 #include "amx6_iomux.h"
 
-static const unsigned char mx6q_cs_density_lookup[] = {6, 10, 18, 32};
-static const unsigned char mx6s_cs_density_lookup[] = {4, 6, 10, 18};
-
 static struct mx6_ddr_sysinfo amx6sdl_sysinfo = {
 	.ddr_type = DDR_TYPE_DDR3,
 	.dsize = 1,		/* size of bus (1=32bit) */
@@ -298,6 +295,28 @@ static void spl_dram_init(void)
 	udelay(100);
 }
 
+#define ARM_PLL_CTL	0x020c8000
+
+int setup_arm_pll(void)
+{
+        u32 reg, div_sel, cpu_speed_mhz;
+
+        /* get CPU speed grade from fuses */
+        cpu_speed_mhz = get_cpu_speed_grade_hz() / 1000000;
+
+	/* calculate divider, assume 24 MHz OSC frequency */
+        div_sel = ((cpu_speed_mhz*2)/24) & 0x7f;
+
+	/* read ARM PLL control register and mask DIV_SELECT bits */
+	reg = readl(ARM_PLL_CTL) & 0xffffff80;
+
+	/* set DIV_SELECT */
+	reg |= div_sel;
+        writel(reg, ARM_PLL_CTL);
+
+        return 0;
+}
+
 void board_init_f(ulong dummy)
 {
 	/* setup AIPS and disable watchdog */
@@ -318,6 +337,9 @@ void board_init_f(ulong dummy)
 
 	/* UART clocks enabled - init serial console */
 	preloader_console_init();
+
+	/* set appropriate ARM CPU clock according to speed grade */
+	setup_arm_pll();
 
 	/* DDR initialization */
 	spl_dram_init();
