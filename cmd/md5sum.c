@@ -13,6 +13,28 @@
 #include <u-boot/md5.h>
 #include <asm/io.h>
 
+static int hex2num (char in)
+{
+	int retVal = -1;
+
+	switch (in)
+	{
+		case '0' ... '9':
+			retVal = in - '0';
+			break;
+
+		case 'a' ... 'f':
+			retVal = in - 'a' + 10;
+			break;
+
+		case 'A' ... 'F':
+			retVal = in - 'A' + 10;
+			break;
+	}
+
+	return retVal;
+}
+
 /*
  * Store the resulting sum to an address or variable
  */
@@ -78,6 +100,7 @@ int do_md5sum(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 	u8 output[16];
 	u8 vsum[16];
 	int verify = 0;
+	int verify_ascii = 0;
 	int ac;
 	char * const *av;
 	void *buf;
@@ -95,12 +118,42 @@ int do_md5sum(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 			return CMD_RET_USAGE;
 	}
 
+	if (strcmp(*av, "-a") == 0) {
+		verify_ascii = 1;
+		av++;
+		ac--;
+		if (ac < 3)
+			return CMD_RET_USAGE;
+	}
+
 	addr = simple_strtoul(*av++, NULL, 16);
 	len = simple_strtoul(*av++, NULL, 16);
 
 	buf = map_sysmem(addr, len);
 	md5_wd(buf, len, output, CHUNKSZ_MD5);
 	unmap_sysmem(buf);
+
+	if (verify_ascii) {
+		u8 *ptr;
+		int result = 0;
+		char *verify_str = *av++;
+
+		if (*verify_str == '*') {
+			ptr = (u8 *)simple_strtoul(verify_str + 1, NULL, 16);
+		} else {
+			printf("Parsing environment variables not supported yet\n");
+			return 1;
+		}
+		for (i = 0; i < 16; i++)
+		{
+			vsum[i] = hex2num (*(uchar*)(ptr + 2*i)) << 4;
+			vsum[i] |= hex2num (*(uchar*)(ptr + 2*i + 1));
+		}
+		/* check */
+		result = memcmp (vsum, output, 16);
+
+		return result;
+	}
 
 	if (!verify) {
 		printf("md5 for %08lx ... %08lx ==> ", addr, addr + len - 1);
@@ -170,7 +223,9 @@ U_BOOT_CMD(
 	"address count [[*]sum]\n"
 		"    - compute MD5 message digest [save to sum]\n"
 	"md5sum -v address count [*]sum\n"
-		"    - verify md5sum of memory area"
+		"    - verify md5sum of memory area\n"
+	"md5sum -a address count [*]sum\n"
+		"    - verify md5sum given in ASCII format"
 );
 #else
 U_BOOT_CMD(

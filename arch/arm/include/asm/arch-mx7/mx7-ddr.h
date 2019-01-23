@@ -13,7 +13,8 @@
 /* DDRC Registers (DDRC_IPS_BASE_ADDR) */
 struct ddrc {
 	u32 mstr;		/* 0x0000 */
-	u32 reserved1[0x18];
+	u32 stat;		/* 0x0004 */
+	u32 reserved1[0x17];
 	u32 rfshtmg;		/* 0x0064 */
 	u32 reserved2[0x1a];
 	u32 init0;		/* 0x00d0 */
@@ -35,7 +36,8 @@ struct ddrc {
 	u32 dramtmg8;		/* 0x0120 */
 	u32 reserved7[0x17];
 	u32 zqctl0;		/* 0x0180 */
-	u32 reserved8[0x03];
+	u32 zqctl1;             /* 0x0184 */
+	u32 reserved8[0x02];
 	u32 dfitmg0;		/* 0x0190 */
 	u32 dfitmg1;		/* 0x0194 */
 	u32 reserved9[0x02];
@@ -136,6 +138,7 @@ struct ddr_phy {
 	u32 mdll_con0;		/* 0x00b0 */
 	u32 reserved8[0x03];
 	u32 zq_con0;		/* 0x00c0 */
+	u32 zq_con1;		/* 0x00c4 */
 };
 
 #define DDR_PHY_CMD_SDLL_CON0_CTRL_RESYNC_MASK BIT(24)

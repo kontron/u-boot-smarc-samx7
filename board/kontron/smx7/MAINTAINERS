@@ -1,0 +1,7 @@
+KONTRON SMX7 BOARD
+M:	Thomas Schaefer <thomas.schaefer@kontron.com>
+S:	Maintained
+F:	board/kontron/smx7
+F:	include/configs/smx7.h
+F:	configs/smx7_defconfig
+F:	configs/smx7_spl_defconfig
