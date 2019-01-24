@@ -23,7 +23,6 @@
 #include <common.h>
 #include <i2c.h>
 #include "emb_eep.h"
-#include "crc.h"
 
 #ifdef CONFIG_EMB_EEP_I2C_EEPROM
 
