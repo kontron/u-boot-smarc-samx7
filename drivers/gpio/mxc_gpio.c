@@ -114,6 +114,24 @@ int gpio_set_value(unsigned gpio, int value)
 	return 0;
 }
 
+int gpio_set_multivalue(unsigned gpio, int value, int mask)
+{
+        unsigned int port = GPIO_TO_PORT(gpio);
+        struct gpio_regs *regs;
+        u32 l;
+
+        if (port >= ARRAY_SIZE(gpio_ports))
+                return -1;
+
+        regs = (struct gpio_regs *)gpio_ports[port];
+
+        l = readl(&regs->gpio_dr) & ~mask;
+        l |= value & mask;
+        writel(l, &regs->gpio_dr);
+
+        return 0;
+}
+
 int gpio_get_value(unsigned gpio)
 {
 	unsigned int port = GPIO_TO_PORT(gpio);
