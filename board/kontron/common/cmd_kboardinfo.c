@@ -101,10 +101,11 @@ int do_kboardinfo (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv [])
 	 * Needed for test design department
 	 */
 	cpurev = get_cpu_rev();
-	printf("CPU:                 Freescale i.MX%s rev%d.%d at %d MHz\n",
+	printf("CPU:                 Freescale i.MX%s rev%d.%d %d MHz at %d MHz\n",
 		get_imx_type((cpurev & 0xFF000) >> 12),
 		(cpurev & 0x000F0) >> 4,
 		(cpurev & 0x0000F) >> 0,
+		get_cpu_speed_grade_hz() / 1000000,
 		mxc_get_clock(MXC_ARM_CLK) / 1000000);
 
 	/*
