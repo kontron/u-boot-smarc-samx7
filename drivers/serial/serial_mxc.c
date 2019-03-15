@@ -335,6 +335,9 @@ static int mxc_serial_ofdata_to_platdata(struct udevice *dev)
 
 	plat->use_dte = fdtdec_get_bool(gd->fdt_blob, dev_of_offset(dev),
 					"fsl,dte-mode");
+        plat->use_rtscts = fdtdec_get_bool(gd->fdt_blob, dev_of_offset(dev),
+                                        "uart-has-rtscts");
+
 	return 0;
 }
 
