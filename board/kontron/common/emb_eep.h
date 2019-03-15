@@ -27,6 +27,11 @@ typedef struct {
 	char		* block;
 	unsigned int 	max_size;
 	int		eeprom_num;
+        int             eeprom_busnum;
+        int             eeprom_addr;    /* EEPROM I2C address */
+        int             eeprom_addrlen;
+        int             eeprom_offset;  /* offset where VPD data starts */
+        struct udevice  *i2c_dev;
 } emb_eep_info;
 
 typedef struct {

@@ -43,29 +43,19 @@ static emb_eep_info vpdinfo;
 
 static int i2c_read_emb (emb_eep_info *vpdi, int offset, unsigned char *buffer, int len)
 {
-	switch (vpdi->eeprom_num) {
-#ifdef CONFIG_EMB_EEP_I2C_EEPROM_ADDR_1
-		case 1:
-			i2c_read (CONFIG_EMB_EEP_I2C_EEPROM_ADDR_1,
-				CONFIG_EMB_EEP_I2C_EEPROM_OFFSET_1 + offset,
-				CONFIG_EMB_EEP_I2C_EEPROM_ADDR_LEN_1,
-				(unsigned char *) &buffer[0],
-				len);
-			break;
+#ifdef CONFIG_DM_I2C
+        dm_i2c_read(vpdi->i2c_dev, 
+                    vpdi->eeprom_offset + offset,
+                    (unsigned char *) &buffer[0],
+                    len);
+#else
+        i2c_read (vpdi->eeprom_addr,
+                  vpdi->eeprom_offset + offset,
+                  vpdi->eeprom_addrlen,
+                  (unsigned char *) &buffer[0],
+                  len);
 #endif
-#ifdef CONFIG_EMB_EEP_I2C_EEPROM_ADDR_2
-		case 2:
-			i2c_read (CONFIG_EMB_EEP_I2C_EEPROM_ADDR_2,
-				CONFIG_EMB_EEP_I2C_EEPROM_OFFSET_2 + offset,
-				CONFIG_EMB_EEP_I2C_EEPROM_ADDR_LEN_2,
-				(unsigned char *) &buffer[0],
-				len);
-			break;
-#endif
-		default:
-			printf ("Warning: EEPROM number %d not supported\n",
-			        vpdi->eeprom_num);
-	}
+
 	return 0;
 }
 
@@ -73,18 +63,22 @@ static int i2c_read_emb (emb_eep_info *vpdi, int offset, unsigned char *buffer, 
 static int i2c_write_emb (emb_eep_info *vpdi, int offset, unsigned char *buffer, int len)
 {
 	int ret = 0;
-#ifdef CONFIG_EMB_EEP_I2C_EEPROM_ADDR_1
-	if (vpdi->eeprom_num == 1) {
-		do {
-			len--;
-			ret |= i2c_write(CONFIG_EMB_EEP_I2C_EEPROM_ADDR_1,
-		                         CONFIG_EMB_EEP_I2C_EEPROM_OFFSET_1 + offset + len,
-		                         CONFIG_EMB_EEP_I2C_EEPROM_ADDR_LEN_1,
-		                         buffer+len, 1);
-			udelay(5000);
-		} while (len > 0);
-	}
+        do {
+                len--;
+#ifdef CONFIG_DM_I2C
+                dm_i2c_write(vpdi->i2c_dev,
+                             vpdi->eeprom_offset + offset + len,
+                             buffer+len,
+                             1);
+#else
+                ret |= i2c_write(vpdi->eeprom_addr,
+                                 vpdi->eeprom_offset + offset + len,
+                                 vpdi->eeprom_addrlen,
+                                 buffer+len, 1);
 #endif
+                udelay(5000);
+        } while (len > 0);
+
 	return ret;
 }
 #endif
@@ -461,14 +455,47 @@ static int emb_eep_check_header (emb_eep_info *vpdi)
 
 static int emb_eep_init (emb_eep_info *vpdi)
 {
+        debug ("Initialize vpd_init, vpdi = 0x%x\n", (int)vpdi);
 
-	debug ("Initialize vpd_init, vpdi = 0x%x\n", (int)vpdi);
+        switch (vpdi->eeprom_num) {
+#ifdef CONFIG_EMB_EEP_I2C_EEPROM_ADDR_1
+        case 1:
+                vpdi->eeprom_busnum = EMB_EEP_I2C_EEPROM_BUS_NUM_1;
+                vpdi->eeprom_addr = CONFIG_EMB_EEP_I2C_EEPROM_ADDR_1;
+                vpdi->eeprom_addrlen = CONFIG_EMB_EEP_I2C_EEPROM_ADDR_LEN_1;
+                vpdi->eeprom_offset = CONFIG_EMB_EEP_I2C_EEPROM_OFFSET_1;
+                break;
+#endif
+#ifdef CONFIG_EMB_EEP_I2C_EEPROM_ADDR_2
+        case 2:
+                vpdi->eeprom_busnum = EMB_EEP_I2C_EEPROM_BUS_NUM_2;
+                vpdi->eeprom_addr = CONFIG_EMB_EEP_I2C_EEPROM_ADDR_2;
+                vpdi->eeprom_addrlen = CONFIG_EMB_EEP_I2C_EEPROM_ADDR_LEN_2;
+                vpdi->eeprom_offset = CONFIG_EMB_EEP_I2C_EEPROM_OFFSET_2;
+                break;
+
+#endif
+        default:
+                printf ("Warning: EEPROM number %d not supported\n",
+                        vpdi->eeprom_num);
+                return -1;
+        }
 
 	/* read 6 bytes first */
-	if (vpdi->eeprom_num == 2)
-		i2c_set_bus_num(EMB_EEP_I2C_EEPROM_BUS_NUM_2);
-	else
-		i2c_set_bus_num(EMB_EEP_I2C_EEPROM_BUS_NUM_1);
+#ifdef CONFIG_DM_I2C
+        int ret;
+        ret = i2c_get_chip_for_busnum(vpdi->eeprom_busnum, 
+                                      vpdi->eeprom_addr,
+                                      vpdi->eeprom_addrlen,
+                                      &(vpdi->i2c_dev));
+	if (ret) {
+		printf("EEPROM 0x%02x not foundon bus %d\n",
+                        vpdi->eeprom_addr, vpdi->eeprom_busnum);
+		return -1;
+	}
+#else
+	i2c_set_bus_num(vpdi->eeprom_busnum);
+#endif
 
 	i2c_read_emb(vpdi, 0, (unsigned char *)&vpdi->header[0], 6);
 
