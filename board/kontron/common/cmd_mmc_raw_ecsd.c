@@ -139,18 +139,6 @@ int mmc_send_ext_csd(struct mmc *mmc, u8 *ext_csd)
 	return err;
 }
 
-void mmc_set_ios(struct mmc *mmc)
-{
-	mmc->cfg->ops->set_ios(mmc);
-}
-
-void mmc_set_bus_width(struct mmc *mmc, uint width)
-{
-	mmc->bus_width = width;
-
-	mmc_set_ios(mmc);
-}
-
 static struct mmc *do_mmc_raw_ecsd_init (int dev, bool force_init)
 {
 	/*
