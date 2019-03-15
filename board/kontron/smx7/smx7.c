@@ -53,70 +53,6 @@ extern int EMB_EEP_I2C_EEPROM_BUS_NUM_1;
 
 DECLARE_GLOBAL_DATA_PTR;
 
-#define I2C_PAD_CTRL    (PAD_CTL_DSE_3P3V_32OHM | PAD_CTL_SRE_SLOW | \
-	PAD_CTL_HYS | PAD_CTL_PUE | PAD_CTL_PUS_PU100KOHM)
-
-
-#ifdef CONFIG_SYS_I2C_MXC
-/* from ICMC: #define I2C_PAD MUX_PAD_CTRL(0x0001F858) */
-#define I2C_PAD MUX_PAD_CTRL(I2C_PAD_CTRL)
-/* I2C1 for PMIC */
-static struct i2c_pads_info i2c_pad_info1 = {
-	.scl = {
-		.i2c_mode = MX7D_PAD_UART1_RX_DATA__I2C1_SCL | I2C_PAD,
-		.gpio_mode = MX7D_PAD_UART1_RX_DATA__GPIO4_IO0 | I2C_PAD,
-		.gp = IMX_GPIO_NR(4, 0),
-	},
-	.sda = {
-		.i2c_mode = MX7D_PAD_UART1_TX_DATA__I2C1_SDA | I2C_PAD,
-		.gpio_mode = MX7D_PAD_UART1_TX_DATA__GPIO4_IO1 | I2C_PAD,
-		.gp = IMX_GPIO_NR(4, 1),
-	},
-};
-
-/* I2C2 */
-static struct i2c_pads_info i2c_pad_info2 = {
-	.scl = {
-		.i2c_mode = MX7D_PAD_I2C2_SCL__I2C2_SCL | I2C_PAD,
-		.gpio_mode = MX7D_PAD_I2C2_SCL__GPIO4_IO10 | I2C_PAD,
-		.gp = IMX_GPIO_NR(4, 10)
-	},
-	.sda = {
-		.i2c_mode = MX7D_PAD_I2C2_SDA__I2C2_SDA | I2C_PAD,
-		.gpio_mode = MX7D_PAD_I2C2_SDA__GPIO4_IO11 | I2C_PAD,
-		.gp = IMX_GPIO_NR(4, 11)
-	}
-};
-
-/* I2C3 */
-static struct i2c_pads_info i2c_pad_info3 = {
-	.scl = {
-		.i2c_mode = MX7D_PAD_I2C3_SCL__I2C3_SCL | I2C_PAD,
-		.gpio_mode = MX7D_PAD_I2C3_SCL__GPIO4_IO12 | I2C_PAD,
-		.gp = IMX_GPIO_NR(4, 12)
-	},
-	.sda = {
-		.i2c_mode = MX7D_PAD_I2C3_SDA__I2C3_SDA | I2C_PAD,
-		.gpio_mode = MX7D_PAD_I2C3_SDA__GPIO4_IO13 | I2C_PAD,
-		.gp = IMX_GPIO_NR(4, 13)
-	}
-};
-
-static struct i2c_pads_info i2c_pad_info4 = {
-	.scl = {
-		.i2c_mode = MX7D_PAD_LCD_DATA22__I2C4_SCL | I2C_PAD,
-		.gpio_mode = MX7D_PAD_LCD_DATA22__GPIO3_IO27 | I2C_PAD,
-		.gp = IMX_GPIO_NR(3, 27)
-	},
-	.sda = {
-		.i2c_mode = MX7D_PAD_LCD_DATA23__I2C4_SDA | I2C_PAD,
-		.gpio_mode = MX7D_PAD_LCD_DATA23__GPIO3_IO28 | I2C_PAD,
-		.gp = IMX_GPIO_NR(3, 28)
-	}
-};
-
-#endif
-
 int board_spi_cs_gpio(unsigned bus, unsigned cs)
 {
 	if ((bus == 2) && (cs == 0))
@@ -134,16 +70,6 @@ int dram_init(void)
 
 	return 0;
 }
-
-#if 0
-static iomux_v3_cfg_t const usb_otg1_pads[] = {
-	MX7D_PAD_GPIO1_IO05__USB_OTG1_PWR | MUX_PAD_CTRL(NO_PAD_CTRL),
-};
-
-static iomux_v3_cfg_t const usb_otg2_pads[] = {
-	MX7D_PAD_UART3_CTS_B__USB_OTG2_PWR | MUX_PAD_CTRL(NO_PAD_CTRL),
-};
-#endif
 
 #ifdef CONFIG_VIDEO_MXS
 static int setup_lcd(void)
@@ -245,7 +171,9 @@ int board_eth_init(bd_t *bis)
 	setbits_le32(&ccm_anatop->clk_misc0, 0x20 | CCM_ANALOG_CLK_MISC0_LVDS1_CLK_SEL(0x12));
 	udelay(10);
 
-	/* remove PHY reset */
+        gpio_request(IMX_GPIO_NR(3, 21), "fec_reset");
+	gpio_direction_output(IMX_GPIO_NR(3, 21), 0);
+	udelay(500);
 	gpio_direction_output(IMX_GPIO_NR(3, 21), 1);
 
 	/* FEC0 is connected to PHY#0 */
@@ -315,11 +243,6 @@ int board_early_init_f(void)
 	BOARD_InitPins();
 	BOARD_FixupPins();
 
-	setup_i2c(0, CONFIG_SYS_MXC_I2C1_SPEED, 0x7f, &i2c_pad_info1);
-	setup_i2c(1, CONFIG_SYS_MXC_I2C2_SPEED, 0x7f, &i2c_pad_info2);
-	setup_i2c(2, CONFIG_SYS_MXC_I2C3_SPEED, 0x7f, &i2c_pad_info3);
-	setup_i2c(3, CONFIG_SYS_MXC_I2C4_SPEED, 0x7f, &i2c_pad_info4);
-
 #if defined(CONFIG_KEX_ARM_PLL_SPEED) && defined(CONFIG_SPL_BUILD)
 	/* increase CPU speed only in SPL and only on dual modules */
 	u32 reg, div_sel;
@@ -335,13 +258,6 @@ int board_early_init_f(void)
 		reg |= div_sel;
 		writel(reg, &ccm_anatop->pll_arm);
 	}
-#endif
-
-#if 0
-	imx_iomux_v3_setup_multiple_pads(usb_otg1_pads,
-					 ARRAY_SIZE(usb_otg1_pads));
-	imx_iomux_v3_setup_multiple_pads(usb_otg2_pads,
-					 ARRAY_SIZE(usb_otg2_pads));
 #endif
 
 	return 0;
@@ -409,21 +325,24 @@ static int imx_set_usb_hsic_power(void)
 
 static int attach_usb_hub(void)
 {
+        struct udevice *dev;
+        int ret;
 	uint8_t usbattach_cmd[] = {0xaa, 0x55, 0x00};
 
 	/* reset USBHUB */
+	gpio_request(IMX_GPIO_NR(1, 0), "usbhub_reset");
 	gpio_direction_output(IMX_GPIO_NR(1, 0), 0);
 	udelay(1000);
 	/* remove USBHUB reset */
 	gpio_direction_output(IMX_GPIO_NR(1, 0), 1);
 	udelay(250000);
 
-	i2c_set_bus_num(1);
-	if (i2c_probe(CONFIG_KEX_USBHUB_I2C_ADDR)) {
+        ret = i2c_get_chip_for_busnum(1, CONFIG_KEX_USBHUB_I2C_ADDR, 1, &dev);
+	if (ret) {
 		printf("USBHUB not found\n");
 		return 0;
 	}
-	i2c_write(CONFIG_KEX_USBHUB_I2C_ADDR, 0, 0, usbattach_cmd, 3);
+	dm_i2c_write(dev, 0, usbattach_cmd, 3);
 
 	return 0;
 }
@@ -453,8 +372,11 @@ static void set_boot_sel(void)
 	int boot_sel;
 
 	/* Get the state of the Boot Select pins */
+	gpio_request(IMX_GPIO_NR(3, 24), "bootsel_0");
 	gpio_direction_input(IMX_GPIO_NR(3, 24));	/* BOOT SEL 0 */
+	gpio_request(IMX_GPIO_NR(3, 25), "bootsel_1");
 	gpio_direction_input(IMX_GPIO_NR(3, 25));	/* BOOT SEL 1 */
+	gpio_request(IMX_GPIO_NR(3, 26), "bootsel_2");
 	gpio_direction_input(IMX_GPIO_NR(3, 26));	/* BOOT SEL 2 */
 
 	boot_sel = gpio_get_value(IMX_GPIO_NR(3, 24)) & 0x1;
@@ -523,6 +445,10 @@ int misc_init_r(void)
 		emb_eep_init_r (1, 1, 1); /* import 1 MAC address */
 #endif
 
+	gpio_request(IMX_GPIO_NR(3, 16), "pcie_a_prsnt");
+	gpio_request(IMX_GPIO_NR(3, 22), "pcie_b_prsnt");
+	gpio_request(IMX_GPIO_NR(6, 15), "pcie_c_prsnt");
+
 	/* set PCIE present signal according to environment settings */
 	if (is_cpu_type(MXC_CPU_MX7D)) {
 		if (env_get_yesno("pcie_a_prsnt"))
@@ -554,17 +480,40 @@ int misc_init_r(void)
 	/* snvs_lpgpr_set(0x12345678); */
 
 	/* init GPIO lines to ground */
+	gpio_request(IMX_GPIO_NR(1, 8), "PWM_OUT");
 	gpio_direction_output(IMX_GPIO_NR(1,8), 0);	/* GPIO5: PWM_OUT */
+
+	gpio_request(IMX_GPIO_NR(3, 5), "CAM0_PWR");
 	gpio_direction_output(IMX_GPIO_NR(3,5), 0);	/* GPIO0: CAM0_PWR */
+
+	gpio_request(IMX_GPIO_NR(3, 6), "CAM1_PWR");
 	gpio_direction_output(IMX_GPIO_NR(3,6), 0);	/* GPIO1: CAM1_PWR */
+
+	gpio_request(IMX_GPIO_NR(3, 7), "CAM0_RST");
 	gpio_direction_output(IMX_GPIO_NR(3,7), 0);	/* GPIO2: CAM0_RST */
+
+	gpio_request(IMX_GPIO_NR(3, 8), "CAM1_RST");
 	gpio_direction_output(IMX_GPIO_NR(3,8), 0);	/* GPIO3: CAM1_RST */
+
+	gpio_request(IMX_GPIO_NR(3, 9), "HDA_RST");
 	gpio_direction_output(IMX_GPIO_NR(3,9), 0);	/* GPIO4: HDA_RST */
+
+	gpio_request(IMX_GPIO_NR(3, 10), "TACHIN");
 	gpio_direction_output(IMX_GPIO_NR(3,10), 0);	/* GPIO6: TACHIN */
+
+	gpio_request(IMX_GPIO_NR(3, 11), "gpio7");
 	gpio_direction_output(IMX_GPIO_NR(3,11), 0);	/* GPIO7 */
+
+	gpio_request(IMX_GPIO_NR(3, 12), "gpio8");
 	gpio_direction_output(IMX_GPIO_NR(3,12), 0);	/* GPIO8 */
+
+	gpio_request(IMX_GPIO_NR(4, 4), "gpio9");
 	gpio_direction_output(IMX_GPIO_NR(4,4), 0);	/* GPIO9 */
+
+	gpio_request(IMX_GPIO_NR(4, 5), "gpio10");
 	gpio_direction_output(IMX_GPIO_NR(4,5), 0);	/* GPIO10 */
+
+	gpio_request(IMX_GPIO_NR(3, 15), "gpio11");
 	gpio_direction_output(IMX_GPIO_NR(3,15), 0);	/* GPIO11 */
 
 	return 0;
