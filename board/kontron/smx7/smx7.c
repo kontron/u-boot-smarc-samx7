@@ -625,17 +625,6 @@ err:
 }
 #endif /* CONFIG_OF_BOARD_SETUP */
 
-static struct mxc_serial_platdata mxc_serial_plat = {
-	.reg = (struct mxc_uart *)CONFIG_MXC_UART_BASE,
-	.use_dte = true,
-	.use_rtscts = true,
-};
-
-U_BOOT_DEVICE(mxc_serial) = {
-	.name = "serial_mxc",
-	.platdata = &mxc_serial_plat,
-};
-
 #ifdef CONFIG_CMD_KBOARDINFO
 /* board infos */
 
