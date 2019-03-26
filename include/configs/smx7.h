@@ -27,7 +27,6 @@
  * Miscellaneous configurable options
  */
 #define CONFIG_WATCHDOG
-#define CONFIG_DBG_MONITOR
 
 #define CONFIG_CMD_MD5SUM
 #define CONFIG_MD5
@@ -78,7 +77,6 @@
 /******************************************************************************
  * I2C Configs
  */
-#define CONFIG_SYS_I2C
 #define CONFIG_SYS_I2C_MXC
 #define CONFIG_I2C_MULTI_BUS
 #define CONFIG_SYS_I2C_MXC_I2C1         /* enable I2C bus 1 */
@@ -99,7 +97,7 @@
 #define CONFIG_EHCI_HCD_INIT_AFTER_RESET
 #define CONFIG_MXC_USB_PORTSC           (PORT_PTS_UTMI | PORT_PTS_PTW)
 #define CONFIG_MXC_USB_FLAGS            0
-#define CONFIG_USB_MAX_CONTROLLER_COUNT 3
+#define CONFIG_USB_MAX_CONTROLLER_COUNT 2
 #define CONFIG_MX7_USB_HSIC_PORTSC      (PORT_PTS_HSIC | PORT_PTS_PTW)
 
 #define CONFIG_USBD_HS
@@ -118,7 +116,6 @@
 #define CONFIG_ENV_OFFSET_REDUND    0x0c8000
 #define CONFIG_ENV_SIZE_REDUND      (CONFIG_ENV_SIZE)
 #else
-#define CONFIG_ENV_IS_NOWHERE
 #define CONFIG_ENV_SIZE             SZ_8K
 #endif
 
