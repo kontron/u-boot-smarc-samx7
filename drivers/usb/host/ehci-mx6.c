@@ -64,7 +64,7 @@ DECLARE_GLOBAL_DATA_PTR;
 #define UCMD_RESET		(1 << 1) /* controller reset */
 
 #if defined(CONFIG_MX7)
-#define HSIC_PORT_IDX 2
+#define USB_HSIC_BASE		(0x30B30000U)
 #endif
 
 #if defined(CONFIG_MX6)
@@ -397,7 +397,7 @@ int ehci_hcd_init(int index, enum usb_init_type init,
 
 	setbits_le32(&ehci->usbmode, CM_HOST);
 #if defined(CONFIG_MX7_USB_HSIC_PORTSC)
-	if (index >= HSIC_PORT_IDX)
+	if (ehci == (struct usb_ehci *)USB_HSIC_BASE)
 		writel(CONFIG_MX7_USB_HSIC_PORTSC, &ehci->portsc);
 	else
 #endif
@@ -422,6 +422,7 @@ struct ehci_mx6_priv_data {
 	struct udevice *vbus_supply;
 	enum usb_init_type init_type;
 	int portnr;
+	char *phy_type;
 };
 
 static int mx6_init_after_reset(struct ehci_ctrl *dev)
@@ -450,7 +451,7 @@ static int mx6_init_after_reset(struct ehci_ctrl *dev)
 
 	setbits_le32(&ehci->usbmode, CM_HOST);
 #if defined(CONFIG_MX7_USB_HSIC_PORTSC)
-	if (priv->portnr >= HSIC_PORT_IDX)
+	if (!strncmp(priv->phy_type, "hsic", 4))
 		writel(CONFIG_MX7_USB_HSIC_PORTSC, &ehci->portsc);
 	else
 #endif
@@ -517,7 +518,16 @@ static int ehci_usb_phy_mode(struct udevice *dev)
 static int ehci_usb_ofdata_to_platdata(struct udevice *dev)
 {
 	struct usb_platdata *plat = dev_get_platdata(dev);
+	struct ehci_mx6_priv_data *priv =dev_get_priv(dev);
 	const char *mode;
+	const void *phy_type;
+
+	phy_type = fdt_getprop(gd->fdt_blob, dev_of_offset(dev),
+		               "phy_type", NULL);
+	if (phy_type) {
+		priv->phy_type = (char *)phy_type;
+		debug("phy_type %s\n", priv->phy_type);
+	}
 
 	mode = fdt_getprop(gd->fdt_blob, dev_of_offset(dev), "dr_mode", NULL);
 	if (mode) {
@@ -546,6 +556,8 @@ static int ehci_usb_probe(struct udevice *dev)
 	struct ehci_hcor *hcor;
 	int ret;
 
+	debug("%s: ehci address used is %p, portnr is %d\n",
+	       __func__, ehci, dev->seq);
 	priv->ehci = ehci;
 	priv->portnr = dev->seq;
 	priv->init_type = type;
@@ -572,7 +584,7 @@ static int ehci_usb_probe(struct udevice *dev)
 	if (priv->init_type == USB_INIT_HOST) {
 		setbits_le32(&ehci->usbmode, CM_HOST);
 #if defined(CONFIG_MX7_USB_HSIC_PORTSC)
-		if (priv->portnr >= HSIC_PORT_IDX)
+		if (!strncmp(priv->phy_type, "hsic", 4))
 			writel(CONFIG_MX7_USB_HSIC_PORTSC, &ehci->portsc);
 		else
 #endif
