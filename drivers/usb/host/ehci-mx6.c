@@ -449,7 +449,12 @@ static int mx6_init_after_reset(struct ehci_ctrl *dev)
 		return 0;
 
 	setbits_le32(&ehci->usbmode, CM_HOST);
-	writel(CONFIG_MXC_USB_PORTSC, &ehci->portsc);
+#if defined(CONFIG_MX7_USB_HSIC_PORTSC)
+	if (priv->portnr >= HSIC_PORT_IDX)
+		writel(CONFIG_MX7_USB_HSIC_PORTSC, &ehci->portsc);
+	else
+#endif
+		writel(CONFIG_MXC_USB_PORTSC, &ehci->portsc);
 	setbits_le32(&ehci->portsc, USB_EN);
 
 	mdelay(10);
@@ -566,7 +571,12 @@ static int ehci_usb_probe(struct udevice *dev)
 
 	if (priv->init_type == USB_INIT_HOST) {
 		setbits_le32(&ehci->usbmode, CM_HOST);
-		writel(CONFIG_MXC_USB_PORTSC, &ehci->portsc);
+#if defined(CONFIG_MX7_USB_HSIC_PORTSC)
+		if (priv->portnr >= HSIC_PORT_IDX)
+			writel(CONFIG_MX7_USB_HSIC_PORTSC, &ehci->portsc);
+		else
+#endif
+			writel(CONFIG_MXC_USB_PORTSC, &ehci->portsc);
 		setbits_le32(&ehci->portsc, USB_EN);
 	}
 
