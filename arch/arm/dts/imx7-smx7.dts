@@ -209,6 +209,12 @@
 	status = "okay";
 };
 
+&usbh {
+	phy_tpye = "hsic";
+	disable-over-current;
+	status = "okay";
+};
+
 &usdhc1 {
 	pinctrl-names = "default", "state_100mhz", "state_200mhz";
 	pinctrl-0 = <&pinctrl_usdhc1>, <&pinctrl_usdhc1_gpio>;

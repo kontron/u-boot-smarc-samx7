@@ -342,6 +342,7 @@ static int attach_usb_hub(void)
 		printf("USBHUB not found\n");
 		return 0;
 	}
+        i2c_set_chip_offset_len(dev, 0);
 	dm_i2c_write(dev, 0, usbattach_cmd, 3);
 
 	return 0;
