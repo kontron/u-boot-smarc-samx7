@@ -351,7 +351,17 @@ static int attach_usb_hub(void)
 int board_ehci_hcd_init(int port)
 {
 	debug("%s: port = %d\n", __func__, port);
+	/*
+	 * port number will change when read from device tree
+	 * note that this depends on device tree and whether
+	 * OTG port 1 was detected or not. If not detected,
+	 * port number will be 0 again!
+	 */
+#if CONFIG_IS_ENABLED(DM_USB)
+	if (port == 1) {
+#else
 	if (port == 2) {
+#endif
 		attach_usb_hub();
 	}
 
@@ -361,7 +371,11 @@ int board_ehci_hcd_init(int port)
 int board_ehci_hcd_exit(int port)
 {
 	debug("%s: port = %d\n", __func__, port);
+#if CONFIG_IS_ENABLED(DM_USB)
+	if (port == 1) {
+#else
 	if (port == 2) {
+#endif
 		attach_usb_hub();
 	}
 
