@@ -19,6 +19,7 @@
 		mmc1 = &usdhc3; 
                 serial0 = &uart6;
 		spi0 = &qspi1;
+                usb0 = &usbotg1;
 	};
 
 	regulators {
@@ -200,7 +201,7 @@
 };
 
 &usbotg1 {
-        dr_mode = "host";
+        dr_mode = "peripheral";
 	status = "okay";
 };
 
