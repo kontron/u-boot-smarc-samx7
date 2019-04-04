@@ -204,16 +204,12 @@ static void usb_scan_bus(struct udevice *bus, bool recurse)
 {
 	struct usb_bus_priv *priv;
 	struct udevice *dev;
-	struct usb_platdata *plat = dev_get_platdata(bus);
 	int ret = 0;
 
 	priv = dev_get_uclass_priv(bus);
 
 	assert(recurse);	/* TODO: Support non-recusive */
 
-	if (plat->init_type == USB_INIT_DEVICE) {
-		return;
-	}
 	printf("scanning bus %d for devices... ", bus->seq);
 	debug("\n");
 	ret = usb_scan_device(bus, 0, USB_SPEED_FULL, &dev);
