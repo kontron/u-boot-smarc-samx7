@@ -1643,8 +1643,10 @@ int ehci_register(struct udevice *dev, struct ehci_hccr *hccr,
 	ctrl->priv = ctrl;
 
 	ctrl->init = init;
-	if (ctrl->init == USB_INIT_DEVICE)
+	if (ctrl->init == USB_INIT_DEVICE) {
+		printf("Port is in device mode\n");
 		goto done;
+	}
 
 	ret = ehci_reset(ctrl);
 	if (ret)
