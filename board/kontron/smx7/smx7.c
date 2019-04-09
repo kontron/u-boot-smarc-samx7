@@ -832,6 +832,33 @@ static void spl_dram_init(void)
 	} while (1);
 }
 
+#if 0
+#define FCR		0x90
+#define CR2		0x84
+#define UFCR_DCEDTE	0x00000040
+#define UFCR_RFDIV2	0x00000200
+void board_spl_console_init(void)
+{
+	u32 fcr;
+	u32 base = CONFIG_MXC_UART_BASE;
+
+	gd->baudrate = CONFIG_BAUDRATE;
+
+	serial_init();
+
+	/*
+	 * enable DTE mode which is required on SMX7
+	 */
+	fcr = UFCR_DCEDTE | UFCR_RFDIV2;
+	writel(fcr, (base+FCR));
+
+	gd->have_console = 1;
+
+	puts("\nU-Boot " SPL_TPL_NAME " " PLAIN_VERSION " (" U_BOOT_DATE " - "
+	      U_BOOT_TIME " " U_BOOT_TZ ")\n");
+}
+#endif
+
 void board_init_f(ulong dummy)
 {
 	/* setup AIPS and disable watchdog */
@@ -846,7 +873,10 @@ void board_init_f(ulong dummy)
 	timer_init();
 
 	/* UART clocks enabled and gd valid - init serial console */
-	/* preloader_console_init(); - does not work so far... */
+	/* preloader_console_init(); * - does not work */
+#if 0
+	board_spl_console_init(); /* this will show startup messages in SPL */
+#endif
 
 	/* DDR initialization */
 	spl_dram_init();
