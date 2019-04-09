@@ -11,7 +11,6 @@
 #ifdef CONFIG_SPL
 #include "imx7_spl.h"
 
-#define CONFIG_SPL_SPI_LOAD
 #define CONFIG_SYS_SPI_U_BOOT_OFFS      0x11400
 #define CONFIG_SPL_TARGET		"u-boot-with-spl.imx"
 #endif
@@ -37,6 +36,8 @@
 #undef CONFIG_CMD_KBOARDINFO
 #undef CONFIG_KBOARDINFO_MODULE
 #undef CONFIG_EMB_EEP_I2C_EEPROM
+#undef CONFIG_DM_SPI_FLASH
+#undef CONFIG_DM_SPI
 #endif
 
 #ifdef CONFIG_CMD_KBOARDINFO
