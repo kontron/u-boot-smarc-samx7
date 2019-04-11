@@ -553,8 +553,8 @@ int board_late_init(void)
 			writel(reg, &ccm_anatop->pll_arm);
 			printf("\n!!! Board revision 0 detected, setting CPU speed to 792 MHz !!!\n\n");
 		}
-
 	}
+
 #if defined(CONFIG_KEX_EEP_BOOTCOUNTER)
 	emb_eep_update_bootcounter(1);
 #endif
@@ -572,6 +572,14 @@ int checkboard(void)
 
 #if defined(CONFIG_OF_BOARD_SETUP)
 const char ft_version_string[] = U_BOOT_VERSION_STRING;
+int board_fix_fdt(void *blob)
+{
+        if (is_cpu_type(MXC_CPU_MX7S)) {
+                fdt_del_node_and_alias(blob, "usb2");
+        }
+
+        return 0;
+}
 
 int ft_board_setup(void *blob, bd_t *bd)
 {

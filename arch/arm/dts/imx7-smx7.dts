@@ -20,6 +20,8 @@
                 serial0 = &uart6;
 		spi0 = &qspi1;
                 usb0 = &usbotg1;
+                usb1 = &usbh;
+                usb2 = &usbotg2;
 	};
 
 	regulators {
