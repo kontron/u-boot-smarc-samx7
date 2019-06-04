@@ -12,7 +12,9 @@
 #include "imx7_spl.h"
 
 #define CONFIG_SYS_SPI_U_BOOT_OFFS      0x11400
+#ifndef CONFIG_SECURE_BOOT
 #define CONFIG_SPL_TARGET		"u-boot-with-spl.imx"
+#endif
 #endif
 
 #include "mx7_common.h"
