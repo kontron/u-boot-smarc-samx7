@@ -63,6 +63,10 @@ DECLARE_GLOBAL_DATA_PTR;
 #define UCMD_RUN_STOP           (1 << 0) /* controller run/stop */
 #define UCMD_RESET		(1 << 1) /* controller reset */
 
+#if defined(CONFIG_MX7)
+#define USB_HSIC_BASE		(0x30B30000U)
+#endif
+
 #if defined(CONFIG_MX6)
 static const unsigned phy_bases[] = {
 	USB_PHY0_BASE_ADDR,
@@ -298,6 +302,20 @@ int __weak board_ehci_hcd_init(int port)
 }
 
 /**
+ * board_ehci_hcd_exit - board specific action after 'usb stop'
+ * @port:	usb port (otg/hsic)
+ *
+ * Board specific setup when stopping USB, e.g. to re-attach a dedicated
+ * hub which might be necessary to enable it after linux boot.
+ *
+ * Return: 0 Success
+ */
+int __weak board_ehci_hcd_exit(int port)
+{
+	return 0;
+}
+
+/**
  * board_ehci_power - enables/disables usb vbus voltage
  * @port:      usb otg port
  * @on:        on/off vbus voltage
@@ -349,6 +367,12 @@ int ehci_hcd_init(int index, enum usb_init_type init,
 		(controller_spacing * index));
 	int ret;
 
+	if (is_cpu_type(MXC_CPU_MX7S)) {
+		/* ino USB2 (OTG2) port on i.MX7S */
+		if (index == 1)
+			return -ENODEV;
+	}
+
 	if (index > 3)
 		return -EINVAL;
 
@@ -372,7 +396,12 @@ int ehci_hcd_init(int index, enum usb_init_type init,
 		return 0;
 
 	setbits_le32(&ehci->usbmode, CM_HOST);
-	writel(CONFIG_MXC_USB_PORTSC, &ehci->portsc);
+#if defined(CONFIG_MX7_USB_HSIC_PORTSC)
+	if (ehci == (struct usb_ehci *)USB_HSIC_BASE)
+		writel(CONFIG_MX7_USB_HSIC_PORTSC, &ehci->portsc);
+	else
+#endif
+		writel(CONFIG_MXC_USB_PORTSC, &ehci->portsc);
 	setbits_le32(&ehci->portsc, USB_EN);
 
 	mdelay(10);
@@ -382,6 +411,8 @@ int ehci_hcd_init(int index, enum usb_init_type init,
 
 int ehci_hcd_stop(int index)
 {
+	board_ehci_hcd_exit(index);
+
 	return 0;
 }
 #else
@@ -391,6 +422,7 @@ struct ehci_mx6_priv_data {
 	struct udevice *vbus_supply;
 	enum usb_init_type init_type;
 	int portnr;
+	char *phy_type;
 };
 
 static int mx6_init_after_reset(struct ehci_ctrl *dev)
@@ -420,7 +452,12 @@ static int mx6_init_after_reset(struct ehci_ctrl *dev)
 		return 0;
 
 	setbits_le32(&ehci->usbmode, CM_HOST);
-	writel(CONFIG_MXC_USB_PORTSC, &ehci->portsc);
+#if defined(CONFIG_MX7_USB_HSIC_PORTSC)
+	if (!strncmp(priv->phy_type, "hsic", 4))
+		writel(CONFIG_MX7_USB_HSIC_PORTSC, &ehci->portsc);
+	else
+#endif
+		writel(CONFIG_MXC_USB_PORTSC, &ehci->portsc);
 	setbits_le32(&ehci->portsc, USB_EN);
 
 	mdelay(10);
@@ -483,7 +520,16 @@ static int ehci_usb_phy_mode(struct udevice *dev)
 static int ehci_usb_ofdata_to_platdata(struct udevice *dev)
 {
 	struct usb_platdata *plat = dev_get_platdata(dev);
+	struct ehci_mx6_priv_data *priv =dev_get_priv(dev);
 	const char *mode;
+	const void *phy_type;
+
+	phy_type = fdt_getprop(gd->fdt_blob, dev_of_offset(dev),
+		               "phy_type", NULL);
+	if (phy_type) {
+		priv->phy_type = (char *)phy_type;
+		debug("phy_type %s\n", priv->phy_type);
+	}
 
 	mode = fdt_getprop(gd->fdt_blob, dev_of_offset(dev), "dr_mode", NULL);
 	if (mode) {
@@ -512,6 +558,8 @@ static int ehci_usb_probe(struct udevice *dev)
 	struct ehci_hcor *hcor;
 	int ret;
 
+	debug("%s: ehci address used is %p, portnr is %d\n",
+	       __func__, ehci, dev->seq);
 	priv->ehci = ehci;
 	priv->portnr = dev->seq;
 	priv->init_type = type;
@@ -540,7 +588,12 @@ static int ehci_usb_probe(struct udevice *dev)
 
 	if (priv->init_type == USB_INIT_HOST) {
 		setbits_le32(&ehci->usbmode, CM_HOST);
-		writel(CONFIG_MXC_USB_PORTSC, &ehci->portsc);
+#if defined(CONFIG_MX7_USB_HSIC_PORTSC)
+		if (!strncmp(priv->phy_type, "hsic", 4))
+			writel(CONFIG_MX7_USB_HSIC_PORTSC, &ehci->portsc);
+		else
+#endif
+			writel(CONFIG_MXC_USB_PORTSC, &ehci->portsc);
 		setbits_le32(&ehci->portsc, USB_EN);
 	}
 

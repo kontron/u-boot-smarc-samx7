@@ -1,0 +1,36 @@
+if TARGET_SMX7
+
+config SYS_BOARD
+	default "smx7"
+
+config SYS_VENDOR
+	default "kontron"
+
+config SYS_CONFIG_NAME
+	default "smx7"
+
+menu "Kontron Extensions"
+
+config KEX_IMX_WATCHDOG
+	bool "IMX watchdog support"
+
+endmenu
+
+config KEX_ARM_PLL_SPEED
+	int "ARM CPU Core Speed"
+	default 792
+	help
+	 Configure ARM_PLL clock which defines CPU core
+	 speed. From this value, the PLL divider div_sel
+	 is calculated and written into CCM_ANALOG_PLL_ARM
+	 register. On SMX7, this is applied only for
+	 i.MX7D CPUs.
+	 fout = fin * div_sel / 2
+
+config KEX_EEP_BOOTCOUNTER
+	bool "KEU EEPROM boot counter support"
+	default y
+
+source "board/kontron/common/Kconfig"
+
+endif

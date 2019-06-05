@@ -204,7 +204,7 @@ static void usb_scan_bus(struct udevice *bus, bool recurse)
 {
 	struct usb_bus_priv *priv;
 	struct udevice *dev;
-	int ret;
+	int ret = 0;
 
 	priv = dev_get_uclass_priv(bus);
 

@@ -18,6 +18,11 @@
 #include <dm/device-internal.h>
 #include <dm/uclass-internal.h>
 
+__weak int board_sata_enable(void)
+{
+	return 0;
+}
+
 static int sata_curr_device = -1;
 
 int sata_remove(int devnum)
@@ -79,6 +84,12 @@ int sata_probe(int devnum)
 static int do_sata(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
 {
 	int rc = 0;
+
+	/* Check board specific sata enable */
+	if (!board_sata_enable()) {
+		printf("SATA not available on this board!\n");
+		return 0;
+	}
 
 	if (argc >= 2) {
 		int devnum = 0;

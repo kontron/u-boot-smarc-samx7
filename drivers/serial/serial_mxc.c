@@ -159,22 +159,24 @@ static void _mxc_serial_init(struct mxc_uart *base, int use_dte)
 }
 
 static void _mxc_serial_setbrg(struct mxc_uart *base, unsigned long clk,
-			       unsigned long baudrate, bool use_dte)
+			       unsigned long baudrate,
+			       struct mxc_serial_platdata *plat)
 {
-	u32 tmp;
+	u32 fcr, cr2;
 
-	tmp = RFDIV << UFCR_RFDIV_SHF;
-	if (use_dte)
-		tmp |= UFCR_DCEDTE;
-	else
-		tmp |= (TXTL << UFCR_TXTL_SHF) | (RXTL << UFCR_RXTL_SHF);
-	writel(tmp, &base->fcr);
+	fcr = (TXTL << UFCR_TXTL_SHF) | (RXTL << UFCR_RXTL_SHF);
+	cr2 = UCR2_WS | UCR2_IRTS | UCR2_RXEN | UCR2_TXEN | UCR2_SRST;
+	if (plat) {
+		if (plat->use_dte) fcr = UFCR_DCEDTE;
+		if (plat->use_rtscts) cr2 |= UCR2_CTSC;
+	}
+	fcr |= (RFDIV << UFCR_RFDIV_SHF);
+	writel(fcr, &base->fcr);
 
 	writel(0xf, &base->bir);
 	writel(clk / (2 * baudrate), &base->bmr);
 
-	writel(UCR2_WS | UCR2_IRTS | UCR2_RXEN | UCR2_TXEN | UCR2_SRST,
-	       &base->cr2);
+	writel(cr2, &base->cr2);
 	writel(UCR1_UARTEN, &base->cr1);
 }
 
@@ -193,7 +195,7 @@ static void mxc_serial_setbrg(void)
 	if (!gd->baudrate)
 		gd->baudrate = CONFIG_BAUDRATE;
 
-	_mxc_serial_setbrg(mxc_base, clk, gd->baudrate, false);
+	_mxc_serial_setbrg(mxc_base, clk, gd->baudrate, NULL);
 }
 
 static int mxc_serial_getc(void)
@@ -267,7 +269,7 @@ int mxc_serial_setbrg(struct udevice *dev, int baudrate)
 	struct mxc_serial_platdata *plat = dev->platdata;
 	u32 clk = imx_get_uartclk();
 
-	_mxc_serial_setbrg(plat->reg, clk, baudrate, plat->use_dte);
+	_mxc_serial_setbrg(plat->reg, clk, baudrate, plat);
 
 	return 0;
 }
@@ -338,6 +340,9 @@ static int mxc_serial_ofdata_to_platdata(struct udevice *dev)
 
 	plat->use_dte = fdtdec_get_bool(gd->fdt_blob, dev_of_offset(dev),
 					"fsl,dte-mode");
+        plat->use_rtscts = fdtdec_get_bool(gd->fdt_blob, dev_of_offset(dev),
+                                        "uart-has-rtscts");
+
 	return 0;
 }
 
@@ -374,7 +379,7 @@ static inline void _debug_uart_init(void)
 
 	_mxc_serial_init(base, false);
 	_mxc_serial_setbrg(base, CONFIG_DEBUG_UART_CLOCK,
-			   CONFIG_BAUDRATE, false);
+			   CONFIG_BAUDRATE, NULL);
 }
 
 static inline void _debug_uart_putc(int ch)

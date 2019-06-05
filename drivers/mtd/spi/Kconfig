@@ -190,4 +190,14 @@ config SPI_FLASH_MTD
 
 	  If unsure, say N
 
+config SPI_FLASH_READ_SR
+	bool "SPI Flash Read Status Register support"
+	depends on SPI_FLASH_MACRONIX
+	help
+	  Enable support to read the SPI flash status register with
+	  'sf protect status' command. Works only with Macronix flash
+	  devices so far.
+
+	  If unsure, say N
+
 endmenu # menu "SPI Flash Support"

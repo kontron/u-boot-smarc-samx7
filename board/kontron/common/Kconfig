@@ -1,0 +1,51 @@
+config CMD_KBOARDINFO
+	bool "Enable Kontron 'kboardinfo' command"
+	imply KBOARDINFO_MODULE
+	help
+	  This option enables the Kontron 'kboardinfo' command
+
+config KBOARDINFO_MODULE
+	bool
+
+config EMB_EEP_I2C_EEPROM
+	bool "Embedded EEPROM support"
+	help
+	  This option enables embedded EEPROM support for kboardinfo
+
+config JAM_STAPL
+	bool "JAM_STAPL kjtag driver support"
+	help
+	  This option enables kjtag JAM_STAPL driver
+
+config EMB_EEP_I2C_EEPROM_BUS_NUM_EE1
+	int "Embedded EEPROM I2C bus number"
+	depends on EMB_EEP_I2C_EEPROM
+	default 1
+
+config EMB_EEP_I2C_EEPROM_ADDR_LEN_1
+	int "Embedded EEPROM I2C addres length"
+	depends on EMB_EEP_I2C_EEPROM
+	default 2
+
+config EMB_EEP_I2C_EEPROM_ADDR_1
+	hex "Embedded EEPROM I2C address"
+	depends on EMB_EEP_I2C_EEPROM
+	default 0x50
+
+config EMB_EEP_I2C_EEPROM_OFFSET_1
+	hex "Embedded EEPROM data area offset"
+	depends on EMB_EEP_I2C_EEPROM
+	default 0x0
+
+config EMB_EEP_I2C_EEPROM_SIZE
+	hex "Embedded EEPROM size"
+	depends on EMB_EEP_I2C_EEPROM
+	default 0x1000
+
+config CMD_MMC_RAW_ECSD
+	bool "Enable Kontron 'mmc raw_ecsd' extension"
+	default y if !SPL_BUILD
+	help
+	  This option enables the raw ECSD access to eMMC
+	  devices
+

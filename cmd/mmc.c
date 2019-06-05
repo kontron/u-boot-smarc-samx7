@@ -11,6 +11,10 @@
 #include <sparse_format.h>
 #include <image-sparse.h>
 
+#ifdef CONFIG_CMD_MMC_RAW_ECSD
+int do_mmc_raw_ecsd_ops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]);
+#endif
+
 static int curr_device = -1;
 
 static void print_mmcinfo(struct mmc *mmc)
@@ -888,6 +892,9 @@ static cmd_tbl_t cmd_mmc[] = {
 	U_BOOT_CMD_MKENT(list, 1, 1, do_mmc_list, "", ""),
 #if CONFIG_IS_ENABLED(MMC_HW_PARTITIONING)
 	U_BOOT_CMD_MKENT(hwpartition, 28, 0, do_mmc_hwpartition, "", ""),
+#endif
+#ifdef CONFIG_CMD_MMC_RAW_ECSD
+	U_BOOT_CMD_MKENT(raw_ecsd, 4, 0, do_mmc_raw_ecsd_ops, "", ""),
 #endif
 #ifdef CONFIG_SUPPORT_EMMC_BOOT
 	U_BOOT_CMD_MKENT(bootbus, 5, 0, do_mmc_bootbus, "", ""),
