@@ -105,7 +105,7 @@
  * Environment organization
  */
 
-#if defined(CONFIG_SPI_FLASH) && !defined(CONFIG_MFG_TOOL)
+#if defined(CONFIG_DM_SPI_FLASH) && !defined(CONFIG_MFG_TOOL)
 #define CONFIG_ENV_SECT_SIZE        (32 * 1024)
 
 #define CONFIG_ENV_OFFSET           0x0c0000
