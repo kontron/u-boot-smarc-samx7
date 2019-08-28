@@ -203,16 +203,19 @@
 };
 
 &usbotg1 {
-        dr_mode = "host";
+	reg = <0x30b10000 0x10000>;
+	dr_mode = "host";
 	status = "okay";
 };
 
 &usbotg2 {
+	reg = <0x30b20000 0x10000>;
 	dr_mode = "host";
 	status = "okay";
 };
 
 &usbh {
+	reg = <0x30b30000 0x10000>;
 	phy_tpye = "hsic";
 	disable-over-current;
 	status = "okay";
