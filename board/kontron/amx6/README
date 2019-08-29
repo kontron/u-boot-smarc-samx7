@@ -1,0 +1,113 @@
+Kontron SMARC AMX6 Module Overview
+----------------------------------
+- Freescale i.MX6 ARM CPU
+  * Cortex-A9 Core
+  * Single and DualLite CPU variants supported
+  * Dual and Quad CPU variants supported
+- Up to 2 GiB DDR3 memory
+- 2x Ethernet
+- SPI flash boot device
+- USB 2.0 OTG port
+- USB 2.0 HSIC port
+- RGB and LVDS display support
+
+AMX Memory Map
+--------------
+Bootloader 32 bit address space for Cortex-A9:
+
+Start Address   End Address     Size    Description
+0x00000000      0x00017fff      96k     Boot ROM
+0x00900000      0x0091ffff      128k    OCRAM
+0x02000000      0x020fffff      1M      AIPS-1 periph.
+0x02100000      0x021fffff      1M      AIPS-2 periph.
+0x10000000      0xffffffff      3840M   SDRAM
+
+SPI Flash Memory Map
+--------------------
+
+Start Address   End Address     Size    Description
+0x00000000      0x000003ff      1k      Unused
+0x00000400      0x000bffff      768k    U-Boot image
+0x00c00000      0x00c7ffff      32k     U-boot environment
+0x00c80000      0x00cfffff      32k     U-Boot redundant environment
+
+Building AMX6 Bootloader Image
+------------------------------
+
+a) Serial download bootloader image
+
+# make distclean
+# make amx6_solo_defconfig (for Solo/DualLite module)
+# make amx6_quad_defconfig (for Quad/Dual module)
+# make
+
+This will create the u-boot.imx image file that can be used to boot the
+module in serial download mode.
+
+b) SPI flash bootloader image
+
+# make distclean
+# make amx6_spl_defconfig
+# make
+
+This will create the final u-boot-with-spl.imx image that already contains
+SPL part.
+
+It is possible to pass a release version when building. To achieve this, the
+IDENT_RELEASE macro has to be defined. This can be done with the following
+build step:
+
+# IDENT_RELEASE=<release_string> make
+
+
+Booting the AMX6 Module
+-----------------------
+AMX6 CPU fuses are configured to boot from SPI flash device. In addition,
+serial download mode via USB OTG port can be used. For serial download boot,
+the serial download bootloader image as described above is used.
+
+
+Bootloder Update from CLI
+-------------------------
+Provided the board has been booted to bootloader CLI prompt (either from SPI
+flash or using serial download mode), bootloader can be updated as shown
+below.
+
+1. Load bootloader SPI flash image file into RAM, e.g. from USB thumb device
+
+==> usb start
+==> load usb 0 ${loadaddr} u-boot-with-spl.imx
+
+2. Update bootloader image in flash
+
+==> sf probe 2
+==> sf erase 0 80000 && sf write ${loadaddr} 400 $filesize
+
+
+OS Update using USB Mass Storage Functionality
+----------------------------------------------
+Provided that the AMX6 module has been attached to a host PC vi USB OTG port,
+the 'ums' command from bootloader CLI can be used to present either eMMC or
+SD card as a block device to the host machine. This can be used for
+partitioning and filesystem installation on the module using standard OS
+(linux) commands like fdisk, mkfs, mount etc.
+
+
+- Attach the eMMC as a block device on the host PC from u-boot CLI:
+
+==> ums 0 mmc 2
+
+
+- Create partition and filesystem on eMMC from host PC:
+
+# sudo fdisk /dev/sdX       - create partition on eMMC from fdisk shell
+# sudo mkfs.ext4 /dev/sdX1
+
+Note: eMMC device name depends on the host machine used. Be careful to not
+      overwrite host machine internal disk drives.
+
+- Mount filesystem and install a rootfs image to eMMC
+
+# sudo mount /dev/sdX1 /mnt
+# sudo tar xzpf <rootfsimg.tar.gz> -C /mnt
+

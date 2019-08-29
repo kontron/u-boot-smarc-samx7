@@ -20,6 +20,10 @@
 
 static struct spi_flash *flash;
 
+#if defined(CONFIG_SPI_FLASH_READ_SR)
+extern int stm_read_status(struct spi_flash *flash, u8 *status);
+#endif
+
 /*
  * This function computes the length argument for the erase command.
  * The length on which the command is to operate can be given in two forms:
@@ -352,6 +356,19 @@ static int do_spi_protect(int argc, char * const argv[])
 	int ret = 0;
 	loff_t start, len;
 	bool prot = false;
+
+#if defined(CONFIG_SPI_FLASH_READ_SR)
+	if (strcmp(argv[1], "status") == 0) {
+		u8 status;
+		if (stm_read_status(flash, &status)) {
+			printf("SPI flash read protection status failed\n");
+			return 1;
+		} else {
+			printf("SPI flash protection status register: 0x%02x\n", status);
+			return 0;
+		}
+	}
+#endif
 
 	if (argc != 4)
 		return -1;

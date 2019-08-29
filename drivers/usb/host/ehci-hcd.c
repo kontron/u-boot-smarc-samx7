@@ -164,7 +164,7 @@ static int handshake(uint32_t *ptr, uint32_t mask, uint32_t done, int usec)
 	uint32_t result;
 	do {
 		result = ehci_readl(ptr);
-		udelay(5);
+		udelay(10);
 		if (result == ~(uint32_t)0)
 			return -1;
 		result &= mask;
@@ -573,6 +573,11 @@ ehci_submit_async(struct usb_device *dev, unsigned long pipe, void *buffer,
 	ts = get_timer(0);
 	vtd = &qtd[qtd_counter - 1];
 	timeout = USB_TIMEOUT_MS(pipe);
+	/* Add delay for control pipe to support slow USB thumb devices */
+	if (usb_pipecontrol(pipe)) {
+		mdelay(10);
+		timeout += 1000;
+	}
 	do {
 		/* Invalidate dcache */
 		invalidate_dcache_range((unsigned long)&ctrl->qh_list,
@@ -927,7 +932,7 @@ static int ehci_submit_root(struct usb_device *dev, unsigned long pipe,
 		goto unknown;
 	}
 
-	mdelay(1);
+	mdelay(5);
 	len = min3(srclen, (int)le16_to_cpu(req->length), length);
 	if (srcptr != NULL && len > 0)
 		memcpy(buffer, srcptr, len);

@@ -1,0 +1,6 @@
+AMX6 BOARD
+M:	Thomas Schäfer <thomas.schaefer@kontron.com>
+S:	Maintained
+F:	board/kontron/amx6/
+F:	include/configs/amx6.h
+F:	configs/amx6_defconfig

@@ -1194,6 +1194,14 @@ int fecmxc_initialize_multi(bd_t *bd, int dev_id, int phy_id, uint32_t addr)
 #else
 	base_mii = addr;
 #endif
+#if defined(CONFIG_MX7)
+	/*
+	 * on i.MX7, ENET2 PHY can be configured from ENET1 (addr = IMX_FEC_BASE),
+	 * but ENET2 register block starts at ENET2_IPS_BASE_ADDR.
+	 */
+	if (dev_id == 1)
+		addr = ENET2_IPS_BASE_ADDR;
+#endif
 	debug("eth_init: fec_probe(bd, %i, %i) @ %08x\n", dev_id, phy_id, addr);
 	bus = fec_get_miibus(base_mii, dev_id);
 	if (!bus)
