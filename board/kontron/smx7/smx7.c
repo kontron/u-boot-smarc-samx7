@@ -58,8 +58,10 @@ int board_spi_cs_gpio(unsigned bus, unsigned cs)
 	if ((bus == 2) && (cs == 0))
 		return IMX_GPIO_NR(6, 22);
 
+#ifndef CONFIG_KEX_EXTSPI_BOOT
 	if ((bus == 2) && (cs == 2))
 		return IMX_GPIO_NR(5, 9);
+#endif
 
 	return -1;
 }
