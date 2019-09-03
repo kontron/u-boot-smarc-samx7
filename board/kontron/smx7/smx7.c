@@ -158,6 +158,24 @@ int board_mmc_init(bd_t *bis)
 
 	return 0;
 }
+
+#if defined(CONFIG_SPL_MMC_SUPPORT)
+#define SRC_GPR10		0x30390098
+#define PERSIST_SECONDARY_BOOT	(1<<30)
+
+bool smx7_mmcboot_secondary(void)
+{
+	return (bool)(readl(SRC_GPR10) & PERSIST_SECONDARY_BOOT);
+}
+
+u32 mmc_redundant_boot_block(void)
+{
+	if (smx7_mmcboot_secondary())
+		return 0x800;
+	else
+		return 0;
+}
+#endif
 #endif /* CONFIG_FSL_ESDHC */
 
 #ifdef CONFIG_FEC_MXC
@@ -558,6 +576,13 @@ int board_late_init(void)
 #if defined(CONFIG_KEX_EEP_BOOTCOUNTER)
 	emb_eep_update_bootcounter(1);
 #endif
+
+#if defined(CONFIG_SPL_MMC_SUPPORT)
+	if (smx7_mmcboot_secondary())
+		env_set("PS1", "[eMMC Work] ");
+	else
+		env_set("PS1", "[eMMC Recovery] ");
+#endif
 #endif
 	return 0;
 }
@@ -721,14 +746,20 @@ uint64_t getBootCounter (int eeprom_num)
 #include <spl.h>
 #include <linux/libfdt.h>
 
+#ifndef CONFIG_SPL_MMC_SUPPORT
 int spl_start_uboot(void)
 {
 	return 1;
 }
+#endif
 
 void board_boot_order(u32 *spl_boot_list)
 {
+#ifdef CONFIG_SPL_MMC_SUPPORT
+	spl_boot_list[0] = BOOT_DEVICE_MMC2;
+#else
 	spl_boot_list[0] = BOOT_DEVICE_SPI;
+#endif
 }
 
 static struct ddrc smx7_ddrc_regs = {
@@ -887,6 +918,32 @@ int reset_out_delay(int delay)
 	return 0;
 }
 
+#if defined CONFIG_SPL_MMC_SUPPORT
+#define RECOVERY_GPIO IMX_GPIO_NR(3, 13)
+
+void smx7_mmcboot_chk_recovery(void)
+{
+	bool mmc_force_recovery;
+
+	gpio_request(RECOVERY_GPIO, "MMC_REC");
+	gpio_direction_input(RECOVERY_GPIO);
+	mmc_force_recovery = !(gpio_get_value(RECOVERY_GPIO) & 0x1);
+	if (mmc_force_recovery && smx7_mmcboot_secondary()) {
+		/*
+		 * jumper is set, so clear the PERSIST_SECONDARY_BOOT
+		 * flag and perform reset.
+		 */
+		writel(0x0, SRC_GPR10);
+		do_reset(NULL, 0, 0, NULL);
+	}
+	if (!mmc_force_recovery && !smx7_mmcboot_secondary()) {
+		/* force standard/secondary boot */
+		writel(PERSIST_SECONDARY_BOOT, SRC_GPR10);
+		do_reset(NULL, 0, 0, NULL);
+	}
+}
+#endif
+
 void board_init_f(ulong dummy)
 {
 	/* setup AIPS and disable watchdog */
@@ -907,6 +964,17 @@ void board_init_f(ulong dummy)
 	/* preloader_console_init(); * - does not work */
 #if 0
 	board_spl_console_init(); /* this will show startup messages in SPL */
+#endif
+
+#if defined CONFIG_SPL_MMC_SUPPORT
+	/*
+	 * Check force recovery jumper (LID jumper here).
+	 * If unset, set the PERSIST_SECONDARY_BOOT bit and reset the board.
+	 * This will force the CPU to boot the redundant bootloader image
+	 * (including SPL!) that is stored beginning at block 0x802 (offset
+	 * 0x100400) in the eMMC boot partition 1
+	 */
+        smx7_mmcboot_chk_recovery();
 #endif
 
 	/* DDR initialization */

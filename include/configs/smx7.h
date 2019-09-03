@@ -118,6 +118,7 @@
 #define CONFIG_ENV_SIZE             SZ_8K
 #endif
 
+#define CONFIG_CMDLINE_PS_SUPPORT
 
 #ifdef CONFIG_IMX_BOOTAUX
 /* Set to QSPI1 A flash at default */
