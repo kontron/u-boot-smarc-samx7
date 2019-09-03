@@ -458,6 +458,21 @@ static void set_boot_sel(void)
 	}
 }
 
+#ifndef CONFIG_SPL_BUILD
+static void smx7_set_prompt(void)
+{
+#if defined(CONFIG_SPL_MMC_SUPPORT)
+	if (smx7_mmcboot_secondary())
+		env_set("PS1", "[eMMC Work] => ");
+	else
+		env_set("PS1", "[eMMC Recovery] => ");
+#endif
+#if defined(CONFIG_KEX_EXTSPI_BOOT)
+	env_set("PS1", "[ext SPI] => ");
+#endif
+}
+#endif
+
 int misc_init_r(void)
 {
 	env_set("version", IDENT_STRING IDENT_RELEASE);
@@ -577,12 +592,7 @@ int board_late_init(void)
 	emb_eep_update_bootcounter(1);
 #endif
 
-#if defined(CONFIG_SPL_MMC_SUPPORT)
-	if (smx7_mmcboot_secondary())
-		env_set("PS1", "[eMMC Work] ");
-	else
-		env_set("PS1", "[eMMC Recovery] ");
-#endif
+	smx7_set_prompt();
 #endif
 	return 0;
 }
