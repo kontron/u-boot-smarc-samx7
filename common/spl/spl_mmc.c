@@ -301,6 +301,16 @@ int spl_boot_partition(const u32 boot_device)
 }
 #endif
 
+/*
+ * This (boardspecific) function checks whether redundant bootloader
+ * image should be loaded from MMC device and returns block number
+ * of redundant boot image.
+ */
+__weak u32 mmc_redundant_boot_block(void)
+{
+	return 0;
+}
+
 int spl_mmc_load_image(struct spl_image_info *spl_image,
 		       struct spl_boot_device *bootdev)
 {
@@ -366,7 +376,8 @@ int spl_mmc_load_image(struct spl_image_info *spl_image,
 #endif
 #ifdef CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_USE_SECTOR
 		err = mmc_load_image_raw_sector(spl_image, mmc,
-			CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR);
+			CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR +
+			mmc_redundant_boot_block());
 		if (!err)
 			return err;
 #endif
