@@ -792,9 +792,11 @@ int qspi_xfer(struct fsl_qspi_priv *priv, unsigned int bitlen,
 
 		if (priv->cur_seqid == QSPI_CMD_FAST_READ ||
 		    priv->cur_seqid == QSPI_CMD_RDAR) {
+			wr_sfaddr = 0;
 			priv->sf_addr = swab32(txbuf) & OFFSET_BITS_MASK;
 		} else if ((priv->cur_seqid == QSPI_CMD_SE) ||
 			   (priv->cur_seqid == QSPI_CMD_BE_4K)) {
+			wr_sfaddr = 0;
 			priv->sf_addr = swab32(txbuf) & OFFSET_BITS_MASK;
 			qspi_op_erase(priv);
 		} else if (priv->cur_seqid == QSPI_CMD_PP ||
@@ -809,6 +811,7 @@ int qspi_xfer(struct fsl_qspi_priv *priv, unsigned int bitlen,
 	}
 
 	if (din) {
+		wr_sfaddr = 0;
 		if (priv->cur_seqid == QSPI_CMD_FAST_READ) {
 #ifdef CONFIG_SYS_FSL_QSPI_AHB
 			qspi_ahb_read(priv, din, bytes);
