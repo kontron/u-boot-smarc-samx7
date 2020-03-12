@@ -131,6 +131,15 @@ usage:
 	return 1;
 }
 
+/* allow watchdog start from outside this module */
+void start_imx_watchdog(int timeout)
+{
+	imx_watchdog_timeout(timeout);
+	imx_watchdog_enable();
+	kick_it = 1;
+	imx_watchdog_kick();
+}
+
 
 U_BOOT_CMD(
 	watchdog,    3,    0,     do_imx_watchdog,

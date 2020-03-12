@@ -955,9 +955,13 @@ void smx7_mmcboot_chk_recovery(void)
 	}
 }
 #endif
+extern void start_imx_watchdog(int);
 
 void board_init_f(ulong dummy)
 {
+	/* start imx watchdog to cover bootloader runtime */
+	start_imx_watchdog(15);
+
 	/* setup AIPS and disable watchdog */
 	arch_cpu_init();
 
