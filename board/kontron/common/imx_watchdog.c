@@ -132,11 +132,11 @@ usage:
 }
 
 /* allow watchdog start from outside this module */
-void start_imx_watchdog(int timeout)
+void start_imx_watchdog(int timeout, int kick)
 {
 	imx_watchdog_timeout(timeout);
 	imx_watchdog_enable();
-	kick_it = 1;
+	kick_it = kick;
 	imx_watchdog_kick();
 }
 
