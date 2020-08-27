@@ -72,17 +72,6 @@
 
 
 /******************************************************************************
- * SPI
- */
-#ifdef CONFIG_MXC_SPI
-#define CONFIG_SF_DEFAULT_BUS		3
-#define CONFIG_SF_DEFAULT_CS		2 /*(0|(GPIO_NUMBER(3, 24)<<8))*/
-#define CONFIG_SF_DEFAULT_SPEED 	20000000
-#define CONFIG_SF_DEFAULT_MODE		(SPI_MODE_0)
-#endif
-
-
-/******************************************************************************
  * Network
  */
 #define CONFIG_FEC_MXC

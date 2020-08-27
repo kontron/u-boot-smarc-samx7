@@ -498,8 +498,13 @@ void splash_load_from_spi(void)
 		return;
 	}
 
+	ulong splash_img_size = env_get_ulong("splash_img_size", 16, 0);
+	/* if not found in env, use the default */
+	if (splash_img_size == 0)
+		splash_img_size = CONFIG_SPLASH_SIZE;
+
 	ret = spi_flash_read(splash_flash, CONFIG_SPLASH_OFFSET,
-					CONFIG_SPLASH_SIZE, tmp_splash);
+					splash_img_size, tmp_splash);
 
 	if (ret) {
 		printf ("Loading bootlogo from SPI Flash failed in flash_read\n");
