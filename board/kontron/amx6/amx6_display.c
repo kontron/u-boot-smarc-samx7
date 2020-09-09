@@ -518,6 +518,7 @@ int board_video_init(void)
 	int ret;
 	char const *panel = env_get("panel");
 	ulong lvds_clk = env_get_ulong("panel_lvds_clk", 10, 0);
+	ulong pixclk = env_get_ulong("panel_pixclk", 10, 0);
 	ulong x_res = env_get_ulong("panel_x_res", 10, 0);
 	ulong y_res = env_get_ulong("panel_y_res", 10, 0);
 
@@ -538,8 +539,18 @@ int board_video_init(void)
 		for (i = 0; i < ARRAY_SIZE(displays); i++) {
 			if (!strcmp(panel, displays[i].mode.name)) {
 				/* User defined parameters */
-				if (lvds_clk > 0)
+				if (lvds_clk > 0) {
+					printf("LVDS clock %ld found in environment, "
+					       "overriding panel value %d\n",
+					       lvds_clk, displays[i].lvds_clock);
 					displays[i].lvds_clock = lvds_clk;
+				}
+				if (pixclk > 0) {
+					printf("Pixelclock %ld found in environment, "
+					       "overriding panel value %d\n",
+					       pixclk, displays[i].mode.pixclock);
+					displays[i].mode.pixclock = pixclk;
+				}
 				/* Resolution can be adjusted only in "user" mode */
 				if (!strcmp(panel, "user")) {
 					if (x_res > 0)
