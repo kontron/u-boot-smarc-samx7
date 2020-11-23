@@ -253,6 +253,7 @@
 #include <linux/usb/ch9.h>
 #include <linux/usb/gadget.h>
 #include <usb_mass_storage.h>
+#include <watchdog.h>
 
 #include <asm/unaligned.h>
 #include <linux/bitops.h>
@@ -677,6 +678,7 @@ static int sleep_thread(struct fsg_common *common)
 			if (!g_dnl_board_usb_cable_connected())
 				return -EIO;
 
+			WATCHDOG_RESET();
 			k = 0;
 		}
 
