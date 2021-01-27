@@ -48,6 +48,7 @@ extern void BOARD_FixupPins(void);
 extern void hsic_1p2_regulator_out(void);
 extern void use_pwm1_out_as_gpio(void);
 /* extern void snvs_lpgpr_set(uint32_t); */
+extern void start_imx_watchdog(int timeout, int kick);
 
 extern int EMB_EEP_I2C_EEPROM_BUS_NUM_1;
 
@@ -955,12 +956,11 @@ void smx7_mmcboot_chk_recovery(void)
 	}
 }
 #endif
-extern void start_imx_watchdog(int);
 
 void board_init_f(ulong dummy)
 {
 	/* start imx watchdog to cover bootloader runtime */
-	start_imx_watchdog(15);
+	start_imx_watchdog(15, 1);
 
 	/* setup AIPS and disable watchdog */
 	arch_cpu_init();
