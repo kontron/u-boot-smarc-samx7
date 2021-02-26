@@ -3,6 +3,7 @@ menu "SPI Flash Support"
 config DM_SPI_FLASH
 	bool "Enable Driver Model for SPI flash"
 	depends on DM && DM_SPI
+	imply SPI_FLASH
 	help
 	  Enable driver model for SPI flash. This SPI flash interface
 	  (spi_flash_probe(), spi_flash_write(), etc.) is then
@@ -26,11 +27,10 @@ config SPI_FLASH_SANDBOX
 	  stored in a file on the host filesystem.
 
 config SPI_FLASH
-	bool "Legacy SPI Flash Interface support"
-	depends on SPI
+	bool "SPI Flash Core Interface support"
 	select SPI_MEM
 	help
-	  Enable the legacy SPI flash support. This will include basic
+	  Enable the SPI flash Core support. This will include basic
 	  standard support for things like probing, read / write, and
 	  erasing through cmd_sf interface.
 
@@ -186,7 +186,7 @@ config SPI_FLASH_DATAFLASH
 
 config SPI_FLASH_MTD
 	bool "SPI Flash MTD support"
-	depends on SPI_FLASH
+	depends on SPI_FLASH && MTD
 	help
           Enable the MTD support for spi flash layer, this adapter is for
 	  translating mtd_read/mtd_write commands into spi_flash_read/write
@@ -203,6 +203,12 @@ config SPI_FLASH_READ_SR
 	  Enable support to read the SPI flash status register with
 	  'sf protect status' command. Works only with Macronix flash
 	  devices so far.
+
+config SPL_SPI_FLASH_MTD
+	bool "SPI flash MTD support for SPL"
+	depends on SPI_FLASH
+	help
+          Enable the MTD support for the SPI flash layer in SPL.
 
 	  If unsure, say N
 
