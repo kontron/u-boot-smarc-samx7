@@ -554,11 +554,6 @@ config TARGET_PCL063_ULL
 config TARGET_SECOMX6
 	bool "secomx6 boards"
 
-config TARGET_SKSIMX6
-	bool "sks-imx6"
-	depends on MX6QDL
-	select SUPPORT_SPL
-
 config TARGET_SOMLABS_VISIONSOM_6ULL
 	bool "visionsom-6ull"
 	depends on MX6ULL
@@ -677,11 +672,11 @@ config TARGET_ZC5601
 
 config TARGET_AMX6
 	bool "Kontron AMX6"
+	depends on MX6QDL
 	select BOARD_EARLY_INIT_F
 	select BOARD_LATE_INIT
 	select DM
 	select DM_THERMAL
-	select MX6QDL
 	select SUPPORT_SPL
 	imply CMD_DM
 

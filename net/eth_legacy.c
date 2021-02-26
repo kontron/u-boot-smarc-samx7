@@ -107,12 +107,10 @@ static int on_ethaddr(const char *name, const char *value, enum env_op op,
 	int flags)
 {
 	int index;
-	int ret = 0;
 	struct eth_device *dev;
-	unsigned char tmp_enetaddr[ARP_HLEN];
 
 	if (!eth_devices)
-		return ret;
+		return 0;
 
 	/* look for an index after "eth" */
 	index = simple_strtoul(name + 3, NULL, 10);
@@ -133,7 +131,7 @@ static int on_ethaddr(const char *name, const char *value, enum env_op op,
 		dev = dev->next;
 	} while (dev != eth_devices);
 
-	return ret;
+	return 0;
 }
 U_BOOT_ENV_CALLBACK(ethaddr, on_ethaddr);
 

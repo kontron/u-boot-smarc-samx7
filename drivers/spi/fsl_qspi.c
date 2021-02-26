@@ -607,33 +607,6 @@ static int fsl_qspi_readl_poll_tout(struct fsl_qspi *q, void __iomem *base,
 
 	return readl_poll_timeout(base, reg, !(reg & mask), timeout_us);
 }
-#ifndef CONFIG_DM_SPI
-static unsigned long spi_bases[] = {
-	QSPI0_BASE_ADDR,
-#ifdef CONFIG_MX6SX
-	QSPI1_BASE_ADDR,
-#endif
-};
-
-static unsigned long amba_bases[] = {
-	QSPI0_AMBA_BASE,
-#ifdef CONFIG_MX6SX
-	QSPI1_AMBA_BASE,
-#endif
-};
-
-static inline struct fsl_qspi *to_qspi_spi(struct spi_slave *slave)
-{
-	return container_of(slave, struct fsl_qspi, slave);
-}
-
-struct spi_slave *spi_setup_slave(unsigned int bus, unsigned int cs,
-		unsigned int max_hz, unsigned int mode)
-{
-	u32 mcr_val;
-	struct fsl_qspi *qspi;
-	struct fsl_qspi_regs *regs;
-	u32 total_size;
 
 static int fsl_qspi_do_op(struct fsl_qspi *q, const struct spi_mem_op *op)
 {
@@ -917,4 +890,3 @@ U_BOOT_DRIVER(fsl_qspi) = {
 	.priv_auto_alloc_size = sizeof(struct fsl_qspi),
 	.probe	= fsl_qspi_probe,
 };
-#endif
