@@ -4,6 +4,8 @@
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
+#include <init.h>
+#include <net.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/mx7-pins.h>
@@ -12,18 +14,21 @@
 #include <asm/gpio.h>
 #include <asm/mach-imx/iomux-v3.h>
 #include <asm/io.h>
+#include <linux/delay.h>
 #include <linux/sizes.h>
 #include <common.h>
-#include <fsl_esdhc.h>
-#include <fdt_support.h>
+#include <image.h>
+#include <fsl_esdhc_imx.h>
 #include <mmc.h>
 #include <miiphy.h>
+#include <fdt_support.h>
 #include <netdev.h>
 #include <power/pmic.h>
 #include <power/pfuze3000_pmic.h>
 #include <i2c.h>
-#include <environment.h>
+#include <env.h>
 #include <search.h>
+#include <serial.h>
 #include <asm/mach-imx/mxc_i2c.h>
 #include <asm/arch/crm_regs.h>
 #include <usb.h>
@@ -121,7 +126,7 @@ int board_mmc_getcd(struct mmc *mmc)
 	return ret;
 }
 
-int board_mmc_init(bd_t *bis)
+int board_mmc_init(struct bd_info *bis)
 {
 	int i, ret;
 	/*
@@ -182,7 +187,7 @@ u32 mmc_redundant_boot_block(void)
 #endif /* CONFIG_FSL_ESDHC */
 
 #ifdef CONFIG_FEC_MXC
-int board_eth_init(bd_t *bis)
+int board_eth_init(struct bd_info *bis)
 {
 	int ret;
 	struct mxc_ccm_anatop_reg *ccm_anatop
@@ -619,7 +624,7 @@ int board_fix_fdt(void *blob)
         return 0;
 }
 
-int ft_board_setup(void *blob, bd_t *bd)
+int ft_board_setup(void *blob, struct bd_info *bd)
 {
 	int err;
 	int nodeoffset;
@@ -960,7 +965,7 @@ void smx7_mmcboot_chk_recovery(void)
 void board_init_f(ulong dummy)
 {
 	/* start imx watchdog to cover bootloader runtime */
-	start_imx_watchdog(15, 1);
+	/* start_imx_watchdog(15, 1); */
 
 	/* setup AIPS and disable watchdog */
 	arch_cpu_init();

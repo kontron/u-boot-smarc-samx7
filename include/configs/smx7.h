@@ -11,7 +11,6 @@
 #ifdef CONFIG_SPL
 #include "imx7_spl.h"
 
-#define CONFIG_SYS_SPI_U_BOOT_OFFS      0x11400
 #ifndef CONFIG_SECURE_BOOT
 #define CONFIG_SPL_TARGET		"u-boot-with-spl.imx"
 #endif
@@ -27,8 +26,6 @@
 /******************************************************************************
  * Miscellaneous configurable options
  */
-#define CONFIG_WATCHDOG
-
 #define CONFIG_MISC_INIT_R
 #ifdef CONFIG_SPL_BUILD
 #undef CONFIG_CMD_KBOARDINFO
@@ -62,13 +59,6 @@
 /******************************************************************************
  * MMC Config
  */
-#define CONFIG_FSL_ESDHC
-#define CONFIG_SYS_FSL_ESDHC_ADDR       0
-
-#ifdef CONFIG_SPL_BUILD
-#undef CONFIG_CMD_MMC_RAW_ECSD
-#endif
-
 #undef CONFIG_BOOTM_NETBSD
 #undef CONFIG_BOOTM_PLAN9
 #undef CONFIG_BOOTM_RTEMS
@@ -104,20 +94,6 @@
 /******************************************************************************
  * Environment organization
  */
-
-#if defined(CONFIG_DM_SPI_FLASH) && !defined(CONFIG_MFG_TOOL)
-#define CONFIG_ENV_SECT_SIZE        (32 * 1024)
-
-#define CONFIG_ENV_OFFSET           0x0c0000
-#define CONFIG_ENV_SIZE             SZ_8K
-
-#define CONFIG_SYS_REDUNDAND_ENVIRONMENT
-#define CONFIG_ENV_OFFSET_REDUND    0x0c8000
-#define CONFIG_ENV_SIZE_REDUND      (CONFIG_ENV_SIZE)
-#else
-#define CONFIG_ENV_SIZE             SZ_8K
-#endif
-
 #define CONFIG_CMDLINE_PS_SUPPORT
 
 #ifdef CONFIG_IMX_BOOTAUX
@@ -217,9 +193,6 @@
 	"echo Exit to CLI"
 #endif
 
-#define CONFIG_SYS_MEMTEST_START	0x80000000
-#define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + 0x20000000)
-
 #define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
 #define CONFIG_SYS_HZ			1000
 
@@ -248,14 +221,6 @@
 #define CONFIG_BMP_16BPP
 #define CONFIG_VIDEO_BMP_RLE8
 #define CONFIG_VIDEO_BMP_LOGO
-#endif
-
-#ifdef CONFIG_FSL_QSPI
-#define CONFIG_SYS_FSL_QSPI_AHB
-#define FSL_QSPI_FLASH_NUM		2
-#define FSL_QSPI_FLASH_SIZE		SZ_16M
-#define QSPI0_BASE_ADDR			QSPI1_IPS_BASE_ADDR
-#define QSPI0_AMBA_BASE			QSPI0_ARB_BASE_ADDR
 #endif
 
 #endif	/* __CONFIG_H */
