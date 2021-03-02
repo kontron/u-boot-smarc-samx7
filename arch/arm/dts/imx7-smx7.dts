@@ -170,16 +170,6 @@
 &qspi1 {
 	u-boot,dm-spl;
 	status = "okay";
-
-	flash0: w25q16dw@0 {
-		#address-cells = <1>;
-		#size-cells = <1>;
-		compatible = "winbond,w25q16dw";
-		spi-max-frequency = <20000000>;
-		/* take off one dummy cycle */
-		spi-nor,ddr-quad-read-dummy = <5>;
-		reg = <0>;
-	};
 };
 
 &i2c1 {
