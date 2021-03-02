@@ -37,6 +37,13 @@
 			enable-active-high;
 		};
 	};
+
+	soc {
+		u-boot,dm-spl;
+		aips3: aips-bus@30800000{
+			u-boot,dm-spl;
+		};
+	};
 };
 
 &iomuxc {
@@ -161,6 +168,7 @@
 };
 
 &qspi1 {
+	u-boot,dm-spl;
 	status = "okay";
 
 	flash0: w25q16dw@0 {
