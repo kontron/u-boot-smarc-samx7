@@ -23,14 +23,10 @@
 #include <miiphy.h>
 #include <fdt_support.h>
 #include <netdev.h>
-#include <power/pmic.h>
-#include <power/pfuze3000_pmic.h>
 #include <i2c.h>
 #include <env.h>
+#include <env_internal.h>
 #include <search.h>
-#include <serial.h>
-#include <asm/mach-imx/mxc_i2c.h>
-#include <asm/arch/crm_regs.h>
 #include <usb.h>
 #include <usb/ehci-ci.h>
 #include <dm.h>
@@ -696,12 +692,12 @@ err:
 
 char *getSerNo (void)
 {
-	ENTRY e;
-	static ENTRY *ep;
+	struct env_entry e;
+	struct env_entry *ep;
 
 	e.key = "serial#";
 	e.data = NULL;
-	hsearch_r (e, FIND, &ep, &env_htab, 0);
+	hsearch_r (e, ENV_FIND, &ep, &env_htab, 0);
 	if (ep == NULL)
 		return "na";
 	else
