@@ -465,6 +465,7 @@ static void set_boot_sel(void)
 #ifndef CONFIG_SPL_BUILD
 static void smx7_set_prompt(void)
 {
+	env_set("PS1", CONFIG_SYS_PROMPT);
 #if defined(CONFIG_SPL_MMC_SUPPORT)
 	if (smx7_mmcboot_secondary())
 		env_set("PS1", "[eMMC Work] => ");
