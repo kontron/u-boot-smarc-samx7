@@ -15,7 +15,8 @@
 #include <image-sparse.h>
 
 #ifdef CONFIG_CMD_MMC_RAW_ECSD
-int do_mmc_raw_ecsd_ops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[]);
+int do_mmc_raw_ecsd_ops(struct cmd_tbl *cmdtp, int flag, int argc,
+			char * const argv[]);
 #endif
 
 static int curr_device = -1;

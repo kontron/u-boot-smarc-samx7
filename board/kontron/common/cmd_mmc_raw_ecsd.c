@@ -24,6 +24,7 @@
 #include <command.h>
 #include <mmc.h>
 #include <memalign.h>
+#include <linux/delay.h>
 
 int mmc_send_cmd(struct mmc *mmc, struct mmc_cmd *cmd, struct mmc_data *data);
 int mmc_send_status(struct mmc *mmc, int timeout);
@@ -118,27 +119,6 @@ int mmc_send_op_cond(struct mmc *mmc)
 	return 0;
 }
 
-int mmc_send_ext_csd(struct mmc *mmc, u8 *ext_csd)
-{
-	struct mmc_cmd cmd;
-	struct mmc_data data;
-	int err;
-
-	/* Get the Card Status Register */
-	cmd.cmdidx = MMC_CMD_SEND_EXT_CSD;
-	cmd.resp_type = MMC_RSP_R1;
-	cmd.cmdarg = 0;
-
-	data.dest = (char *)ext_csd;
-	data.blocks = 1;
-	data.blocksize = 512;
-	data.flags = MMC_DATA_READ;
-
-	err = mmc_send_cmd(mmc, &cmd, &data);
-
-	return err;
-}
-
 static struct mmc *do_mmc_raw_ecsd_init (int dev, bool force_init)
 {
 	/*
@@ -213,7 +193,8 @@ int do_mmc_raw_ecsd_read (struct mmc *mmc, int regnum)
 }
 
 
-int do_mmc_raw_ecsd_ops(cmd_tbl_t *cmdtp, int flag, int argc, char * const argv[])
+int do_mmc_raw_ecsd_ops(struct cmd_tbl *cmdtp, int flag, int argc,
+			char * const argv[])
 {
 	static struct mmc *mmc = 0;
 	int dev;
