@@ -44,6 +44,11 @@
 			u-boot,dm-spl;
 		};
 	};
+
+	wdt-reboot {
+		compatible = "wdt-reboot";
+		wdt = <&wdog1>;
+	};
 };
 
 &iomuxc {
