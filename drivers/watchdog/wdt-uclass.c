@@ -49,6 +49,11 @@ int initr_watchdog(void)
 						    4 * reset_period) / 4;
 	}
 
+	if (timeout == 0) {
+		printf("WDT:   Not started, timeout is 0\n");
+		return 0;
+	}
+
 	wdt_start(gd->watchdog_dev, timeout * 1000, 0);
 	gd->flags |= GD_FLG_WDT_READY;
 	printf("WDT:   Started with%s servicing (%ds timeout)\n",
