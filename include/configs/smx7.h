@@ -46,17 +46,6 @@
 #endif
 
 /******************************************************************************
- * Network
- */
-#define CONFIG_FEC_MXC
-#define CONFIG_FEC_XCV_TYPE             RGMII
-#define CONFIG_ETHPRIME                 "FEC0"
-#define CONFIG_FEC_MXC_PHYADDR          0
-
-/* ENET1 */
-#define IMX_FEC_BASE			ENET_IPS_BASE_ADDR
-
-/******************************************************************************
  * MMC Config
  */
 #undef CONFIG_BOOTM_NETBSD

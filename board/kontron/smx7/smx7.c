@@ -42,7 +42,8 @@
 #define IDENT_RELEASE		"develop"
 #endif
 
-const char version_string[] = U_BOOT_VERSION_STRING "\n" IDENT_STRING IDENT_RELEASE;
+const char version_string[] =
+	    U_BOOT_VERSION_STRING "\n" IDENT_STRING IDENT_RELEASE;
 
 extern void BOARD_InitPins(void);
 extern void BOARD_FixupPins(void);
@@ -183,14 +184,21 @@ u32 mmc_redundant_boot_block(void)
 #endif /* CONFIG_FSL_ESDHC */
 
 #ifdef CONFIG_FEC_MXC
-int board_eth_init(struct bd_info *bis)
+static int setup_fec(void)
 {
-	int ret;
+	struct iomuxc_gpr_base_regs *const iomuxc_gpr_regs
+		= (struct iomuxc_gpr_base_regs *) IOMUXC_GPR_BASE_ADDR;
 	struct mxc_ccm_anatop_reg *ccm_anatop
-	    = (struct mxc_ccm_anatop_reg *) ANATOP_BASE_ADDR;
+		= (struct mxc_ccm_anatop_reg *) ANATOP_BASE_ADDR;
 
-	/* enable lvds output buffer for anaclk1, select 0x12 = pll_enet_div40 (25MHz) */
-	setbits_le32(&ccm_anatop->clk_misc0, 0x20 | CCM_ANALOG_CLK_MISC0_LVDS1_CLK_SEL(0x12));
+	/* enable enet PLL 25 MHz output */
+	/*
+	 * ENETPLL/40 can be used as PHY clock instead of separate crystal
+	 * oscillator. Thus enable LVDS1 output buffer and select 25 MHz
+	 * (0x12) divider in CCM_ANALOG_CLK_MISC0 register.
+	 */
+	setbits_le32(&ccm_anatop->clk_misc0,
+		     0x20 | CCM_ANALOG_CLK_MISC0_LVDS1_CLK_SEL(0x12));
 	udelay(10);
 
         gpio_request(IMX_GPIO_NR(3, 21), "fec_reset");
@@ -198,27 +206,10 @@ int board_eth_init(struct bd_info *bis)
 	udelay(500);
 	gpio_direction_output(IMX_GPIO_NR(3, 21), 1);
 
-	/* FEC0 is connected to PHY#0 */
-	ret = fecmxc_initialize_multi(bis, 0, 0, IMX_FEC_BASE);
-	if (ret)
-		printf("FEC0 MXC: %s:failed\n", __func__);
-
-	if (is_cpu_type(MXC_CPU_MX7D)) {
-		/* FEC1 is connected to PHY#1 */
-		ret = fecmxc_initialize_multi(bis, 1, 1, IMX_FEC_BASE);
-		if (ret)
-			printf("FEC1 MXC: %s:failed\n", __func__);
-	}
-
-	return ret;
-}
-
-static int setup_fec(void)
-{
-	struct iomuxc_gpr_base_regs *const iomuxc_gpr_regs
-		= (struct iomuxc_gpr_base_regs *) IOMUXC_GPR_BASE_ADDR;
-
-	/* Use 125M anatop REF_CLK1 for ENET1 and ENET2, clear gpr1[13], gpr1[17] */
+	/*
+	 * Use 125M anatop REF_CLK1 for ENET1 and ENET2, clear gpr1[13],
+	 * gpr1[17]
+	 */
 	clrsetbits_le32(&iomuxc_gpr_regs->gpr[1],
 		(IOMUXC_GPR_GPR1_GPR_ENET1_TX_CLK_SEL_MASK |
 		 IOMUXC_GPR_GPR1_GPR_ENET2_TX_CLK_SEL_MASK |
@@ -423,15 +414,15 @@ static void set_boot_sel(void)
 	/*
 	 * Jumper settings per SMARC Spec
 	 *
-	 *   BOOT_SEL2#    BOOT_SEL1#    BOOT_SEL0# Boot Source
-	 * 0  	GND           GND           GND        Carrier SATA
-	 * 1	GND           GND           Float      Carrier SD Card
-	 * 2	GND           Float         GND        Carrier eMMC Flash
-	 * 3	GND           Float         Float      Carrier SPI
-	 * 4	Float         GND           GND        Module device (NAND, NOR) - vendor specific
-	 * 5	Float         GND           Float      Remote boot (GBE, serial) - vendor specific
-	 * 6	Float         Float         GND        Module eMMC Flash
-	 * 7	Float         Float         Float      Module SPI
+	 *    BOOT_SEL2#  BOOT_SEL1#  BOOT_SEL0# Boot Source
+	 * 0  GND         GND         GND        Carrier SATA
+	 * 1  GND         GND         Float      Carrier SD Card
+	 * 2  GND         Float       GND        Carrier eMMC Flash
+	 * 3  GND         Float       Float      Carrier SPI
+	 * 4  Float       GND         GND        Module device (NAND, NOR)
+	 * 5  Float       GND         Float      Remote boot (GBE, serial)
+	 * 6  Float       Float       GND        Module eMMC Flash
+	 * 7  Float       Float       Float      Module SPI
 	 */
 
 	switch (boot_sel) {
@@ -520,7 +511,10 @@ int misc_init_r(void)
 			gpio_direction_output(IMX_GPIO_NR(6,15), 1);
 	}
 
-	/* fix IOMUX configuration of PWM1_OUT for use as GPIO line if variable set */
+	/*
+	 * fix IOMUX configuration of PWM1_OUT for use as GPIO line if
+	 * variable set
+	 */
 	if (env_get_yesno("pwm_out_disable"))
 		use_pwm1_out_as_gpio();
 
@@ -584,12 +578,13 @@ int board_late_init(void)
 		    = (struct mxc_ccm_anatop_reg *) ANATOP_BASE_ADDR;
 
 		if (is_cpu_type(MXC_CPU_MX7D)) {
-			/* read ARM PLL control register and mask divider bits */
+			/* read ARM PLL control register and mask divider */
 			reg = readl(&ccm_anatop->pll_arm) & 0xffffff80;
 			/* set default divider field for 792 MHz */
 			reg |= 66;
 			writel(reg, &ccm_anatop->pll_arm);
-			printf("\n!!! Board revision 0 detected, setting CPU speed to 792 MHz !!!\n\n");
+			printf("\n!!! Board revision 0 detected, setting"
+			       " CPU speed to 792 MHz !!!\n\n");
 		}
 	}
 
