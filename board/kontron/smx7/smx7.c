@@ -611,6 +611,7 @@ int board_fix_fdt(void *blob)
 {
         if (is_cpu_type(MXC_CPU_MX7S)) {
                 fdt_del_node_and_alias(blob, "usb2");
+		fdt_del_node_and_alias(blob, "ethernet1");
         }
 
         return 0;
