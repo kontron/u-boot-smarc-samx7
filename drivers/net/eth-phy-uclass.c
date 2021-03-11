@@ -81,9 +81,9 @@ struct mii_dev *eth_phy_get_mdio_bus(struct udevice *eth_dev)
 			 */
 			uc_priv = (struct eth_phy_device_priv *)(phy_dev->uclass_priv);
 			if (uc_priv->mdio_bus)
-				printf("Get shared mii bus on %s\n", eth_dev->name);
+				debug("Get shared mii bus on %s\n", eth_dev->name);
 			else
-				printf("Can't get shared mii bus on %s\n", eth_dev->name);
+				debug("Can't get shared mii bus on %s\n", eth_dev->name);
 
 			return uc_priv->mdio_bus;
 		}
