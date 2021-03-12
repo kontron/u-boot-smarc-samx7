@@ -26,7 +26,6 @@
 /******************************************************************************
  * Miscellaneous configurable options
  */
-#define CONFIG_MISC_INIT_R
 #ifdef CONFIG_SPL_BUILD
 #undef CONFIG_CMD_KBOARDINFO
 #undef CONFIG_KBOARDINFO_MODULE
