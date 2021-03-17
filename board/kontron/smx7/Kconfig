@@ -31,6 +31,15 @@ config KEX_EEP_BOOTCOUNTER
 	bool "KEU EEPROM boot counter support"
 	default y
 
+config KEX_EXTSPI_BOOT
+	bool "SMX7 external (carrier) SPI boot support"
+	depends on !QSPI_BOOT && SPI_BOOT && MXC_SPI
+	default n
+	help
+	 Enable boot from external (carrier) SPI. To boot
+	 from external SPI device, hardware modifications
+	 are required on SMX7.
+
 source "board/kontron/common/Kconfig"
 
 endif

@@ -41,7 +41,7 @@ char *print_if_avail (char *text)
 		return "na";
 }
 
-int do_kboardinfo (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv [])
+int do_kboardinfo (struct cmd_tbl *cmdtp, int flag, int argc, char * const argv [])
 {
 	u32 cpurev;
 

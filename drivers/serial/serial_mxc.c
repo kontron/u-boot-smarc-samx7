@@ -332,7 +332,7 @@ static int mxc_serial_ofdata_to_platdata(struct udevice *dev)
 	struct mxc_serial_platdata *plat = dev->platdata;
 	fdt_addr_t addr;
 
-	addr = devfdt_get_addr(dev);
+	addr = dev_read_addr(dev);
 	if (addr == FDT_ADDR_T_NONE)
 		return -EINVAL;
 
@@ -347,6 +347,9 @@ static int mxc_serial_ofdata_to_platdata(struct udevice *dev)
 }
 
 static const struct udevice_id mxc_serial_ids[] = {
+	{ .compatible = "fsl,imx21-uart" },
+	{ .compatible = "fsl,imx53-uart" },
+	{ .compatible = "fsl,imx6sx-uart" },
 	{ .compatible = "fsl,imx6ul-uart" },
 	{ .compatible = "fsl,imx7d-uart" },
 	{ .compatible = "fsl,imx6q-uart" },
@@ -364,9 +367,7 @@ U_BOOT_DRIVER(serial_mxc) = {
 #endif
 	.probe = mxc_serial_probe,
 	.ops	= &mxc_serial_ops,
-#if !CONFIG_IS_ENABLED(OF_CONTROL)
 	.flags = DM_FLAG_PRE_RELOC,
-#endif
 };
 #endif
 

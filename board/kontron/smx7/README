@@ -67,6 +67,52 @@ The resulting bootloader image will be u-boot-with-spl.imx. In bootloader defaul
 environment the 'uboot_update' script is defined that can be used to update a
 given bootloader image via TFTP network connection.
 
+c) eMMC redundant bootloader image
+
+# make distclean
+# make smx7_mmc_spl_defconfig
+# make u-boot-with-spl.imx
+
+The resulting bootloader image will be u-boot-with-spl.imx. It is installed
+at block 0 _and_ at block 0x800 on the first boot partition of the eMMC.
+Note that this is a fully redundant bootloader implementation that can be
+controlled via external GPIO, in this implementation the LID signal from
+Kontron eval carrier 2 is used to force booting either from block 0 (standard
+boot, LID# jumper not set) or from block 0x800 (recovery boot, LID# jumper
+installed).
+Note also that this only serves as a proof of concept if redundant eMMC boot.
+In a real world application, probably more changes would be necessary. E.g.
+bootloader environment still comes from QSPI flash, this would probably
+be changed in productive use.
+
+To install the bootloader image on eMMC the following steps are required (It
+is assumed that the bootloader has been copied via network or other means into
+RAM memory at $loadaddr before). The image must be installed beginning with
+the 2nd block (offset 0x400).
+
+=> mmc dev 1 1
+=> mmc write $loadaddr 0x002 0x7fe
+=> mmc write $loadaddr 0x802 0x7fe
+
+In addition, i.MX7 boot config fuses must be set appropriately to boot from
+eMMC. Note that this is not possible if fuses have been burnt for QSPI boot
+before.
+
+=> fuse prog -y 1 3 10002800
+
+d) external SPI boot bootloader image
+
+# make distclean
+# make smx7_extspi_spl_defconfig
+# make -j8
+
+The resulting bootloader image will be u-boot-with-spl.imx. It is installed
+starting at offset 0x400 in external SPI flash. Note that the module can
+only boot from external SPI flash after hardware modification. Note also
+that this must be considered as proof of concept, in real applications,
+further modification is probably necessary.
+
+
 It is possible to pass a release version when building. To achieve this, the
 IDENT_RELEASE macro has to be defined. This can be done with the following
 build step:

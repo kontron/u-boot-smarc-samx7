@@ -11,7 +11,6 @@
 #ifdef CONFIG_SPL
 #include "imx7_spl.h"
 
-#define CONFIG_SYS_SPI_U_BOOT_OFFS      0x11400
 #ifndef CONFIG_SECURE_BOOT
 #define CONFIG_SPL_TARGET		"u-boot-with-spl.imx"
 #endif
@@ -27,9 +26,6 @@
 /******************************************************************************
  * Miscellaneous configurable options
  */
-#define CONFIG_WATCHDOG
-
-#define CONFIG_MISC_INIT_R
 #ifdef CONFIG_SPL_BUILD
 #undef CONFIG_CMD_KBOARDINFO
 #undef CONFIG_KBOARDINFO_MODULE
@@ -51,24 +47,11 @@
 /******************************************************************************
  * Network
  */
-#define CONFIG_FEC_MXC
-#define CONFIG_FEC_XCV_TYPE             RGMII
-#define CONFIG_ETHPRIME                 "FEC0"
-#define CONFIG_FEC_MXC_PHYADDR          0
-
-/* ENET1 */
-#define IMX_FEC_BASE			ENET_IPS_BASE_ADDR
+#define CONFIG_ETHPRIME			"eth0"
 
 /******************************************************************************
  * MMC Config
  */
-#define CONFIG_FSL_ESDHC
-#define CONFIG_SYS_FSL_ESDHC_ADDR       0
-
-#ifdef CONFIG_SPL_BUILD
-#undef CONFIG_CMD_MMC_RAW_ECSD
-#endif
-
 #undef CONFIG_BOOTM_NETBSD
 #undef CONFIG_BOOTM_PLAN9
 #undef CONFIG_BOOTM_RTEMS
@@ -102,122 +85,112 @@
 #define CONFIG_USBD_HS
 
 /******************************************************************************
- * Environment organization
+ * Environment Settings
  */
+#define CONFIG_CMDLINE_PS_SUPPORT
 
-#if defined(CONFIG_DM_SPI_FLASH) && !defined(CONFIG_MFG_TOOL)
-#define CONFIG_ENV_SECT_SIZE        (32 * 1024)
+/******************************************************************************
+ * Default Environment Variables
+ */
+#ifndef CONFIG_SPL_BUILD
+#define DISTROBOOT_ENV_SETTINGS \
+	"fdt_addr_r=0x83000000\0" \
+	"kernel_addr_r=" __stringify(CONFIG_LOADADDR) "\0" \
+	"pxefile_addr_r=" __stringify(CONFIG_LOADADDR) "\0" \
+	"ramdisk_addr_r=0x84000000\0" \
+	"scriptaddr=0x80400000\0"
 
-#define CONFIG_ENV_OFFSET           0x0c0000
-#define CONFIG_ENV_SIZE             SZ_8K
+#define BOOT_TARGET_DEVICES(func) \
+	func(MMC, mmc, 1) \
+	func(MMC, mmc, 0) \
+	func(USB, usb, 0) \
+	func(DHCP, dhcp, 0)
 
-#define CONFIG_SYS_REDUNDAND_ENVIRONMENT
-#define CONFIG_ENV_OFFSET_REDUND    0x0c8000
-#define CONFIG_ENV_SIZE_REDUND      (CONFIG_ENV_SIZE)
+#include <config_distro_bootcmd.h>
 #else
-#define CONFIG_ENV_SIZE             SZ_8K
+#define DISTROBOOT_ENV_SETTINGS
+#define BOOTENV
 #endif
-
 
 #ifdef CONFIG_IMX_BOOTAUX
 /* Set to QSPI1 A flash at default */
 #define CONFIG_SYS_AUXCORE_BOOTDATA 0x60000000
 
 #define UPDATE_M4_ENV \
-        "m4image=m4_qspi.bin\0" \
-        "loadm4image=load mmc 0:1 ${loadaddr} ${m4image}\0" \
-        "update_m4_from_sd=" \
-                "sf probe 0:0 && " \
-                "run loadm4image && " \
-                "setexpr fw_sz ${filesize} + 0xffff; "  \
-                "setexpr fw_sz ${fw_sz} / 0x10000; "    \
-                "setexpr fw_sz ${fw_sz} * 0x10000; "    \
-                "sf erase 0x0 ${fw_sz} && " \
-                "sf write ${loadaddr} 0x0 ${filesize}" "\0" \
-        "m4boot=sf probe 0:0; bootaux "__stringify(CONFIG_SYS_AUXCORE_BOOTDATA)"\0"
+	"m4image=m4_qspi.bin\0" \
+	"loadm4image=load mmc 0:1 ${loadaddr} ${m4image}\0" \
+	"update_m4_from_sd=" \
+		"sf probe 0:0 && " \
+		"run loadm4image && " \
+		"setexpr fw_sz ${filesize} + 0xffff; "  \
+		"setexpr fw_sz ${fw_sz} / 0x10000; "    \
+		"setexpr fw_sz ${fw_sz} * 0x10000; "    \
+		"sf erase 0x0 ${fw_sz} && " \
+		"sf write ${loadaddr} 0x0 ${filesize}" "\0" \
+	"m4boot=sf probe 0:0; bootaux "__stringify(CONFIG_SYS_AUXCORE_BOOTDATA)"\0"
 #else
 #define UPDATE_M4_ENV ""
 #endif
 
-#if 0
 #define CONFIG_EXTRA_ENV_SETTINGS \
-        UPDATE_M4_ENV \
-        "autoload=no" "\0" \
-        "set_fdtfile=setenv fdtfile imx7${core_variant}-samx7-${panel}.dtb;" "\0" \
-        "clear_env=sf probe 0 && sf erase " __stringify(CONFIG_ENV_OFFSET) " 10000" "\0" \
-        "console=ttymxc0" "\0" \
-        "fdt_addr=0x83000000" "\0" \
-        "fdt_high=0xffffffff" "\0" \
-        "image=zImage" "\0" \
-        "initrd_high=0xffffffff" "\0" \
-        "panel=ld101" "\0" \
-        "pcie_a_prsnt=yes" "\0" \
-        "pcie_b_prsnt=yes" "\0" \
-        "pcie_c_prsnt=yes" "\0" \
-        "pwm_out_disable=yes" "\0" \
-        "bootm_boot_mode=sec" "\0" \
-        "bootfailed=echo Booting failed from all boot sources && false" "\0" \
-        "bootos=run setbootargs && " \
-                "run loadimage && " \
-                "run loadfdt && " \
-                "bootz ${loadaddr} - ${fdt_addr} || false" "\0" \
-        "bootsel_boot=echo BOOT_SEL ${boot_sel} selected && run ${boot_sel}_boot" "\0" \
-        "module_mmc_boot=run mmcboot" "\0" \
-        "module_spi_boot=run mmcboot" "\0" \
-        "loadimage=load ${intf} ${bdev}:${bpart} ${loadaddr} /boot/${image}" "\0" \
-        "loadfdt=run set_fdtfile && load ${intf} ${bdev}:${bpart} ${fdt_addr} /boot/${fdtfile}" "\0" \
-        "setbootargs=setenv bootargs console=${console},${baudrate} root=${rootpath}" "\0" \
-        "mmcroot=/dev/mmcblk2p1 rootwait rw" "\0" \
-        "mmcboot=echo Booting from mmc ... && " \
-                "setenv bdev 1 && setenv bpart 1 && setenv intf mmc && " \
-                "mmc dev ${bdev} && setenv rootpath ${mmcroot} && " \
-                "run bootos" "\0" \
-        "netsetbootargs=bootp && setenv bootargs console=${console},${baudrate} root=/dev/nfs ip=dhcp " \
-                "nfsroot=${serverip}:${nfsrootpath},v3,tcp mipi_dsi_samsung.lvds_freq=50" "\0" \
-        "nfsrootpath=/srv/export/samx7" "\0" \
-        "netboot=echo Booting from net ...; " \
-                "run netsetbootargs && " \
-                "tftp ${loadaddr} ${image} && " \
-                "run set_fdtfile && tftp ${fdt_addr} ${fdtfile} && " \
-                "bootz ${loadaddr} - ${fdt_addr} || false" "\0" \
-        "sdroot=/dev/mmcblk0p1 rootwait rw" "\0" \
-        "sdboot=echo Booting from SD card ... && " \
-                "setenv bdev 0 && setenv bpart 1 && setenv intf mmc && " \
-                "mmc dev ${bdev} && setenv rootpath ${sdroot} && " \
-                "run bootos" "\0" \
-        "usbroot=/dev/sda1 rootwait rw" "\0" \
-        "usbboot=echo Booting from USB ... && " \
-                "setenv bdev 0 && setenv bpart 1 && setenv intf usb && " \
-                "usb start && usb dev ${bdev} && setenv rootpath ${usbroot} && " \
-                "run bootos" "\0" \
-        "qspi_header_file=qspi-header.bin" "\0" \
-        "uboot_update_file=u-boot-smx7-spl.imx" "\0" \
-        "uboot_install=bootp && tftp 80800000 ${qspi_header_file} && tftp 88000000 ${uboot_update_file} && " \
-                "sf probe 0 && sf erase 0 80000 && sf write 80800000 0 200 && sf write 88000000 400 ${filesize}" "\0" \
-        "uboot_update=bootp && tftp 88000000 ${uboot_update_file} && " \
-                "sf probe 0 && sf read 80800000 0 200 && sf erase 0 80000 && " \
-                "sf write 80800000 0 200 && sf write 88000000 400 ${filesize}" "\0"
-
-#define CONFIG_BOOTCOMMAND \
-        "run mmcboot || run sdboot || run usbboot || run netboot || run bootfailed"
-#else
-#define CONFIG_EXTRA_ENV_SETTINGS \
-        "autoload=no" "\0" \
-        "bootm_boot_mode=sec" "\0" \
-        "fdt_high=0xffffffff" "\0" \
-        "initrd_high=0xffffffff" "\0" \
-        "updfile=update_smx7_spl/update" "\0" \
-        "updNet=bootp; if tftp $loadaddr $updfile; then setenv loader tftp; source $loadaddr; else run updFal; fi" "\0" \
-        "updUsb=usb start && usb dev 0 && load usb 0:1 $loadaddr $updfile && setenv loader load usb 0:1 && source $loadaddr && true" "\0" \
-        "updFal=echo update failed" "\0" \
-        "update=run updUsb || run updFal" "\0"
-
-#define CONFIG_BOOTCOMMAND \
-	"echo Exit to CLI"
-#endif
-
-#define CONFIG_SYS_MEMTEST_START	0x80000000
-#define CONFIG_SYS_MEMTEST_END		(CONFIG_SYS_MEMTEST_START + 0x20000000)
+	UPDATE_M4_ENV								\
+	"autoload=no\0"								\
+	"set_fdtfile=setenv fdtfile imx7${core_variant}-samx7-${panel}.dtb;\0"	\
+	"clear_env=sf probe 0 && sf erase " __stringify(CONFIG_ENV_OFFSET) " 10000\0" \
+	"console=ttymxc0\0"							\
+	"fdt_addr=0x83000000\0"							\
+	"fdt_high=0xffffffff\0"							\
+	"image=zImage\0"							\
+	"initrd_high=0xffffffff\0"						\
+	"panel=ld101\0"								\
+	"pcie_a_prsnt=yes\0"							\
+	"pcie_b_prsnt=yes\0"							\
+	"pcie_c_prsnt=yes\0"							\
+	"pwm_out_disable=yes\0"							\
+	"bootm_boot_mode=sec\0"							\
+	"bootfailed=echo Booting failed from all boot sources && false\0"	\
+	"bootos=run setbootargs && " \
+		"run loadimage && " \
+		"run loadfdt && " \
+		"bootz ${loadaddr} - ${fdt_addr} || false\0"			\
+	"bootsel_boot=echo BOOT_SEL ${boot_sel} selected && " \
+		"run ${boot_sel}_boot\0"					\
+	"module_mmc_boot=run mmcboot\0"						\
+	"module_spi_boot=run mmcboot\0"						\
+	"legacy_boot=run mmcboot || run sdboot || run usbboot || " \
+		"run bootfailed\0"						\
+	"loadimage=load ${intf} ${bdev}:${bpart} ${loadaddr} " \
+		"/boot/${image}\0"						\
+	"loadfdt=run set_fdtfile && load ${intf} ${bdev}:${bpart} " \
+		"${fdt_addr} /boot/${fdtfile}\0"				\
+	"setbootargs=setenv bootargs console=${console},${baudrate} " \
+		"root=${rootpath}\0"						\
+	"mmcroot=/dev/mmcblk2p1 rootwait rw\0"					\
+	"mmcboot=echo Booting from mmc ... && " \
+		"setenv bdev 1 && setenv bpart 1 && setenv intf mmc && " \
+		"mmc dev ${bdev} && setenv rootpath ${mmcroot} && " \
+		"run bootos\0"							\
+	"sdroot=/dev/mmcblk0p1 rootwait rw\0"					\
+	"sdboot=echo Booting from SD card ... && " \
+		"setenv bdev 0 && setenv bpart 1 && setenv intf mmc && " \
+		"mmc dev ${bdev} && setenv rootpath ${sdroot} && " \
+		"run bootos\0"							\
+	"usbroot=/dev/sda1 rootwait rw\0"					\
+	"usbboot=echo Booting from USB ... && " \
+		"setenv bdev 0 && setenv bpart 1 && setenv intf usb && " \
+		"usb start && usb dev ${bdev} && " \
+		"setenv rootpath ${usbroot} && run bootos\0"			\
+	"updfile=update_smx7_spl/update\0"					\
+	"updNet=bootp; if tftp $loadaddr $updfile; then setenv loader tftp; " \
+		"source $loadaddr; else run updFal; fi\0"			\
+	"updUsb=usb start && usb dev 0 " \
+		"&& load usb 0:1 $loadaddr $updfile && " \
+		"setenv loader load usb 0:1 && " \
+		"source $loadaddr && true\0"					\
+	"updFal=echo update failed\0"						\
+	"update=run updUsb || run updFal\0"					\
+	DISTROBOOT_ENV_SETTINGS							\
+	BOOTENV
 
 #define CONFIG_SYS_LOAD_ADDR		CONFIG_LOADADDR
 #define CONFIG_SYS_HZ			1000
@@ -235,13 +208,6 @@
 	(CONFIG_SYS_INIT_RAM_ADDR + CONFIG_SYS_INIT_SP_OFFSET)
 
 
-#ifdef CONFIG_MXC_SPI
-#define CONFIG_SF_DEFAULT_BUS       2
-#define CONFIG_SF_DEFAULT_CS        0
-#define CONFIG_SF_DEFAULT_SPEED     20000000
-#define CONFIG_SF_DEFAULT_MODE      SPI_MODE_0
-#endif
-
 #define CONFIG_SYS_FSL_USDHC_NUM        2
 
 #define CONFIG_IMX_THERMAL
@@ -254,14 +220,6 @@
 #define CONFIG_BMP_16BPP
 #define CONFIG_VIDEO_BMP_RLE8
 #define CONFIG_VIDEO_BMP_LOGO
-#endif
-
-#ifdef CONFIG_FSL_QSPI
-#define CONFIG_SYS_FSL_QSPI_AHB
-#define FSL_QSPI_FLASH_NUM		2
-#define FSL_QSPI_FLASH_SIZE		SZ_16M
-#define QSPI0_BASE_ADDR			QSPI1_IPS_BASE_ADDR
-#define QSPI0_AMBA_BASE			QSPI0_ARB_BASE_ADDR
 #endif
 
 #endif	/* __CONFIG_H */

@@ -37,14 +37,68 @@
 			enable-active-high;
 		};
 	};
+
+	soc {
+		u-boot,dm-spl;
+		aips3: aips-bus@30800000{
+			u-boot,dm-spl;
+		};
+	};
+
+	wdt-reboot {
+		compatible = "wdt-reboot";
+		wdt = <&wdog1>;
+	};
 };
 
 &iomuxc {
 	imx7d-smx7 {
+		pinctrl_enet1: enet1grp {
+			fsl,pins = <
+				MX7D_PAD_GPIO1_IO10__ENET1_MDIO			0x3
+				MX7D_PAD_GPIO1_IO11__ENET1_MDC			0x3
+				MX7D_PAD_ENET1_RGMII_TXC__ENET1_RGMII_TXC	0x1
+				MX7D_PAD_ENET1_RGMII_TD0__ENET1_RGMII_TD0	0x1
+				MX7D_PAD_ENET1_RGMII_TD1__ENET1_RGMII_TD1	0x1
+				MX7D_PAD_ENET1_RGMII_TD2__ENET1_RGMII_TD2	0x1
+				MX7D_PAD_ENET1_RGMII_TD3__ENET1_RGMII_TD3	0x1
+				MX7D_PAD_ENET1_RGMII_TX_CTL__ENET1_RGMII_TX_CTL	0x1
+				MX7D_PAD_ENET1_RGMII_RXC__ENET1_RGMII_RXC	0x1
+				MX7D_PAD_ENET1_RGMII_RD0__ENET1_RGMII_RD0	0x1
+				MX7D_PAD_ENET1_RGMII_RD1__ENET1_RGMII_RD1	0x1
+				MX7D_PAD_ENET1_RGMII_RD2__ENET1_RGMII_RD2	0x1
+				MX7D_PAD_ENET1_RGMII_RD3__ENET1_RGMII_RD3	0x1
+				MX7D_PAD_ENET1_RGMII_RX_CTL__ENET1_RGMII_RX_CTL	0x1
+			>;
+		};
+
+		pinctrl_enet2: enet2grp {
+			fsl,pins = <
+				MX7D_PAD_EPDC_GDSP__ENET2_RGMII_TXC             0x1
+				MX7D_PAD_EPDC_SDCE2__ENET2_RGMII_TD0		0x1
+				MX7D_PAD_EPDC_SDCE3__ENET2_RGMII_TD1		0x1
+				MX7D_PAD_EPDC_GDCLK__ENET2_RGMII_TD2		0x1
+				MX7D_PAD_EPDC_GDOE__ENET2_RGMII_TD3		0x1
+				MX7D_PAD_EPDC_GDRL__ENET2_RGMII_TX_CTL		0x1
+				MX7D_PAD_EPDC_SDCE1__ENET2_RGMII_RXC		0x1
+				MX7D_PAD_EPDC_SDCLK__ENET2_RGMII_RD0		0x1
+				MX7D_PAD_EPDC_SDLE__ENET2_RGMII_RD1		0x1
+				MX7D_PAD_EPDC_SDOE__ENET2_RGMII_RD2		0x1
+				MX7D_PAD_EPDC_SDSHR__ENET2_RGMII_RD3		0x1
+				MX7D_PAD_EPDC_SDCE0__ENET2_RGMII_RX_CTL		0x1
+			>;
+		};
+
+		pinctrl_enet2_reg: enet2reggrp {
+			fsl,pins = <
+				MX7D_PAD_LPSR_GPIO1_IO04__GPIO1_IO4		0x14
+			>;
+		};
+
 		pinctrl_i2c1: i2c1grp {
 			fsl,pins = <
 				MX7D_PAD_UART1_TX_DATA__I2C1_SDA	0x4000007f
-				MX7D_PAD_UART1_RX_DATA__I2C1_SCL        0x4000007f
+				MX7D_PAD_UART1_RX_DATA__I2C1_SCL	0x4000007f
 			>;
 		};
 
@@ -161,17 +215,41 @@
 };
 
 &qspi1 {
+	u-boot,dm-spl;
+	status = "okay";
+};
+
+&fec1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_enet1>;
+	phy-mode = "rgmii";
+	phy-handle = <&ethphy0>;
+	fsl,magic-packet;
 	status = "okay";
 
-	flash0: w25q16dw@0 {
+	mdio {
 		#address-cells = <1>;
-		#size-cells = <1>;
-		compatible = "winbond,w25q16dw";
-		spi-max-frequency = <20000000>;
-		/* take off one dummy cycle */
-		spi-nor,ddr-quad-read-dummy = <5>;
-		reg = <0>;
+		#size-cells = <0>;
+
+		ethphy0: ethernet-phy@0 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <0>;
+		};
+
+		ethphy1: ethernet-phy@1 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <1>;
+		};
 	};
+};
+
+&fec2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_enet2>;
+	phy-mode = "rgmii";
+	phy-handle = <&ethphy1>;
+	fsl,magic-packet;
+	status = "okay";
 };
 
 &i2c1 {
@@ -203,16 +281,19 @@
 };
 
 &usbotg1 {
-        dr_mode = "host";
+	reg = <0x30b10000 0x10000>;
+	dr_mode = "host";
 	status = "okay";
 };
 
 &usbotg2 {
+	reg = <0x30b20000 0x10000>;
 	dr_mode = "host";
 	status = "okay";
 };
 
 &usbh {
+	reg = <0x30b30000 0x10000>;
 	phy_tpye = "hsic";
 	disable-over-current;
 	status = "okay";

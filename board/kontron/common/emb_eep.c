@@ -22,6 +22,8 @@
 
 #include <common.h>
 #include <i2c.h>
+#include <log.h>
+#include <env.h>
 #include "emb_eep.h"
 
 #ifdef CONFIG_EMB_EEP_I2C_EEPROM

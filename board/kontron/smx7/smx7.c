@@ -4,6 +4,8 @@
  * SPDX-License-Identifier:	GPL-2.0+
  */
 
+#include <init.h>
+#include <net.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/imx-regs.h>
 #include <asm/arch/mx7-pins.h>
@@ -12,20 +14,19 @@
 #include <asm/gpio.h>
 #include <asm/mach-imx/iomux-v3.h>
 #include <asm/io.h>
+#include <linux/delay.h>
 #include <linux/sizes.h>
 #include <common.h>
-#include <fsl_esdhc.h>
-#include <fdt_support.h>
+#include <image.h>
+#include <fsl_esdhc_imx.h>
 #include <mmc.h>
 #include <miiphy.h>
+#include <fdt_support.h>
 #include <netdev.h>
-#include <power/pmic.h>
-#include <power/pfuze3000_pmic.h>
 #include <i2c.h>
-#include <environment.h>
+#include <env.h>
+#include <env_internal.h>
 #include <search.h>
-#include <asm/mach-imx/mxc_i2c.h>
-#include <asm/arch/crm_regs.h>
 #include <usb.h>
 #include <usb/ehci-ci.h>
 #include <dm.h>
@@ -41,13 +42,15 @@
 #define IDENT_RELEASE		"develop"
 #endif
 
-const char version_string[] = U_BOOT_VERSION_STRING "\n" IDENT_STRING IDENT_RELEASE;
+const char version_string[] =
+	    U_BOOT_VERSION_STRING "\n" IDENT_STRING IDENT_RELEASE;
 
 extern void BOARD_InitPins(void);
 extern void BOARD_FixupPins(void);
 extern void hsic_1p2_regulator_out(void);
 extern void use_pwm1_out_as_gpio(void);
 /* extern void snvs_lpgpr_set(uint32_t); */
+extern void start_imx_watchdog(int timeout, int kick);
 
 extern int EMB_EEP_I2C_EEPROM_BUS_NUM_1;
 
@@ -58,8 +61,10 @@ int board_spi_cs_gpio(unsigned bus, unsigned cs)
 	if ((bus == 2) && (cs == 0))
 		return IMX_GPIO_NR(6, 22);
 
+#ifndef CONFIG_KEX_EXTSPI_BOOT
 	if ((bus == 2) && (cs == 2))
 		return IMX_GPIO_NR(5, 9);
+#endif
 
 	return -1;
 }
@@ -118,7 +123,7 @@ int board_mmc_getcd(struct mmc *mmc)
 	return ret;
 }
 
-int board_mmc_init(bd_t *bis)
+int board_mmc_init(struct bd_info *bis)
 {
 	int i, ret;
 	/*
@@ -158,17 +163,42 @@ int board_mmc_init(bd_t *bis)
 
 	return 0;
 }
+
+#if defined(CONFIG_SPL_MMC_SUPPORT)
+#define SRC_GPR10		0x30390098
+#define PERSIST_SECONDARY_BOOT	(1<<30)
+
+bool smx7_mmcboot_secondary(void)
+{
+	return (bool)(readl(SRC_GPR10) & PERSIST_SECONDARY_BOOT);
+}
+
+u32 mmc_redundant_boot_block(void)
+{
+	if (smx7_mmcboot_secondary())
+		return 0x800;
+	else
+		return 0;
+}
+#endif
 #endif /* CONFIG_FSL_ESDHC */
 
 #ifdef CONFIG_FEC_MXC
-int board_eth_init(bd_t *bis)
+static int setup_fec(void)
 {
-	int ret;
+	struct iomuxc_gpr_base_regs *const iomuxc_gpr_regs
+		= (struct iomuxc_gpr_base_regs *) IOMUXC_GPR_BASE_ADDR;
 	struct mxc_ccm_anatop_reg *ccm_anatop
-	    = (struct mxc_ccm_anatop_reg *) ANATOP_BASE_ADDR;
+		= (struct mxc_ccm_anatop_reg *) ANATOP_BASE_ADDR;
 
-	/* enable lvds output buffer for anaclk1, select 0x12 = pll_enet_div40 (25MHz) */
-	setbits_le32(&ccm_anatop->clk_misc0, 0x20 | CCM_ANALOG_CLK_MISC0_LVDS1_CLK_SEL(0x12));
+	/* enable enet PLL 25 MHz output */
+	/*
+	 * ENETPLL/40 can be used as PHY clock instead of separate crystal
+	 * oscillator. Thus enable LVDS1 output buffer and select 25 MHz
+	 * (0x12) divider in CCM_ANALOG_CLK_MISC0 register.
+	 */
+	setbits_le32(&ccm_anatop->clk_misc0,
+		     0x20 | CCM_ANALOG_CLK_MISC0_LVDS1_CLK_SEL(0x12));
 	udelay(10);
 
         gpio_request(IMX_GPIO_NR(3, 21), "fec_reset");
@@ -176,27 +206,10 @@ int board_eth_init(bd_t *bis)
 	udelay(500);
 	gpio_direction_output(IMX_GPIO_NR(3, 21), 1);
 
-	/* FEC0 is connected to PHY#0 */
-	ret = fecmxc_initialize_multi(bis, 0, 0, IMX_FEC_BASE);
-	if (ret)
-		printf("FEC0 MXC: %s:failed\n", __func__);
-
-	if (is_cpu_type(MXC_CPU_MX7D)) {
-		/* FEC1 is connected to PHY#1 */
-		ret = fecmxc_initialize_multi(bis, 1, 1, IMX_FEC_BASE);
-		if (ret)
-			printf("FEC1 MXC: %s:failed\n", __func__);
-	}
-
-	return ret;
-}
-
-static int setup_fec(void)
-{
-	struct iomuxc_gpr_base_regs *const iomuxc_gpr_regs
-		= (struct iomuxc_gpr_base_regs *) IOMUXC_GPR_BASE_ADDR;
-
-	/* Use 125M anatop REF_CLK1 for ENET1 and ENET2, clear gpr1[13], gpr1[17] */
+	/*
+	 * Use 125M anatop REF_CLK1 for ENET1 and ENET2, clear gpr1[13],
+	 * gpr1[17]
+	 */
 	clrsetbits_le32(&iomuxc_gpr_regs->gpr[1],
 		(IOMUXC_GPR_GPR1_GPR_ENET1_TX_CLK_SEL_MASK |
 		 IOMUXC_GPR_GPR1_GPR_ENET2_TX_CLK_SEL_MASK |
@@ -401,15 +414,15 @@ static void set_boot_sel(void)
 	/*
 	 * Jumper settings per SMARC Spec
 	 *
-	 *   BOOT_SEL2#    BOOT_SEL1#    BOOT_SEL0# Boot Source
-	 * 0  	GND           GND           GND        Carrier SATA
-	 * 1	GND           GND           Float      Carrier SD Card
-	 * 2	GND           Float         GND        Carrier eMMC Flash
-	 * 3	GND           Float         Float      Carrier SPI
-	 * 4	Float         GND           GND        Module device (NAND, NOR) - vendor specific
-	 * 5	Float         GND           Float      Remote boot (GBE, serial) - vendor specific
-	 * 6	Float         Float         GND        Module eMMC Flash
-	 * 7	Float         Float         Float      Module SPI
+	 *    BOOT_SEL2#  BOOT_SEL1#  BOOT_SEL0# Boot Source
+	 * 0  GND         GND         GND        Carrier SATA
+	 * 1  GND         GND         Float      Carrier SD Card
+	 * 2  GND         Float       GND        Carrier eMMC Flash
+	 * 3  GND         Float       Float      Carrier SPI
+	 * 4  Float       GND         GND        Module device (NAND, NOR)
+	 * 5  Float       GND         Float      Remote boot (GBE, serial)
+	 * 6  Float       Float       GND        Module eMMC Flash
+	 * 7  Float       Float       Float      Module SPI
 	 */
 
 	switch (boot_sel) {
@@ -439,6 +452,22 @@ static void set_boot_sel(void)
 			break;
 	}
 }
+
+#ifndef CONFIG_SPL_BUILD
+static void smx7_set_prompt(void)
+{
+	env_set("PS1", CONFIG_SYS_PROMPT);
+#if defined(CONFIG_SPL_MMC_SUPPORT)
+	if (smx7_mmcboot_secondary())
+		env_set("PS1", "[eMMC Work] => ");
+	else
+		env_set("PS1", "[eMMC Recovery] => ");
+#endif
+#if defined(CONFIG_KEX_EXTSPI_BOOT)
+	env_set("PS1", "[ext SPI] => ");
+#endif
+}
+#endif
 
 int misc_init_r(void)
 {
@@ -482,7 +511,10 @@ int misc_init_r(void)
 			gpio_direction_output(IMX_GPIO_NR(6,15), 1);
 	}
 
-	/* fix IOMUX configuration of PWM1_OUT for use as GPIO line if variable set */
+	/*
+	 * fix IOMUX configuration of PWM1_OUT for use as GPIO line if
+	 * variable set
+	 */
 	if (env_get_yesno("pwm_out_disable"))
 		use_pwm1_out_as_gpio();
 
@@ -546,18 +578,21 @@ int board_late_init(void)
 		    = (struct mxc_ccm_anatop_reg *) ANATOP_BASE_ADDR;
 
 		if (is_cpu_type(MXC_CPU_MX7D)) {
-			/* read ARM PLL control register and mask divider bits */
+			/* read ARM PLL control register and mask divider */
 			reg = readl(&ccm_anatop->pll_arm) & 0xffffff80;
 			/* set default divider field for 792 MHz */
 			reg |= 66;
 			writel(reg, &ccm_anatop->pll_arm);
-			printf("\n!!! Board revision 0 detected, setting CPU speed to 792 MHz !!!\n\n");
+			printf("\n!!! Board revision 0 detected, setting"
+			       " CPU speed to 792 MHz !!!\n\n");
 		}
 	}
 
 #if defined(CONFIG_KEX_EEP_BOOTCOUNTER)
 	emb_eep_update_bootcounter(1);
 #endif
+
+	smx7_set_prompt();
 #endif
 	return 0;
 }
@@ -576,12 +611,13 @@ int board_fix_fdt(void *blob)
 {
         if (is_cpu_type(MXC_CPU_MX7S)) {
                 fdt_del_node_and_alias(blob, "usb2");
+		fdt_del_node_and_alias(blob, "ethernet1");
         }
 
         return 0;
 }
 
-int ft_board_setup(void *blob, bd_t *bd)
+int ft_board_setup(void *blob, struct bd_info *bd)
 {
 	int err;
 	int nodeoffset;
@@ -653,12 +689,12 @@ err:
 
 char *getSerNo (void)
 {
-	ENTRY e;
-	static ENTRY *ep;
+	struct env_entry e;
+	struct env_entry *ep;
 
 	e.key = "serial#";
 	e.data = NULL;
-	hsearch_r (e, FIND, &ep, &env_htab, 0);
+	hsearch_r (e, ENV_FIND, &ep, &env_htab, 0);
 	if (ep == NULL)
 		return "na";
 	else
@@ -721,14 +757,20 @@ uint64_t getBootCounter (int eeprom_num)
 #include <spl.h>
 #include <linux/libfdt.h>
 
+#ifndef CONFIG_SPL_MMC_SUPPORT
 int spl_start_uboot(void)
 {
 	return 1;
 }
+#endif
 
 void board_boot_order(u32 *spl_boot_list)
 {
+#ifdef CONFIG_SPL_MMC_SUPPORT
+	spl_boot_list[0] = BOOT_DEVICE_MMC2;
+#else
 	spl_boot_list[0] = BOOT_DEVICE_SPI;
+#endif
 }
 
 static struct ddrc smx7_ddrc_regs = {
@@ -867,8 +909,57 @@ void board_spl_console_init(void)
 }
 #endif
 
+int reset_out_delay(int delay)
+{
+	/*
+	 * Pull RESET_OUT to low
+	 *
+	 * This is a workaround to mitigate that signal is pulled high
+	 * on the module.
+	 */
+	gpio_direction_output(IMX_GPIO_NR(2,30), 0);
+	/*
+	 * Wait 150ms and set RESET_OUT back to high level.
+	 * This is to meet requirement that RESET_OUT must go high within
+	 * 100 - 500 ms after CARRIER_POWER_ON.
+	 */
+	udelay(delay*1000);
+	gpio_direction_output(IMX_GPIO_NR(2,30), 1);
+
+	return 0;
+}
+
+#if defined CONFIG_SPL_MMC_SUPPORT
+#define RECOVERY_GPIO IMX_GPIO_NR(3, 13)
+
+void smx7_mmcboot_chk_recovery(void)
+{
+	bool mmc_force_recovery;
+
+	gpio_request(RECOVERY_GPIO, "MMC_REC");
+	gpio_direction_input(RECOVERY_GPIO);
+	mmc_force_recovery = !(gpio_get_value(RECOVERY_GPIO) & 0x1);
+	if (mmc_force_recovery && smx7_mmcboot_secondary()) {
+		/*
+		 * jumper is set, so clear the PERSIST_SECONDARY_BOOT
+		 * flag and perform reset.
+		 */
+		writel(0x0, SRC_GPR10);
+		do_reset(NULL, 0, 0, NULL);
+	}
+	if (!mmc_force_recovery && !smx7_mmcboot_secondary()) {
+		/* force standard/secondary boot */
+		writel(PERSIST_SECONDARY_BOOT, SRC_GPR10);
+		do_reset(NULL, 0, 0, NULL);
+	}
+}
+#endif
+
 void board_init_f(ulong dummy)
 {
+	/* start imx watchdog to cover bootloader runtime */
+	/* start_imx_watchdog(15, 1); */
+
 	/* setup AIPS and disable watchdog */
 	arch_cpu_init();
 
@@ -880,10 +971,24 @@ void board_init_f(ulong dummy)
 	/* setup GP timer */
 	timer_init();
 
+	/* pull RESET_OUT# high after 150ms delay */
+	reset_out_delay(150);
+
 	/* UART clocks enabled and gd valid - init serial console */
 	/* preloader_console_init(); * - does not work */
 #if 0
 	board_spl_console_init(); /* this will show startup messages in SPL */
+#endif
+
+#if defined CONFIG_SPL_MMC_SUPPORT
+	/*
+	 * Check force recovery jumper (LID jumper here).
+	 * If unset, set the PERSIST_SECONDARY_BOOT bit and reset the board.
+	 * This will force the CPU to boot the redundant bootloader image
+	 * (including SPL!) that is stored beginning at block 0x802 (offset
+	 * 0x100400) in the eMMC boot partition 1
+	 */
+        smx7_mmcboot_chk_recovery();
 #endif
 
 	/* DDR initialization */
