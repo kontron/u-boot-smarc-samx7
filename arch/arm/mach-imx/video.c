@@ -16,7 +16,7 @@ int detect_hdmi(struct display_info_t const *dev)
 }
 #endif
 
-int board_video_skip(void)
+__weak int board_video_skip(void)
 {
 	int i;
 	int ret = 0;
