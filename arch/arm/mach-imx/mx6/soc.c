@@ -25,6 +25,7 @@
 #include <fsl_sec.h>
 #include <imx_thermal.h>
 #include <mmc.h>
+#include <sysreset.h>
 
 #define has_err007805() \
 	(is_mx6sl() || is_mx6dl() || is_mx6solo() || is_mx6ull())
