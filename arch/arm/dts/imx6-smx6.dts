@@ -1,0 +1,140 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2021 Kontron Europe GmbH
+ *
+ */
+
+/dts-v1/;
+
+
+#include "imx6q.dtsi"
+#include "imx6qdl-smx6.dtsi"
+#include <dt-bindings/gpio/gpio.h>
+
+/ {
+	model = "Kontron SMARC sAMX6i Quad/Dual";
+	compatible = "kontron,imx6q-samx6i", "fsl,imx6q";
+
+	aliases {
+		spi0 = &ecspi4;
+		spi1 = &ecspi2;
+	};
+
+	chosen {
+		stdout-path = &uart1;
+	};
+
+	regulators {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <0>; 
+
+		/* MicroSD slot power */
+		carrier_sdio_reg: regulator@101 {
+			compatible = "regulator-fixed";
+			reg = <101>;
+			regulator-name = "V_3V3_SDCARD";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			gpio = <&gpio1 29 0>;
+			enable-active-high;
+		};
+	};
+};
+
+
+/* Quad/Dual SoMs have 3 chip-select signals */
+&ecspi4 {
+	fsl,spi-num-chipselects = <3>;
+	cs-gpios = <&gpio3 24 GPIO_ACTIVE_HIGH>,
+		   <&gpio3 29 GPIO_ACTIVE_HIGH>,
+		   <&gpio3 25 GPIO_ACTIVE_HIGH>;
+};
+
+/* I2C mapping:
+ * - IMX i2c3 is not available for SMX6_PTP case
+ */
+&i2c1 {
+	clock-frequency = <100000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c1>;
+	status = "okay";
+};
+
+&i2c2 {
+	clock-frequency = <100000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c1>;
+	status = "okay";
+};
+
+&i2c3 {
+	clock-frequency = <100000>;
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_i2c1>;
+	status = "okay";
+
+	smarc_eeprom: eeprom@50 {
+		compatible = "atmel,24c32";
+		reg = <0x50>;
+		pagesize = <32>;
+	};
+};
+
+
+&fec {
+	pinctrl-0 = <&pinctrl_enet>;
+	fsl,magic-packet;
+};
+
+&usdhc1 {
+	status = "disabled";
+};
+
+&usdhc2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc2>;
+	bus-width = <8>;
+
+	/* per schematics, always constant */
+	cd-gpios = <&gpio1 4 GPIO_ACTIVE_LOW>;
+	status = "disabled";
+};
+
+/* SDIO */
+&usdhc3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc3>;
+	cd-gpios = <&gpio6 14 GPIO_ACTIVE_LOW>;
+	wp-gpios = <&gpio1 26 GPIO_ACTIVE_HIGH>;
+	bus-width = <4>;
+	vmmc-supply = <&carrier_sdio_reg>;
+	no-1-8-v;
+
+	status = "okay";
+};
+
+/* SDMMC */
+&usdhc4 {
+	/* Internal eMMC */
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_usdhc4>;
+	bus-width = <8>;
+	no-sdio;
+	no-sd;
+	non-removable;
+	vmmc-supply = <&reg_3p3v_s0>;
+	/* vqmmc-supply = <&reg_1p8v_s0>; */
+
+	status = "okay";
+};
+
+
+&snvs_poweroff {
+	status = "okay";
+};
+
+
+&ipu1 {
+	use-ipu-clock;
+};

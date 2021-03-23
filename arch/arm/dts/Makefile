@@ -675,6 +675,7 @@ endif
 
 ifneq ($(CONFIG_MX6Q)$(CONFIG_MX6QDL),)
 dtb-y += \
+	imx6-smx6.dtb \
 	imx6-apalis.dtb \
 	imx6q-cm-fx6.dtb \
 	imx6q-cubox-i.dtb \
