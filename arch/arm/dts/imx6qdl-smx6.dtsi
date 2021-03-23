@@ -9,73 +9,91 @@
 #include <dt-bindings/sound/fsl-imx-audmux.h>
 
 / {
-	reg_1p0v_s0: regulator-1p0v-s0 {
-		compatible = "regulator-fixed";
-		regulator-name = "V_1V0_S0";
-		regulator-min-microvolt = <1000000>;
-		regulator-max-microvolt = <1000000>;
-		regulator-always-on;
-		regulator-boot-on;
-		vin-supply = <&reg_smarc_suppy>;
-	};
+	regulators {
+		compatible = "simple-bus";
+		#address-cells = <1>;
+		#size-cells = <0>;
 
-	reg_1p35v_vcoredig_s5: regulator-1p35v-vcoredig-s5 {
-		compatible = "regulator-fixed";
-		regulator-name = "V_1V35_VCOREDIG_S5";
-		regulator-min-microvolt = <1350000>;
-		regulator-max-microvolt = <1350000>;
-		regulator-always-on;
-		regulator-boot-on;
-		vin-supply = <&reg_3p3v_s5>;
-	};
+		/* MicroSD slot power */
+		carrier_sdio_reg: regulator@101 {
+			compatible = "regulator-fixed";
+			reg = <101>;
+			regulator-name = "V_3V3_SDCARD";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			gpio = <&gpio1 29 0>;
+			enable-active-high;
+		};
 
-	reg_1p8v_s5: regulator-1p8v-s5 {
-		compatible = "regulator-fixed";
-		regulator-name = "V_1V8_S5";
-		regulator-min-microvolt = <1800000>;
-		regulator-max-microvolt = <1800000>;
-		regulator-always-on;
-		regulator-boot-on;
-		vin-supply = <&reg_3p3v_s5>;
-	};
+		reg_3p3v_s0: regulator-3p3v-s0 {
+			compatible = "regulator-fixed";
+			regulator-name = "V_3V3_S0";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+			regulator-boot-on;
+			vin-supply = <&reg_3p3v_s5>;
+		};
 
-	reg_3p3v_s0: regulator-3p3v-s0 {
-		compatible = "regulator-fixed";
-		regulator-name = "V_3V3_S0";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		regulator-always-on;
-		regulator-boot-on;
-		vin-supply = <&reg_3p3v_s5>;
-	};
+		reg_3p3v_s5: regulator-3p3v-s5 {
+			compatible = "regulator-fixed";
+			regulator-name = "V_3V3_S5";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+			regulator-boot-on;
+			vin-supply = <&reg_smarc_suppy>;
+		};
 
-	reg_3p3v_s5: regulator-3p3v-s5 {
-		compatible = "regulator-fixed";
-		regulator-name = "V_3V3_S5";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		regulator-always-on;
-		regulator-boot-on;
-		vin-supply = <&reg_smarc_suppy>;
-	};
+		/* Module supply range can be 3.00V ... 5.25V */
+		reg_smarc_suppy: regulator-smarc-supply {
+			compatible = "regulator-fixed";
+			regulator-name = "V_IN_WIDE";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5000000>;
+			regulator-always-on;
+			regulator-boot-on;
+		};
+#if 0
+		reg_1p0v_s0: regulator-1p0v-s0 {
+			compatible = "regulator-fixed";
+			regulator-name = "V_1V0_S0";
+			regulator-min-microvolt = <1000000>;
+			regulator-max-microvolt = <1000000>;
+			regulator-always-on;
+			regulator-boot-on;
+			vin-supply = <&reg_smarc_suppy>;
+		};
 
-	reg_smarc_rtc: regulator-smarc-rtc {
-		compatible = "regulator-fixed";
-		regulator-name = "V_IN_RTC_BATT";
-		regulator-min-microvolt = <3300000>;
-		regulator-max-microvolt = <3300000>;
-		regulator-always-on;
-		regulator-boot-on;
-	};
+		reg_1p35v_vcoredig_s5: regulator-1p35v-vcoredig-s5 {
+			compatible = "regulator-fixed";
+			regulator-name = "V_1V35_VCOREDIG_S5";
+			regulator-min-microvolt = <1350000>;
+			regulator-max-microvolt = <1350000>;
+			regulator-always-on;
+			regulator-boot-on;
+			vin-supply = <&reg_3p3v_s5>;
+		};
 
-	/* Module supply range can be 3.00V ... 5.25V */
-	reg_smarc_suppy: regulator-smarc-supply {
-		compatible = "regulator-fixed";
-		regulator-name = "V_IN_WIDE";
-		regulator-min-microvolt = <5000000>;
-		regulator-max-microvolt = <5000000>;
-		regulator-always-on;
-		regulator-boot-on;
+		reg_1p8v_s5: regulator-1p8v-s5 {
+			compatible = "regulator-fixed";
+			regulator-name = "V_1V8_S5";
+			regulator-min-microvolt = <1800000>;
+			regulator-max-microvolt = <1800000>;
+			regulator-always-on;
+			regulator-boot-on;
+			vin-supply = <&reg_3p3v_s5>;
+		};
+
+		reg_smarc_rtc: regulator-smarc-rtc {
+			compatible = "regulator-fixed";
+			regulator-name = "V_IN_RTC_BATT";
+			regulator-min-microvolt = <3300000>;
+			regulator-max-microvolt = <3300000>;
+			regulator-always-on;
+			regulator-boot-on;
+		};
+#endif
 	};
 
 	lcd: lcd {
@@ -175,39 +193,6 @@
 	pinctrl-0 = <&pinctrl_flexcan2>;
 };
 #endif
-
-/* SPI1 */
-&ecspi2 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_ecspi2>;
-	cs-gpios = <&gpio2 26 GPIO_ACTIVE_HIGH>,
-		   <&gpio2 27 GPIO_ACTIVE_HIGH>;
-	status = "okay";
-};
-
-/* SPI0 */
-&ecspi4 {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_ecspi4>;
-	cs-gpios = <&gpio3 24 GPIO_ACTIVE_HIGH>,
-		   <&gpio3 29 GPIO_ACTIVE_HIGH>;
-	status = "okay";
-
-	/* default boot source: workaround #1 for errata ERR006282 */
-	smarc_flash: spi-flash@0 {
-		compatible = "jedec,spi-nor";
-		reg = <0>;
-		spi-max-frequency = <20000000>;
-	};
-};
-
-/* GBE */
-&fec {
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_enet>;
-	phy-mode = "rgmii";
-	phy-reset-gpios = <&gpio1 25 GPIO_ACTIVE_LOW>;
-};
 
 #if 0
 &i2c_intern {
@@ -731,10 +716,3 @@
 	vbus-supply = <&reg_5p0v_s0>;
 };
 #endif
-
-&wdog1 {
-	/* CPLD is feeded by watchdog (hardwired) */
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_wdog1>;
-	status = "okay";
-};

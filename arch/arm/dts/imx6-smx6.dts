@@ -23,32 +23,35 @@
 	chosen {
 		stdout-path = &uart1;
 	};
-
-	regulators {
-		compatible = "simple-bus";
-		#address-cells = <1>;
-		#size-cells = <0>; 
-
-		/* MicroSD slot power */
-		carrier_sdio_reg: regulator@101 {
-			compatible = "regulator-fixed";
-			reg = <101>;
-			regulator-name = "V_3V3_SDCARD";
-			regulator-min-microvolt = <3300000>;
-			regulator-max-microvolt = <3300000>;
-			gpio = <&gpio1 29 0>;
-			enable-active-high;
-		};
-	};
 };
 
 
+/* SPI0 */
 /* Quad/Dual SoMs have 3 chip-select signals */
 &ecspi4 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_ecspi4>;
 	fsl,spi-num-chipselects = <3>;
 	cs-gpios = <&gpio3 24 GPIO_ACTIVE_HIGH>,
 		   <&gpio3 29 GPIO_ACTIVE_HIGH>,
 		   <&gpio3 25 GPIO_ACTIVE_HIGH>;
+	status = "okay";
+
+	/* default boot source: workaround #1 for errata ERR006282 */
+	smarc_flash: spi-flash@0 {
+		compatible = "jedec,spi-nor";
+		reg = <0>;
+		spi-max-frequency = <20000000>;
+	};
+};
+
+/* SPI1 */
+&ecspi2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_ecspi2>;
+	cs-gpios = <&gpio2 26 GPIO_ACTIVE_HIGH>,
+		   <&gpio2 27 GPIO_ACTIVE_HIGH>;
+	status = "okay";
 };
 
 /* I2C mapping:
@@ -81,10 +84,14 @@
 	};
 };
 
-
+/* GBE */
 &fec {
+	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_enet>;
+	phy-mode = "rgmii";
+	phy-reset-gpios = <&gpio1 25 GPIO_ACTIVE_LOW>;
 	fsl,magic-packet;
+	status = "okay";
 };
 
 &usdhc1 {
@@ -137,4 +144,11 @@
 
 &ipu1 {
 	use-ipu-clock;
+};
+
+&wdog1 {
+	/* CPLD is feeded by watchdog (hardwired) */
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_wdog1>;
+	status = "okay";
 };
