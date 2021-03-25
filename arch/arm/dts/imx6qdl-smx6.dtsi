@@ -54,6 +54,14 @@
 			regulator-always-on;
 			regulator-boot-on;
 		};
+
+		/* Regulator for USB */
+		reg_5p0v_s0: swbst {
+			regulator-name = "V_5V0_S0";
+			regulator-min-microvolt = <5000000>;
+			regulator-max-microvolt = <5150000>;
+			regulator-boot-on;
+		};
 #if 0
 		reg_1p0v_s0: regulator-1p0v-s0 {
 			compatible = "regulator-fixed";
@@ -250,14 +258,6 @@
 				regulator-max-microvolt = <3300000>;
 				regulator-boot-on;
 				regulator-always-on;
-			};
-
-			/* Regulator for USB */
-			reg_5p0v_s0: swbst {
-				regulator-name = "V_5V0_S0";
-				regulator-min-microvolt = <5000000>;
-				regulator-max-microvolt = <5150000>;
-				regulator-boot-on;
 			};
 
 			reg_vsnvs: vsnvs {
@@ -697,20 +697,3 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_uart5>;
 };
-
-/* USB0 */
-&usbotg {
-	/*
-	 * no 'imx6-usb-charger-detection'
-	 * since USB_OTG_CHD_B pin is not wired
-	 */
-	pinctrl-names = "default";
-	pinctrl-0 = <&pinctrl_usbotg>;
-};
-
-#if 0
-/* USB1/2 via hub */
-&usbh1 {
-	vbus-supply = <&reg_5p0v_s0>;
-};
-#endif
