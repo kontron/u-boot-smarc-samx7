@@ -13,6 +13,7 @@
 #include <asm/gpio.h>
 #include <spi.h>
 #include <spi_flash.h>
+#include <env.h>
 
 #include "amx6_iomux.h"
 

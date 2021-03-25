@@ -5,30 +5,29 @@
  */
 
 #include <common.h>
-#include <asm/io.h>
 #include <asm/arch/clock.h>
 #include <asm/arch/imx-regs.h>
-#include <asm/arch/iomux.h>
 #include <asm/arch/mx6-pins.h>
+#include <asm/arch/iomux.h>
+#include <asm/arch/sys_proto.h>
+#include <asm/arch-imx/cpu.h>
 #include <asm/mach-imx/iomux-v3.h>
 #include <asm/mach-imx/mxc_i2c.h>
+#include <asm/mach-imx/sata.h>
 #include <asm/gpio.h>
+#include <fsl_esdhc_imx.h>
 #include <mmc.h>
-#include <fsl_esdhc.h>
 #include <miiphy.h>
 #include <netdev.h>
 #include <linux/fb.h>
-#include <asm/arch/mxc_hdmi.h>
+#include <linux/delay.h>
 #include <i2c.h>
-#include <environment.h>
+#include <env.h>
 #include <search.h>
-#include <asm/arch/sys_proto.h>
 #include <spi.h>
 #include <spi_flash.h>
 #include <fdt_support.h>
 
-#include <asm/arch-imx/cpu.h>
-#include <asm/mach-imx/sata.h>
 #include <version.h>
 
 #include "../common/emb_eep.h"
@@ -202,6 +201,7 @@ struct i2c_pads_info mx6dl_i2c_pad_info2 = {
 	}
 };
 
+
 /* GPIO ***************************/
 static iomux_v3_cfg_t const gpio_pads[] = {
 	IOMUX_PADS(PAD_EIM_DA0__GPIO3_IO00	|  MUX_PAD_CTRL(GPIO_PAD_CTRL)),
@@ -243,27 +243,34 @@ static void setup_boot_sel(void)
 
 	/*
 	 * Caution :
-	 *  To read boot select configuration is changed designed for pins purpose
-	 *  from PCIe reset (GPIO output) to Boot Select (GPIO input).
+	 * To read boot select configuration is changed designed for pins
+	 * purpose from PCIe reset (GPIO output) to Boot Select (GPIO input).
 	 *
 	 */
 	SETUP_IOMUX_PADS(boot_sel_pads);
 
 	/* Get the state of the Boot Select pins */
-	gpio_direction_input(IMX_GPIO_NR(3, 13));	/* BOOT SEL 0 = PCIE_A_RST_IMX pin */
-	gpio_direction_input(IMX_GPIO_NR(3, 14));	/* BOOT SEL 1 = PCIE_B_RST_IMX pin */
-	gpio_direction_input(IMX_GPIO_NR(3, 15));	/* BOOT SEL 2 = PCIE_C_RST_IMX pin */
+	gpio_request(IMX_GPIO_NR(3, 13), "bootsel_0");
+	gpio_direction_input(IMX_GPIO_NR(3, 13));	/* BOOT SEL 0 */
+	gpio_request(IMX_GPIO_NR(3, 14), "bootsel_1");
+	gpio_direction_input(IMX_GPIO_NR(3, 14));	/* BOOT SEL 1 */
+	gpio_request(IMX_GPIO_NR(3, 15), "bootsel_2");
+	gpio_direction_input(IMX_GPIO_NR(3, 15));	/* BOOT SEL 2 */
 	/*
 	 * Enable Boot Select feature :
-	 *  1/ When GPB2_GPIO3_1V8 = High or unconnected,
-	 *	PCIE_x_RST_IMX_n function will stay unchanged
+	 * 1/ When GPB2_GPIO3_1V8 = High or unconnected,
+	 *    PCIE_x_RST_IMX_n function will stay unchanged
 	 *
-	 * 2/ When tied LOW, I_PCIE_x_RST_IMX_n signals will become CPLD outputs asserted as
-	 *	I_PCIE_A_RST_IMX_n<=I_BOOT_SEL0_n
-	 *	I_PCIE_B_RST_IMX_n<=I_BOOT_SEL1_n
-	 *	I_PCIE_C_RST_IMX_n<=I_BOOT_SEL2_n
+	 * 2/ When tied LOW, I_PCIE_x_RST_IMX_n signals will become CPLD
+	 *    outputs asserted as
+	 *    I_PCIE_A_RST_IMX_n<=I_BOOT_SEL0_n
+	 *    I_PCIE_B_RST_IMX_n<=I_BOOT_SEL1_n
+	 *    I_PCIE_C_RST_IMX_n<=I_BOOT_SEL2_n
 	 */
-	gpio_direction_output(IMX_GPIO_NR(2, 3), 0);	/* Enable Boot select = GPB2_GPIO3_1V8 pin */
+
+	/* Enable Boot select = GPB2_GPIO3_1V8 pin */
+	gpio_request(IMX_GPIO_NR(2, 3), "bootsel_en");
+	gpio_direction_output(IMX_GPIO_NR(2, 3), 0);
 
 	boot_sel = gpio_get_value(IMX_GPIO_NR(3, 13)) & 0x1;
 	boot_sel |= (gpio_get_value(IMX_GPIO_NR(3, 14)) & 0x1) << 1;
@@ -272,23 +279,28 @@ static void setup_boot_sel(void)
 	/*
 	 * Jumper settings per SMARC Spec
 	 *
-	 *   BOOT_SEL2#    BOOT_SEL1#    BOOT_SEL0# Boot Source
-	 * 0  	GND           GND           GND        Carrier SATA
-	 * 1	GND           GND           Float      Carrier SD Card
-	 * 2	GND           Float         GND        Carrier eMMC Flash
-	 * 3	GND           Float         Float      Carrier SPI
-	 * 4	Float         GND           GND        Module device (NAND, NOR) - vendor specific
-	 * 5	Float         GND           Float      Remote boot (GBE, serial) - vendor specific
-	 * 6	Float         Float         GND        Module eMMC Flash
-	 * 7	Float         Float         Float      Module SPI
+	 *    BOOT_SEL2#  BOOT_SEL1#  BOOT_SEL0# Boot Source
+	 * 0  GND         GND         GND        Carrier SATA
+	 * 1  GND         GND         Float      Carrier SD Card
+	 * 2  GND         Float       GND        Carrier eMMC Flash
+	 * 3  GND         Float       Float      Carrier SPI
+	 * 4  Float       GND         GND        Module device (NAND, NOR)
+	 * 5  Float       GND         Float      Remote boot (GBE, serial)
+	 * 6  Float       Float       GND        Module eMMC Flash
+	 * 7  Float       Float       Float      Module SPI
 	 */
 	printf("Selected Boot source: %s\n", boot_selects[boot_sel]);
 
 	/* Disable Boot Select feature */
 	gpio_direction_output(IMX_GPIO_NR(2, 3), 1);
-	gpio_direction_output(IMX_GPIO_NR(3, 13), 0); /* Set the PCIE_A_RST_IMX pin to low to possibly workaround a PCIe issue */
-	gpio_direction_output(IMX_GPIO_NR(3, 14), 0); /* Set the PCIE_B_RST_IMX pin to low to possibly workaround a PCIe issue */
-	gpio_direction_output(IMX_GPIO_NR(3, 15), 0); /* Set the PCIE_C_RST_IMX pin to low to possibly workaround a PCIe issue */
+
+	/*
+	 * Set the PCIE_A/B/C_RST_IMX pin to low to possibly workaround a
+	 * PCIe issue.
+	 */
+	gpio_direction_output(IMX_GPIO_NR(3, 13), 0); /* PCIE_A_RST_IMX */
+	gpio_direction_output(IMX_GPIO_NR(3, 14), 0); /* PCIE_B_RST_IMX */
+	gpio_direction_output(IMX_GPIO_NR(3, 15), 0); /* PCIE_C_RST_IMX */
 
 	switch (boot_sel) {
 		case 0:
@@ -414,6 +426,7 @@ static iomux_v3_cfg_t ecspi4_pads[] = {
 void board_spi_init(void)
 {
 	u32 reg = 0;
+
 	/* Enable SPI-clocks for bus 2 and 4*/
 	reg = readl(0x020C406C);
 	reg |= 0xCC;
@@ -425,8 +438,9 @@ static void setup_iomux_spi(void)
 	SETUP_IOMUX_PADS(ecspi2_pads);
 	SETUP_IOMUX_PADS(ecspi4_pads);
 
-	/* Workaround : normally clock for SPI module is enabled by Freescale Bootstrap
-	 * but in case of loading U-Boot via e.g. BDI none is eager to do that.
+	/* Workaround : normally clock for SPI module is enabled by
+	 * Freescale Bootstrap but in case of loading U-Boot via e.g.
+	 * BDI none is eager to do that.
 	 */
 	board_spi_init();
 }
@@ -441,6 +455,12 @@ static iomux_v3_cfg_t uart1_pads[] = {
 	IOMUX_PADS(PAD_EIM_D19__UART1_CTS_B | MUX_PAD_CTRL(UART_PAD_CTRL)),
 	IOMUX_PADS(PAD_EIM_D20__UART1_RTS_B | MUX_PAD_CTRL(UART_PAD_CTRL)),
 };
+
+#if defined(CONFIG_FSL_ESDHC_IMX) && defined(CONFIG_SPL_BUILD)
+
+#define USDHC3_CD_GPIO	IMX_GPIO_NR(6, 14)
+#define USDHC3_PWR_GPIO	IMX_GPIO_NR(1, 29)
+#define USDHC4_RST_GPIO	IMX_GPIO_NR(6, 8)
 
 /* SD / MMC  ***************************/
 /* SD2 : SDMMC , 8-bit */
@@ -485,66 +505,79 @@ static iomux_v3_cfg_t const usdhc4_pads[] = {
        IOMUX_PADS(PAD_NANDF_ALE__SD4_RESET    | MUX_PAD_CTRL(USDHC_PAD_CTRL)),
 };
 
-#ifdef CONFIG_FSL_ESDHC
-
-struct fsl_esdhc_cfg usdhc_cfg[4] = {
-	{USDHC1_BASE_ADDR, 1},
-	{USDHC2_BASE_ADDR, 1},
-	{USDHC3_BASE_ADDR, 1},
-	{USDHC4_BASE_ADDR, 1},
+struct fsl_esdhc_cfg usdhc_cfg[3] = {
+	{USDHC2_BASE_ADDR},
+	{USDHC3_BASE_ADDR},
+	{USDHC4_BASE_ADDR},
 };
 
 int board_mmc_getcd(struct mmc *mmc)
 {
 	struct fsl_esdhc_cfg *cfg = (struct fsl_esdhc_cfg *)mmc->priv;
+	int ret = 0;
 
-	int retval = 0;
-
-	/* only SDIO (USDHC3) has a CardDetect */
-	if(cfg->esdhc_base == USDHC3_BASE_ADDR)
-	{
-		gpio_direction_input(IMX_GPIO_NR(6, 14));
-
-		retval = gpio_get_value(IMX_GPIO_NR(6, 14));
-		if(retval == 0)
-		{
-			gpio_direction_output(IMX_GPIO_NR(1, 29), 0);
-
-			gpio_set_value(IMX_GPIO_NR(1, 29), 1);
+	switch (cfg->esdhc_base) {
+	case USDHC2_BASE_ADDR: /* carrier eMMC */
+		break;
+	case USDHC3_BASE_ADDR: /* carrier SD */
+		gpio_direction_input(USDHC3_CD_GPIO);
+		ret = !gpio_get_value(USDHC3_CD_GPIO);
+		if (!ret) {
+			gpio_direction_output(USDHC3_PWR_GPIO, 0);
+			gpio_set_value(USDHC3_PWR_GPIO, 1);
 		}
+		break;
+	case USDHC4_BASE_ADDR: /* onboard eMMC */
+		ret = 1; /* onboard eMMC is always present */
+		break;
 	}
 
-	return !retval;
+	return ret;
 }
 
 #define SYSCTL_OFS		0x2c
 #define SYSCTL_IPP_RST_N	0x00800000
 
-int board_mmc_init(bd_t *bis)
+int board_mmc_init(struct bd_info *bis)
 {
+	int i;
 	int ret = 0;
 
-	/* Reset eMMC device first */
-	uint *usdhc4_sysctl = (uint *)(USDHC4_BASE_ADDR + SYSCTL_OFS);
-	clrbits_le32(usdhc4_sysctl, SYSCTL_IPP_RST_N);
-	udelay(1000);
-	setbits_le32(usdhc4_sysctl, SYSCTL_IPP_RST_N);
+	for (i=0 ; i<CONFIG_SYS_FSL_USDHC_NUM ; i++) {
+		uint *sysctl;
+		switch(i) {
+		case 0:
+			SETUP_IOMUX_PADS(usdhc2_pads);
+			usdhc_cfg[0].sdhc_clk = mxc_get_clock(MXC_ESDHC2_CLK);
+			break;
+		case 1:
+			SETUP_IOMUX_PADS(usdhc3_pads);
+			usdhc_cfg[1].sdhc_clk = mxc_get_clock(MXC_ESDHC3_CLK);
+			break;
+		case 2:
+			/* Reset eMMC device first */
+			sysctl = (uint *)(USDHC4_BASE_ADDR + SYSCTL_OFS);
+			clrbits_le32(sysctl, SYSCTL_IPP_RST_N);
+			udelay(1000);
+			setbits_le32(sysctl, SYSCTL_IPP_RST_N);
 
-	SETUP_IOMUX_PADS(usdhc2_pads);
-	SETUP_IOMUX_PADS(usdhc3_pads);
-	SETUP_IOMUX_PADS(usdhc4_pads);
+			SETUP_IOMUX_PADS(usdhc4_pads);
+			usdhc_cfg[2].sdhc_clk = mxc_get_clock(MXC_ESDHC4_CLK);
+			break;
+		default:
+			printf("Warning: you configured more USDHC "
+			       "controllers (%d) than supported by the "
+			       "board\n", i+1);
+			return -EINVAL;
+		}
 
-	usdhc_cfg[1].sdhc_clk = mxc_get_clock(MXC_ESDHC2_CLK);
-	usdhc_cfg[2].sdhc_clk = mxc_get_clock(MXC_ESDHC3_CLK);
-	usdhc_cfg[3].sdhc_clk = mxc_get_clock(MXC_ESDHC4_CLK);
+		ret = fsl_esdhc_initialize(bis, &usdhc_cfg[i]);
+		if (ret)
+			return ret;
+	}
 
-	ret |= fsl_esdhc_initialize(bis, &usdhc_cfg[1]);
-	ret |= fsl_esdhc_initialize(bis, &usdhc_cfg[2]);
-	ret |= fsl_esdhc_initialize(bis, &usdhc_cfg[3]);
-
-	return ret;
+	return 0;
 }
-
 #endif
 
 /* Ethernet ***************************/
@@ -576,7 +609,7 @@ int board_phy_config(struct phy_device *phydev)
 	return 0;
 }
 
-int board_eth_init(bd_t *bis)
+int board_eth_init(struct bd_info *bis)
 {
 	int ret;
 
@@ -601,6 +634,7 @@ int board_ehci_hcd_init(int port)
 	SETUP_IOMUX_PADS(usb_pads);
 
 	/* Reset USB hub */
+	gpio_request(IMX_GPIO_NR(7, 12), "usbhub_rst");
 	gpio_direction_output(IMX_GPIO_NR(7, 12), 0);
 	mdelay(2);
 	gpio_set_value(IMX_GPIO_NR(7, 12), 1);
@@ -657,17 +691,8 @@ int board_init(void)
 	return 0;
 }
 
-#ifdef CONFIG_MXC_SPI
-int board_spi_cs_gpio(unsigned bus, unsigned cs)
-{
-	return (bus == CONFIG_SF_DEFAULT_BUS && cs == CONFIG_SF_DEFAULT_CS) ? (IMX_GPIO_NR(3, 24)) : -1;
-}
-#endif
-
 int checkboard(void)
 {
-	puts("Board: " IDENT_STRING IDENT_RELEASE "\n");
-
 	return 0;
 }
 
@@ -693,6 +718,15 @@ int misc_init_r (void)
 
 	setup_boot_sel ();
 
+	return 0;
+}
+#endif
+
+#if defined(CONFIG_OF_BOARD_FIXUP)
+const char ft_version_string[] = U_BOOT_VERSION_STRING;
+
+int board_fix_fdt(void *blob)
+{
 	return 0;
 }
 #endif
@@ -786,7 +820,8 @@ static int fdt_setup_info_string(void *blob, char *name, char *value)
 
 extern char *print_if_avail (char *);
 
-int ft_board_setup(void *blob, bd_t *bd) {
+#if defined(CONFIG_OF_BOARD_SETUP)
+int ft_board_setup(void *blob, struct bd_info *bd) {
 #if defined(CONFIG_CMD_KBOARDINFO)
 	/* set up in FDT u-boot version information */
 	fdt_setup_info_string(blob, "O000060,uboot_version", (char *)version_string);
@@ -803,6 +838,7 @@ int ft_board_setup(void *blob, bd_t *bd) {
 
 	return 0;
 }
+#endif
 
 #ifdef CONFIG_BOARD_LATE_INIT
 
