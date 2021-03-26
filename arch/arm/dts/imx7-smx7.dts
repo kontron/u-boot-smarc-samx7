@@ -19,6 +19,7 @@
 		mmc1 = &usdhc3; 
                 serial0 = &uart6;
 		spi0 = &qspi1;
+		spi1 = &ecspi3;
                 usb0 = &usbotg1;
                 usb1 = &usbh;
                 usb2 = &usbotg2;
@@ -211,12 +212,33 @@
 				MX7D_PAD_SD3_STROBE__SD3_STROBE		0x1b
 			>;
 		};
+
+		pinctrl_ecspi3: ecspi3grp {
+			fsl,pins = <
+				MX7D_PAD_I2C1_SCL__ECSPI3_MISO		0x2
+				MX7D_PAD_I2C1_SDA__ECSPI3_MOSI		0x2
+				MX7D_PAD_SAI2_RX_DATA__ECSPI3_SCLK	0x2
+				MX7D_PAD_SAI2_TX_DATA__GPIO6_IO22	0x14
+			>;
+		};
 	};
 };
 
 &qspi1 {
 	u-boot,dm-spl;
 	status = "okay";
+};
+
+/*
+ * SMARC eval2 carrier SPI
+ * enable this to access carrier SPI flash
+ */
+&ecspi3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_ecspi3>;
+	fsl,spi-num-chipselects = <1>;
+	cs-gpios = <&gpio6 22 GPIO_ACTIVE_HIGH>; /* ECSPI3_SS0 */
+	status = "disabled";
 };
 
 &fec1 {
