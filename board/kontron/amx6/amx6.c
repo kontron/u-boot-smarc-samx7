@@ -74,34 +74,43 @@ u32 get_board_rev(void)
 	}
 }
 
-#define SMX6_OLD_PCB_VERSION	1
-
 u32 get_pcb_version (void)
 {
 	int PcbVersion;
+#if CONFIG_SPL_BUILD
+	struct gpio_regs *regs;
 
+	regs = (struct gpio_regs *)GPIO2_BASE_ADDR;
+	PcbVersion = spl_read_gpio(regs, 2);
+#else
 	gpio_direction_input(IMX_GPIO_NR(2, 2));
 	PcbVersion = gpio_get_value(IMX_GPIO_NR(2, 2));
+#endif
 
 	return (PcbVersion);
 }
 
 int get_ddr3_id (void)
 {
-	int ddr3_id;
+	int id0, id1;
+#if CONFIG_SPL_BUILD
+	struct gpio_regs *regs;
 
+	regs = (struct gpio_regs *)GPIO6_BASE_ADDR;
+	id1 = spl_read_gpio(regs, 7) << 1;
+	id0 = spl_read_gpio(regs, 9);
+#else
 	/* get the status of the DDR3_ID-pins to determine the RAM-size */
 	gpio_direction_input(IMX_GPIO_NR(6, 7));
-	ddr3_id = (gpio_get_value(IMX_GPIO_NR(6, 7)) & 1) << 1;
+	id1 = (gpio_get_value(IMX_GPIO_NR(6, 7)) & 1) << 1;
 
 	gpio_direction_input(IMX_GPIO_NR(6, 9));
-	ddr3_id |= (gpio_get_value(IMX_GPIO_NR(6, 9)) & 1);
+	id0 = (gpio_get_value(IMX_GPIO_NR(6, 9)) & 1);
 
-	debug("spl_dram_init: ddr3_id=%d\n", ddr3_id);
+#endif
 
-	return ddr3_id;
+	return (id0 | id1);
 }
-
 
 int dram_init(void)
 {

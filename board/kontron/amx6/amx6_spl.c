@@ -7,12 +7,17 @@
 #include <common.h>
 #include <linux/libfdt.h>
 #include <spl.h>
+#include <log.h>
+#include <hang.h>
+#include <init.h>
+#include <asm/gpio.h>
 #include <asm/io.h>
 #include <asm/arch/mx6-ddr.h>
 #include <asm/arch/mx6-pins.h>
 #include <asm/arch/crm_regs.h>
 #include <asm/arch/sys_proto.h>
 #include <asm/arch-imx/cpu.h>
+#include <linux/delay.h>
 
 #include "amx6_iomux.h"
 
@@ -212,6 +217,10 @@ const struct mx6dq_iomux_grp_regs amx6dq_grp_ioregs = {
 	.grp_b7ds = 0x00000030,
 };
 
+u32 spl_read_gpio (struct gpio_regs *regs, int pins)
+{
+	return ((readl(&regs->gpio_psr) >> pins) & 0x01);
+}
 static void spl_dram_init(void)
 {
 	int ddr3_id;
@@ -237,6 +246,8 @@ static void spl_dram_init(void)
 	}
 
 	ddr3_id = get_ddr3_id();
+	debug("%s: ddr3_id=%d\n", __func__, ddr3_id);
+
 	switch (ddr3_id) {
 		case 0:	/* 1 Gb density */
 			mem_ddr.density = 1;
@@ -325,4 +336,3 @@ void board_init_f(ulong dummy)
 	/* load/boot image from boot device */
 	board_init_r(NULL, 0);
 }
-

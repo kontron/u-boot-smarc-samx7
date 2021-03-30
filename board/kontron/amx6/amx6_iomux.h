@@ -7,7 +7,8 @@
 
 u32 get_pcb_version (void);
 int get_ddr3_id (void);
-u32 get_board_rev(void);
+u32 get_board_rev (void);
+u32 spl_read_gpio (struct gpio_regs *, int);
 
 #define MX6SDL	1
 #define MX6DQ	2
