@@ -21,6 +21,23 @@
 		mmc1 = &usdhc3;
 	};
 
+	soc {
+		u-boot,dm-spl;
+		aips-bus@2000000 {
+			u-boot,dm-spl;
+			compatible = "fsl,aips-bus", "simple-bus";
+			spba-bus@2000000 {
+				u-boot,dm-spl;
+				compatible = "fsl,spba-bus", "simple-bus";
+			};
+
+			gpio@20a4000 {
+				u-boot,dm-spl;
+				compatible = "fsl,imx6q-gpio", "fsl,imx35-gpio";
+			};
+		};
+	};
+
 	chosen {
 		stdout-path = &uart1;
 	};
@@ -29,6 +46,7 @@
 
 /* SPI0 */
 &ecspi4 {
+	u-boot,dm-spl;
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_ecspi4>;
 	fsl,spi-num-chipselects = <3>;
@@ -39,6 +57,7 @@
 #if 0
 	/* default boot source: workaround #1 for errata ERR006282 */
 	flash: spi-flash@0 {
+		u-boot,dm-spl;
 		compatible = "jedec,spi-nor";
 		reg = <0>;
 		spi-max-frequency = <20000000>;
