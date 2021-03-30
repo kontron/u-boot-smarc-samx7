@@ -23,6 +23,7 @@
 #include <linux/delay.h>
 #include <i2c.h>
 #include <env.h>
+#include <env_internal.h>
 #include <search.h>
 #include <spi.h>
 #include <spi_flash.h>
@@ -83,6 +84,8 @@ u32 get_pcb_version (void)
 	regs = (struct gpio_regs *)GPIO2_BASE_ADDR;
 	PcbVersion = spl_read_gpio(regs, 2);
 #else
+	printf("%s: START\n", __func__);
+	gpio_request(IMX_GPIO_NR(2, 2), "");
 	gpio_direction_input(IMX_GPIO_NR(2, 2));
 	PcbVersion = gpio_get_value(IMX_GPIO_NR(2, 2));
 #endif
@@ -745,12 +748,12 @@ int board_fix_fdt(void *blob)
 
 char *getSerNo (void)
 {
-	ENTRY e;
-	static ENTRY *ep;
+	struct env_entry e;
+	struct env_entry *ep;
 
 	e.key = "serial#";
 	e.data = NULL;
-	hsearch_r (e, FIND, &ep, &env_htab, 0);
+	hsearch_r (e, ENV_FIND, &ep, &env_htab, 0);
 	if (ep == NULL)
 		return "na";
 	else
