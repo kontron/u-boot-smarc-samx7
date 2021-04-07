@@ -47,6 +47,25 @@
 		compatible = "wdt-reboot";
 		wdt = <&wdog1>;
 	};
+
+	backlight_lvds: backlight-lvds {
+		compatible = "pwm-backlight";
+		pwms = <&pwm1 0 5000000>;
+		brightness-levels = <0 4 8 16 32 64 128 255>;
+		default-brightness-level = <7>;
+		status = "okay";
+	};
+
+	panel {
+		compatible = "simple-panel";
+		backlight = <&backlight_lvds>;
+
+		port {
+			panel_in: endpoint {
+				remote-endpoint = <&lvds0_out>;
+			};
+		};
+	};
 };
 
 
@@ -182,4 +201,22 @@
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_wdog1>;
 	status = "okay";
+};
+
+&ldb {
+	status = "okay";
+
+	lvds-channel@1 {
+		fsl,data-mapping = "spwg";
+		fsl,data-width = <18>;
+		status = "okay";
+
+		port@4 {
+			reg = <4>;
+
+			lvds0_out: endpoint {
+				remote-endpoint = <&panel_in>;
+			};
+		};
+	};
 };
