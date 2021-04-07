@@ -15,6 +15,10 @@
 	model = "Kontron SMARC sAMX6i Quad/Dual";
 	compatible = "kontron,imx6q-samx6i", "fsl,imx6q";
 
+	chosen {
+		stdout-path = &uart1;
+	};
+
 	aliases {
 		spi0 = &ecspi4;
 		mmc0 = &usdhc4;
@@ -38,8 +42,10 @@
 		};
 	};
 
-	chosen {
-		stdout-path = &uart1;
+	wdt-reboot {
+		u-boot,dm-spl;
+		compatible = "wdt-reboot";
+		wdt = <&wdog1>;
 	};
 };
 
@@ -171,6 +177,7 @@
 };
 
 &wdog1 {
+	u-boot,dm-spl;
 	/* CPLD is feeded by watchdog (hardwired) */
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_wdog1>;
