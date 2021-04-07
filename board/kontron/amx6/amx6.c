@@ -84,7 +84,6 @@ u32 get_pcb_version (void)
 	regs = (struct gpio_regs *)GPIO2_BASE_ADDR;
 	PcbVersion = spl_read_gpio(regs, 2);
 #else
-	printf("%s: START\n", __func__);
 	gpio_request(IMX_GPIO_NR(2, 2), "");
 	gpio_direction_input(IMX_GPIO_NR(2, 2));
 	PcbVersion = gpio_get_value(IMX_GPIO_NR(2, 2));
