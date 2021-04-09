@@ -40,6 +40,8 @@
 
 #include "amx6_iomux.h"
 
+void setup_display(void);
+
 #define IDENT_STRING		"Kontron SMARC-sAMX6   Release "
 
 #ifndef IDENT_RELEASE
@@ -697,6 +699,10 @@ int board_init(void)
 
 #ifdef CONFIG_CMD_GPIO
 	SETUP_IOMUX_PADS(gpio_pads);
+#endif
+
+#ifdef CONFIG_VIDEO_IPUV3
+	setup_display();
 #endif
 
 	return 0;

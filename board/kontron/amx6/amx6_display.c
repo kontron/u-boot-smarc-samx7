@@ -6,6 +6,7 @@
 
 #include <common.h>
 #include <asm/io.h>
+#include <asm/arch/clock.h>
 #include <asm/arch/mx6-pins.h>
 #include <asm/arch/crm_regs.h>
 #include <asm/mach-imx/iomux-v3.h>
@@ -18,7 +19,17 @@
 #include "amx6_iomux.h"
 
 #define GATE_UNGATE_CLOCKS
-#define PATCH_FOR_CLOCKS
+#undef PATCH_FOR_CLOCKS
+
+#define PFD_528_CLK			528 			/* [MHz] */
+#define PFD_528_CLK_MUL			18
+#define PFD_528_CLK_DIV_LOW		12
+#define PFD_528_CLK_DIV_HI		35
+#define LVDS_CLK_MUL			7
+
+/* calculate PLL2 PFD0_FRAC */
+#define PFD_528_DIVIDER(_LVDS_CLK_)								\
+	(PFD_528_CLK * PFD_528_CLK_MUL / LVDS_CLK_MUL)/(_LVDS_CLK_)
 
 struct display_info_t {
 	int	bus;
@@ -29,8 +40,6 @@ struct display_info_t {
 	struct	fb_videomode mode;
 	int lvds_clock;
 };
-
-void setup_display(ulong );
 
 static int detect_default(struct display_info_t const *dev)
 {
@@ -43,6 +52,7 @@ iomux_v3_cfg_t backlight_pads[] = {
 	IOMUX_PADS(PAD_SD1_DAT1__GPIO1_IO17 | MUX_PAD_CTRL(GPIO_PAD_CTRL)),
 };
 
+#if 0
 void enable_lvds(void)
 {
 	struct iomuxc *iomux = (struct iomuxc *)
@@ -63,13 +73,62 @@ static void enable_lvds_and_display(struct display_info_t const *dev)
 	setup_display(dev->lvds_clock);
 	enable_lvds ();
 }
+#else
+static void enable_backlight(void)
+{
+	SETUP_IOMUX_PADS(backlight_pads);
+
+	gpio_request(IMX_GPIO_NR(1, 18), "LCD Backlight PWM");
+	gpio_direction_output(IMX_GPIO_NR(1, 18), 1);
+	gpio_request(IMX_GPIO_NR(1, 16), "LCD Backlight Enable");
+	gpio_direction_output(IMX_GPIO_NR(1, 16), 1);
+	gpio_request(IMX_GPIO_NR(1, 17), "LCD VDD Enable");
+	gpio_direction_output(IMX_GPIO_NR(1, 17), 1);
+}
+
+static void enable_lvds(struct display_info_t const *dev)
+{
+	u32 reg;
+	int pfd_frac_div = PFD_528_CLK_DIV_HI;
+	struct iomuxc *iomux = (struct iomuxc *)IOMUXC_BASE_ADDR;
+	struct anatop_regs *anatop = (struct anatop_regs *)ANATOP_BASE_ADDR;
+	ulong lvds_clk = dev->lvds_clock;
+
+	/* setup_display(dev->lvds_clock); */
+	/* Clock value validation */
+	if (lvds_clk > 0) {
+		pfd_frac_div = PFD_528_DIVIDER(lvds_clk);
+		if (pfd_frac_div < PFD_528_CLK_DIV_LOW) {
+			pfd_frac_div = PFD_528_CLK_DIV_LOW;
+		} else if (pfd_frac_div > PFD_528_CLK_DIV_HI) {
+			pfd_frac_div = PFD_528_CLK_DIV_HI;
+		}
+	} else {
+		pfd_frac_div = PFD_528_CLK_DIV_HI;
+	}
+
+	/* set PLL2 PFD0_FRAC according to expected LVDS clock value */
+	writel(ANATOP_PFD_FRAC_MASK(0), &anatop->pfd_528_clr);
+	writel(pfd_frac_div<<ANATOP_PFD_FRAC_SHIFT(0), &anatop->pfd_528_set);
+
+
+	reg = readl(&iomux->gpr[2]) | IOMUXC_GPR2_DATA_WIDTH_CH0_24BIT;
+	writel(reg, &iomux->gpr[2]);
+
+	enable_backlight();
+}
+#endif
 
 static struct display_info_t displays[] = {{
 	.bus	= -1,
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "LCD_800x480@LVDS",
 		.refresh        = 60,
@@ -91,7 +150,11 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "LCD_320x240@LVDS",
 		.refresh        = 60,
@@ -113,7 +176,11 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "LCD_480x272@LVDS",
 		.refresh        = 60,
@@ -135,7 +202,11 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "LCD_480x320@LVDS",
 		.refresh        = 60,
@@ -157,7 +228,11 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "LCD_640x480@LVDS",
 		.refresh        = 60,
@@ -179,7 +254,11 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "LCD_800x600@LVDS",
 		.refresh        = 60,
@@ -201,7 +280,11 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "LCD_960x640@LVDS",
 		.refresh        = 60,
@@ -223,7 +306,11 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "LCD_1024x576@LVDS",
 		.refresh        = 60,
@@ -245,7 +332,11 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "LCD_1024x600@LVDS",
 		.refresh        = 60,
@@ -267,7 +358,11 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "LCD_1024x768@LVDS",
 		.refresh        = 60,
@@ -289,7 +384,11 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "LCD_1152x768@LVDS",
 		.refresh        = 60,
@@ -311,7 +410,11 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "LCD_1152x864@LVDS",
 		.refresh        = 60,
@@ -333,7 +436,11 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "LCD_1280x720@LVDS",
 		.refresh        = 60,
@@ -355,7 +462,11 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "LCD_1280x768@LVDS",
 		.refresh        = 60,
@@ -377,7 +488,11 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "LCD_1280x800@LVDS",
 		.refresh        = 60,
@@ -399,7 +514,11 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "LCD_1280x1024@LVDS",
 		.refresh        = 50,
@@ -421,7 +540,11 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "LCD_1360x768@LVDS",
 		.refresh        = 50,
@@ -443,7 +566,11 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "LCD_1366x768@LVDS",
 		.refresh        = 50,
@@ -465,7 +592,11 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
+#if 0
 	.enable	= enable_lvds_and_display,
+#else
+	.enable	= enable_lvds,
+#endif
 	.mode	= {
 		.name           = "user",
 		.refresh        = 60,
@@ -586,9 +717,10 @@ int board_video_init(void)
 		} else {
 			printf("Display: disabled\n");
 		}
-		ret = -EINVAL;
+		return -EINVAL;
 	}
-	return (0 != ret);
+
+	return ret;
 }
 
 int board_video_skip(void)
@@ -605,45 +737,20 @@ int board_video_skip(void)
 	return (skip);
 }
 
-#define PFD_528_CLK				528 			/* [MHz] */
-#define PFD_528_CLK_MUL			18
-#define PFD_528_CLK_DIV_LOW		12
-#define PFD_528_CLK_DIV_HI		35
-#define LVDS_CLK_MUL			7
-
-/* calculate PLL2 PFD0_FRAC */
-#define PFD_528_DIVIDER(_LVDS_CLK_)								\
-	(PFD_528_CLK * PFD_528_CLK_MUL / LVDS_CLK_MUL)/(_LVDS_CLK_)
-
-void setup_display(ulong lvds_clk)
+void setup_display(void)
 {
 	struct mxc_ccm_reg *mxc_ccm = (struct mxc_ccm_reg *)CCM_BASE_ADDR;
 	struct anatop_regs *anatop = (struct anatop_regs *)ANATOP_BASE_ADDR;
 	struct iomuxc *iomux = (struct iomuxc *)IOMUXC_BASE_ADDR;
 
-	int reg, pfd_frac_div = PFD_528_CLK_DIV_HI;
+	int reg;
 
-	/* Turn on LDB0,IPU,IPU DI0 clocks */
-	reg = __raw_readl(&mxc_ccm->CCGR3);
-	reg |=   MXC_CCM_CCGR3_IPU1_IPU_MASK
-		|MXC_CCM_CCGR3_LDB_DI0_MASK;
+	enable_ipu_clock();
+
+	/* Turn on LDB0, LDB1, IPU,IPU DI0 clocks */
+	reg = readl(&mxc_ccm->CCGR3);
+	reg |= MXC_CCM_CCGR3_IPU1_IPU_MASK | MXC_CCM_CCGR3_LDB_DI0_MASK;
 	writel(reg, &mxc_ccm->CCGR3);
-
-	/* Clock value validation */
-	if (lvds_clk > 0) {
-		pfd_frac_div = PFD_528_DIVIDER(lvds_clk);
-		if (pfd_frac_div < PFD_528_CLK_DIV_LOW) {
-			pfd_frac_div = PFD_528_CLK_DIV_LOW;
-		} else if (pfd_frac_div > PFD_528_CLK_DIV_HI) {
-			pfd_frac_div = PFD_528_CLK_DIV_HI;
-		}
-	} else {
-		pfd_frac_div = PFD_528_CLK_DIV_HI;
-	}
-
-	/* set PLL2 PFD0_FRAC according to expected LVDS clock value */
-	writel(ANATOP_PFD_FRAC_MASK(0), &anatop->pfd_528_clr);
-	writel(pfd_frac_div<<ANATOP_PFD_FRAC_SHIFT(0), &anatop->pfd_528_set);
 
 	/* set LDB0, LDB1 clk derive from PLL2 PFD0 clock wich value is 271,5 MHz */
 
@@ -658,6 +765,9 @@ void setup_display(ulong lvds_clk)
 	writel(0x80, &anatop->pfd_528_set);
 #endif
 
+	select_ldb_di_clock_source(MXC_PLL2_PFD0_CLK);
+
+#if 0
 #ifdef PATCH_FOR_CLOCKS
 	/*
 	 * In some situations the display clock did not start up correctly
@@ -689,11 +799,12 @@ void setup_display(ulong lvds_clk)
 	writel(reg, &mxc_ccm->ccsr);
 #endif
 
+	/* set LDB0, LDB1 clk select to 011/011 */
 	reg = readl(&mxc_ccm->cs2cdr);
 	reg &= ~(MXC_CCM_CS2CDR_LDB_DI0_CLK_SEL_MASK
-		 |MXC_CCM_CS2CDR_LDB_DI1_CLK_SEL_MASK);
-	reg |= (1<<MXC_CCM_CS2CDR_LDB_DI0_CLK_SEL_OFFSET)
-	      |(1<<MXC_CCM_CS2CDR_LDB_DI1_CLK_SEL_OFFSET);
+		 | MXC_CCM_CS2CDR_LDB_DI1_CLK_SEL_MASK);
+	reg |= (1 << MXC_CCM_CS2CDR_LDB_DI0_CLK_SEL_OFFSET)
+	      | (1 << MXC_CCM_CS2CDR_LDB_DI1_CLK_SEL_OFFSET);
 	writel(reg, &mxc_ccm->cs2cdr);
 
 	reg = readl(&mxc_ccm->cscmr2);
@@ -702,14 +813,14 @@ void setup_display(ulong lvds_clk)
 
 	reg = readl(&mxc_ccm->chsccdr);
 	reg &= ~(MXC_CCM_CHSCCDR_IPU1_DI0_PRE_CLK_SEL_MASK
-		|MXC_CCM_CHSCCDR_IPU1_DI0_PODF_MASK
-		|MXC_CCM_CHSCCDR_IPU1_DI0_CLK_SEL_MASK);
+		| MXC_CCM_CHSCCDR_IPU1_DI0_PODF_MASK
+		| MXC_CCM_CHSCCDR_IPU1_DI0_CLK_SEL_MASK);
 	reg |= (CHSCCDR_CLK_SEL_LDB_DI0
-		<<MXC_CCM_CHSCCDR_IPU1_DI0_CLK_SEL_OFFSET)
-	      |(CHSCCDR_PODF_DIVIDE_BY_3
-		<<MXC_CCM_CHSCCDR_IPU1_DI0_PODF_OFFSET)
-	      |(CHSCCDR_IPU_PRE_CLK_540M_PFD
-		<<MXC_CCM_CHSCCDR_IPU1_DI0_PRE_CLK_SEL_OFFSET);
+		<< MXC_CCM_CHSCCDR_IPU1_DI0_CLK_SEL_OFFSET)
+	       | (CHSCCDR_PODF_DIVIDE_BY_3
+		  << MXC_CCM_CHSCCDR_IPU1_DI0_PODF_OFFSET)
+	       | (CHSCCDR_IPU_PRE_CLK_540M_PFD
+		  << MXC_CCM_CHSCCDR_IPU1_DI0_PRE_CLK_SEL_OFFSET);
 	writel(reg, &mxc_ccm->chsccdr);
 
 #ifdef PATCH_FOR_CLOCKS
@@ -734,6 +845,7 @@ void setup_display(ulong lvds_clk)
 	reg = readl(&mxc_ccm->ccdr); /* ccm_base + 0x4 */
 	reg &= ~(1 << 16);
 	writel(reg, &mxc_ccm->ccdr);
+#endif
 #endif
 
 #ifdef GATE_UNGATE_CLOCKS
@@ -760,8 +872,9 @@ void setup_display(ulong lvds_clk)
 	writel(reg, &iomux->gpr[2]);
 
 	reg = readl(&iomux->gpr[3]);
-	reg = (reg & ~IOMUXC_GPR3_LVDS0_MUX_CTL_MASK)
+	reg = (reg & ~(IOMUXC_GPR3_LVDS0_MUX_CTL_MASK
+		      | IOMUXC_GPR3_HDMI_MUX_CTL_MASK))
 	    | (IOMUXC_GPR3_MUX_SRC_IPU1_DI0
-	       <<IOMUXC_GPR3_LVDS0_MUX_CTL_OFFSET);
+	       << IOMUXC_GPR3_LVDS0_MUX_CTL_OFFSET);
 	writel(reg, &iomux->gpr[3]);
 }
