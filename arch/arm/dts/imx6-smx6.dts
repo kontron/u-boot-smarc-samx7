@@ -21,7 +21,7 @@
 
 	aliases {
 		spi0 = &ecspi4;
-		mmc0 = &usdhc4;
+		mmc2 = &usdhc4;
 		mmc1 = &usdhc3;
 	};
 
