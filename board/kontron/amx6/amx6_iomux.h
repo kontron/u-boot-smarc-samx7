@@ -50,10 +50,6 @@ u32 spl_read_gpio (struct gpio_regs *, int);
 		PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED |       		\
 		PAD_CTL_DSE_40ohm   | PAD_CTL_SRE_FAST  )
 
-#define JTAG_GPIO_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_PUE |    		\
-		PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED |       		\
-		PAD_CTL_DSE_40ohm   | PAD_CTL_SRE_FAST  )
-
 #define I2C_PAD_CTRL	(PAD_CTL_PKE | PAD_CTL_PUE |				\
 	PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED |				\
 	PAD_CTL_DSE_40ohm | PAD_CTL_HYS |					\

@@ -1,30 +1,28 @@
-/****************************************************************************/
-/*																			*/
-/*	Module:			jbistub.c												*/
-/*																			*/
-/*					Copyright (C) Altera Corporation 1997-2001				*/
-/*																			*/
-/*	Description:	Jam STAPL ByteCode Player main source file				*/
-/*																			*/
-/*					Supports Altera ByteBlaster hardware download cable		*/
-/*					on Windows 95 and Windows NT operating systems.			*/
-/*					(A device driver is required for Windows NT.)			*/
-/*																			*/
-/*					Also supports BitBlaster hardware download cable on		*/
-/*					Windows 95, Windows NT, and UNIX platforms.				*/
-/*																			*/
-/*	Revisions:		1.1 fixed control port initialization for ByteBlaster	*/
-/*					2.0 added support for STAPL bytecode format, added code	*/
-/*						to get printer port address from Windows registry	*/
-/*					2.1 improved messages, fixed delay-calibration bug in	*/
-/*						16-bit DOS port, added support for "alternative		*/
-/*						cable X", added option to control whether to reset	*/
-/*						the TAP after execution, moved porting macros into	*/
-/*						jbiport.h											*/
-/*					2.2 added support for static memory						*/
-/*						fixed /W4 warnings									*/
-/*																			*/
-/****************************************************************************/
+/************************************************************************/
+/*
+ * Module:	jbistub.c
+ *
+ * Copyright (C) Altera Corporation 1997-2001
+ *
+ * Description:	Jam STAPL ByteCode Player main source file
+ *
+ * Supports Altera ByteBlaster hardware download cable
+ * on Windows 95 and Windows NT operating systems.
+ * (A device driver is required for Windows NT.)
+ *
+ * Also supports BitBlaster hardware download cable on
+ * Windows 95, Windows NT, and UNIX platforms.
+ *
+ * Revisions:	1.1 fixed control port initialization for ByteBlaster
+ *		2.0 added support for STAPL bytecode format, added code
+ *		    to get printer port address from Windows registry
+ *		2.1 improved messages, fixed delay-calibration bug in
+ *		    16-bit DOS port, added support for "alternative
+ *		    cable X", added option to control whether to reset
+ *		    the TAP after execution, moved porting macros into
+ *		    jbiport.h
+ *		2.2 added support for static memory fixed /W4 warnings
+ */
 
 
 #include "jbiport.h"
@@ -33,6 +31,10 @@
 #include <common.h>
 #include <command.h>
 #include <malloc.h>
+#include <asm/gpio.h>
+#include <asm/arch/sys_proto.h>
+#include <asm/arch/mx6-pins.h>
+#include <linux/delay.h>
 
 typedef int BOOL;
 typedef unsigned char BYTE;
@@ -60,9 +62,115 @@ void close_jtag_hardware(void);
 /* function prototypes to allow forward reference */
 int getBoardId (void);
 
+#if 0
 void amx6_setup_iomux_gpio_jtag(void);
 void amx6_clear_iomux_gpio_jtag(void);
 int amx6_jbi_jtag_io(int , int , int );
+#endif
+
+#define JTAG_GPIO_PAD_CTRL      (PAD_CTL_PKE | PAD_CTL_PUE |			\
+				 PAD_CTL_PUS_100K_UP | PAD_CTL_SPEED_MED |	\
+				 PAD_CTL_DSE_40ohm   | PAD_CTL_SRE_FAST  )
+
+static iomux_v3_cfg_t gpio_jtag_pads[] = {
+	/* CPLD_TMS_IMX */
+	IOMUX_PADS(PAD_KEY_COL0__GPIO4_IO06 | MUX_PAD_CTRL(JTAG_GPIO_PAD_CTRL)),
+	/* CPLD_TDI_IMX */
+	IOMUX_PADS(PAD_KEY_ROW0__GPIO4_IO07 | MUX_PAD_CTRL(JTAG_GPIO_PAD_CTRL)),
+	/* CPLD_TDO_IMX */
+	IOMUX_PADS(PAD_KEY_COL1__GPIO4_IO08 | MUX_PAD_CTRL(JTAG_GPIO_PAD_CTRL)),
+	/* CPLD_TCK_IMX */
+	IOMUX_PADS(PAD_KEY_ROW1__GPIO4_IO09 | MUX_PAD_CTRL(JTAG_GPIO_PAD_CTRL)),
+};
+
+/* Setup bit-banging JTAG interface to on-board CPLD logic */
+void amx6_setup_iomux_gpio_jtag(void)
+{
+	SETUP_IOMUX_PADS(gpio_jtag_pads);
+
+	/* Configure JTAG pins direction */
+	gpio_direction_output(IMX_GPIO_NR(4, 6), 0);
+	gpio_direction_output(IMX_GPIO_NR(4, 7), 0);
+	gpio_direction_input(IMX_GPIO_NR(4, 8));
+	gpio_direction_output(IMX_GPIO_NR(4, 9), 0);
+}
+
+void amx6_clear_iomux_gpio_jtag(void)
+{
+	/* clear JTAG pins */
+	gpio_direction_input(IMX_GPIO_NR(4, 6));
+	gpio_direction_input(IMX_GPIO_NR(4, 7));
+	gpio_direction_input(IMX_GPIO_NR(4, 8));
+	gpio_direction_input(IMX_GPIO_NR(4, 9));
+}
+
+#define GPIO_TO_PORT(n)		((n) / 32)
+
+static unsigned long gpio_ports[] = {
+	[0] = GPIO1_BASE_ADDR,
+	[1] = GPIO2_BASE_ADDR,
+	[2] = GPIO3_BASE_ADDR,
+	[3] = GPIO4_BASE_ADDR,
+	[4] = GPIO5_BASE_ADDR,
+	[5] = GPIO6_BASE_ADDR,
+	[6] = GPIO7_BASE_ADDR,
+};
+
+int gpio_set_multivalue(unsigned gpio, int value, int mask)
+{
+	unsigned int port = GPIO_TO_PORT(gpio);
+	struct gpio_regs *regs;
+	u32 l;
+
+	if (port >= ARRAY_SIZE(gpio_ports))
+		return -1;
+
+	regs = (struct gpio_regs *)gpio_ports[port];
+
+	l = readl(&regs->gpio_dr) & ~mask;
+	l |= value & mask;
+	writel(l, &regs->gpio_dr);
+
+	return 0;
+}
+
+#define AMX6_JTAG_TMS_BIT	(1 << 6)
+#define AMX6_JTAG_TDI_BIT	(1 << 7)
+#define AMX6_JTAG_TD0_BIT	(1 << 8)
+#define AMX6_JTAG_TCK_BIT	(1 << 9)
+
+#define AMX6_JTAG_TMS_GPIO_PIN	IMX_GPIO_NR(4, 6)
+#define AMX6_JTAG_TDI_GPIO_PIN	IMX_GPIO_NR(4, 7)
+#define AMX6_JTAG_TD0_GPIO_PIN	IMX_GPIO_NR(4, 8)
+#define AMX6_JTAG_TCK_GPIO_PIN	IMX_GPIO_NR(4, 9)
+
+#define TMS_SET_BIT(bit)	gpio_set_value(AMX6_JTAG_TMS_GPIO_PIN, bit)
+#define TDI_SET_BIT(bit)	gpio_set_value(AMX6_JTAG_TDI_GPIO_PIN, bit)
+#define TCK_SET_BIT(bit)	gpio_set_value(AMX6_JTAG_TCK_GPIO_PIN, bit)
+#define TDO_GET_BIT()		gpio_get_value(AMX6_JTAG_TD0_GPIO_PIN)
+
+#define JTAG_SET_MASK		(AMX6_JTAG_TMS_BIT | AMX6_JTAG_TDI_BIT | AMX6_JTAG_TCK_BIT)
+#define JTAG_SET(val)									\
+	{										\
+		gpio_set_multivalue(AMX6_JTAG_TMS_GPIO_PIN, val, JTAG_SET_MASK);	\
+	}
+
+static int amx6_jbi_jtag_io(int tms, int tdi, int read_tdo)
+{
+	int tdo = 0;
+	int data;
+
+	data = (tdi ? AMX6_JTAG_TDI_BIT : 0) | (tms ? AMX6_JTAG_TMS_BIT : 0);
+	JTAG_SET(data);
+
+	if (read_tdo)
+		tdo = TDO_GET_BIT();
+
+	JTAG_SET(data | AMX6_JTAG_TCK_BIT);
+	JTAG_SET(data);
+
+	return (tdo);
+}
 
 /*
 *	This structure stores information about each available vector signal
@@ -323,7 +431,7 @@ int jbi_vector_io
 	}
 
 	/*
-	*	Read the input signals and save information in capture_vect[]
+	* Read the input signals and save information in capture_vect[]
 	*/
 	if ((dir != mask) && (capture_vect != NULL))
 	{
@@ -428,7 +536,7 @@ char *error_text[] =
 
 /************************************************************************/
 
-int do_jbi (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv [])
+int do_jbi (struct cmd_tbl *cmdtp, int flag, int argc, char * const argv [])
 {
 	JBI_RETURN_TYPE exec_result = JBIC_SUCCESS;
 	JBI_RETURN_TYPE crc_result = JBIC_SUCCESS;
@@ -473,7 +581,8 @@ int do_jbi (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv [])
 
 
 	/* print out the version string and copyright message */
-	fprintf(stderr, "Jam STAPL ByteCode Player Version 2.2\nCopyright (C) 1998-2001 Altera Corporation\n\n");
+	fprintf(stderr, "Jam STAPL ByteCode Player Version 2.2\n"
+	                "Copyright (C) 1998-2001 Altera Corporation\n\n");
 
 	/* args parsing */
 	for (arg = 1; arg < argc; arg++)
@@ -753,7 +862,7 @@ U_BOOT_CMD (
 #endif
 
 /* kjtag - Kontron wrapper for programming logic with using Jam STAPL ByteCode Player */
-int do_kjtag (cmd_tbl_t *cmdtp, int flag, int argc, char * const argv [])
+int do_kjtag (struct cmd_tbl *cmdtp, int flag, int argc, char * const argv [])
 {
 	int program = 0;
 	int raw_image = 0; /* FIXME: for future use */
