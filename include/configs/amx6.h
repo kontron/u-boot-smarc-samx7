@@ -108,46 +108,80 @@
 /******************************************************************************
  * Environment Settings
  */
+#ifndef CONFIG_SPL_BUILD
+#define DISTROBOOT_ENV_SETTINGS \
+	"fdt_addr_r=0x13000000\0" \
+	"kernel_addr_r=" __stringify(CONFIG_LOADADDR) "\0" \
+	"pxefile_addr_r=" __stringify(CONFIG_LOADADDR) "\0" \
+	"ramdisk_addr_r=0x14000000\0" \
+	"scriptaddr=0x10400000\0"
+
+#define BOOT_TARGET_DEVICES(func) \
+	func(MMC, mmc, 0) \
+	func(MMC, mmc, 0) \
+	func(USB, usb, 0) \
+	func(SATA, sata, 0) \
+	func(DHCP, dhcp, 0)
+
+#include <config_distro_bootcmd.h>
+#else
+#define DISTROBOOT_ENV_SETTINGS
+#define BOOTENV
+#endif
+
 #define CONFIG_EXTRA_ENV_SETTINGS \
-	"netdev=eth0\0"	\
-	"machid=10e9\0" \
-	"uimage=uImage\0" \
-	"console=ttymxc0\0" \
+	"autoload=no\0"								\
+	"netdev=eth0\0"								\
+	"machid=10e9\0"								\
+	"image=uImage\0"							\
+	"console=ttymxc0\0"							\
+	"ethrotate=no\0"							\
 	"mmcdev=1\0" \
 	"mmcpart=1\0" \
-	"fdt_high=0xffffffff\0" \
-	"fdtaddr=11000000\0"	\
-	"fdtfile=smx6.dtb\0" \
+	"fdt_high=0xffffffff\0"							\
+	"initrd_high=0xffffffff\0"						\
+	"fdtaddr=12c00000\0"	\
+	"fdtfile=imx6q-smx6-lvds-ld101.dtb\0" \
 	"panel=off\0" \
-	"mmcroot=/dev/mmcblk1p1 rootwait rw\0" \
-	"mmcargs=setenv bootargs console=${console},${baudrate} " \
-		"root=${mmcroot}\0" \
-	"loaduimage=ext2load mmc ${mmcdev}:${mmcpart} ${loadaddr} ${uimage}\0" \
-	"loadfdt=ext2load mmc ${mmcdev}:${mmcpart} ${fdtaddr} ${fdtfile}\0" \
+	"splash_img_addr=100000\0"						\
+	"splash_img_size=80000\0"						\
+	"wince_kitl=disabled\0"							\
+	"bootfailed=echo Booting failed from all boot sources && false\0"	\
+	"bootos=run setbootargs && " \
+		"run loadimage && " \
+		"run loadfdt && " \
+		"bootm ${loadaddr} - ${fdtaddr} || false\0"			\
+	"legacy_boot=run mmcboot || run sdboot || run usbboot || " \
+		"run bootfailed\0"						\
+	"loadimage=load ${intf} ${bdev}:${bpart} ${loadaddr} /boot/${image}\0"	\
+	"loadfdt=load ${intf} ${bdev}:${bpart} ${fdtaddr} /boot/${fdtfile}\0"	\
+	"setbootargs=setenv bootargs console=${console},${baudrate} " \
+		"root=${rootpath}\0"						\
+	"mmcroot=/dev/mmcblk2p1 rw\0"						\
 	"mmcboot=echo Booting from mmc ...; " \
-		"run mmcargs; " \
-		"bootm ${loadaddr} - ${fdtaddr}\0" \
-	"netargs=setenv bootargs console=${console},${baudrate} " \
-		"root=/dev/nfs " \
-		"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
-	"netboot=echo Booting from net ...; " \
-		"tftp ${fdtaddr} ${fdtfile};" \
-		"tftp ${loadaddr} ${uimage};" \
-		"bootm ${loadaddr} - ${fdtaddr}\0" \
-
-
-#define CONFIG_BOOTCOMMAND \
-	"mmc dev ${mmcdev};" \
-	"if mmc rescan; then " \
-	    "if run loaduimage; then " \
-			"if run loadfdt; then " \
-	           "run mmcboot; " \
-             "else run netboot; " \
-		"fi; " \
-            "else run netboot; " \
-	    "fi; " \
-	"else run netboot; " \
-	"fi; "
+		"setenv bdev 2 && setenv bpart 1 && setenv intf mmc && " \
+		"mmc dev ${bdev} && setenv rootpath ${mmcroot} && " \
+		"run bootos\0"							\
+	"sdroot=/dev/mmcblk1p1 rootwait rw\0"					\
+	"sdboot=echo Booting from SD card ... && " \
+		"setenv bdev 1 && setenv bpart 1 && setenv intf mmc && " \
+		"mmc dev ${bdev} && setenv rootpath ${sdroot} && " \
+		"run bootos\0"							\
+	"usbroot=/dev/sda1 rootwait rw\0"					\
+	"usbboot=echo Booting from USB ... && " \
+		"setenv bdev 0 && setenv bpart 1 && setenv intf usb && " \
+		"usb start && usb dev ${bdev} && " \
+		"setenv rootpath ${usbroot} && run bootos\0"			\
+	"updfile=update_smx6/update\0"						\
+	"updNet=bootp; if tftp $loadaddr $updfile; then setenv loader tftp; " \
+		"source $loadaddr; else run updFal; fi\0"			\
+	"updUsb=usb start && usb dev 0 && " \
+		"load usb 0:1 $loadaddr $updfile && " \
+		"setenv loader load usb 0:1 && " \
+		"source $loadaddr && true\0"					\
+	"updFal=echo update failed\0"						\
+	DISTROBOOT_ENV_SETTINGS							\
+	BOOTENV
 
 
 /******************************************************************************
