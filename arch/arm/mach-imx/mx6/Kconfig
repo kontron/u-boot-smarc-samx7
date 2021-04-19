@@ -672,7 +672,6 @@ config TARGET_ZC5601
 
 config TARGET_AMX6
 	bool "Kontron AMX6"
-	depends on MX6QDL
 	select BOARD_EARLY_INIT_F
 	select BOARD_LATE_INIT
 	select DM
