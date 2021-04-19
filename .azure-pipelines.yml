@@ -23,7 +23,7 @@ jobs:
           %CD:~0,2%\msys64\usr\bin\bash -lc "pacman --noconfirm -Syyuu"
         displayName: 'Update MSYS2'
       - script: |
-          %CD:~0,2%\msys64\usr\bin\bash -lc "pacman --noconfirm --needed -S make gcc bison flex diffutils openssl-devel"
+          %CD:~0,2%\msys64\usr\bin\bash -lc "pacman --noconfirm --needed -Sy make gcc bison flex diffutils openssl-devel"
         displayName: 'Install Toolchain'
       - script: |
           echo make tools-only_defconfig tools-only NO_SDL=1 > build-tools.sh
@@ -67,7 +67,11 @@ jobs:
       image: $(ci_runner_image)
       options: $(container_option)
     steps:
-      - script: make htmldocs
+      - script: |
+          virtualenv -p /usr/bin/python3 /tmp/venvhtml
+          . /tmp/venvhtml/bin/activate
+          pip install -r doc/sphinx/requirements.txt
+          make htmldocs
 
   - job: todo
     displayName: 'Search for TODO within source tree'
@@ -144,7 +148,7 @@ jobs:
           export UBOOT_TRAVIS_BUILD_DIR=/tmp/sandbox_spl
           export PYTHONPATH=${UBOOT_TRAVIS_BUILD_DIR}/scripts/dtc/pylibfdt
           export PATH=${UBOOT_TRAVIS_BUILD_DIR}/scripts/dtc:${PATH}
-          ./tools/buildman/buildman -o ${UBOOT_TRAVIS_BUILD_DIR} -w sandbox_spl
+          ./tools/buildman/buildman -T0 -o ${UBOOT_TRAVIS_BUILD_DIR} -w sandbox_spl
           ./tools/binman/binman --toolpath ${UBOOT_TRAVIS_BUILD_DIR}/tools test
           ./tools/buildman/buildman -t
           ./tools/dtoc/dtoc -t
@@ -291,7 +295,7 @@ jobs:
           cat << "EOF" >> test.sh
           # the below corresponds to .gitlab-ci.yml "before_script"
           cd ${WORK_DIR}
-          git clone --depth=1 git://github.com/swarren/uboot-test-hooks.git /tmp/uboot-test-hooks
+          git clone --depth=1 https://source.denx.de/u-boot/u-boot-test-hooks /tmp/uboot-test-hooks
           ln -s travis-ci /tmp/uboot-test-hooks/bin/`hostname`
           ln -s travis-ci /tmp/uboot-test-hooks/py/`hostname`
           grub-mkimage --prefix=\"\" -o ~/grub_x86.efi -O i386-efi normal  echo lsefimmap lsefi lsefisystab efinet tftp minicmd
@@ -454,7 +458,7 @@ jobs:
           cat << "EOF" >> build.sh
           if [[ "${BUILDMAN}" != "" ]]; then
               ret=0;
-              tools/buildman/buildman -o /tmp -P -W ${BUILDMAN} ${OVERRIDE} || ret=$?;
+              tools/buildman/buildman -o /tmp -P -E -W ${BUILDMAN} ${OVERRIDE} || ret=$?;
               if [[ $ret -ne 0 ]]; then
                   tools/buildman/buildman -o /tmp -seP ${BUILDMAN};
                   exit $ret;
