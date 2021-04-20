@@ -179,6 +179,18 @@ config SPI_FLASH_USE_4K_SECTORS
 	  Please note that some tools/drivers/filesystems may not work with
 	  4096 B erase size (e.g. UBIFS requires 15 KiB as a minimum).
 
+config SPI_FLASH_ERASE_64K
+	bool "Use 64 K erase sectors if possible"
+	depends on SPI_FLASH_USE_4K_SECTORS
+	default n
+	help
+	  Using 4K sectors results in performance loss when erasing large amounts
+	  of SPI flash memory.
+
+	  If this option is turned on, erase function will check if erase length
+	  is a multiple of 64 K and use 64 K sector erase commands to improve
+	  erase time.
+
 config SPI_FLASH_DATAFLASH
 	bool "AT45xxx DataFlash support"
 	depends on SPI_FLASH && DM_SPI_FLASH

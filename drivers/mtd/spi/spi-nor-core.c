@@ -234,7 +234,7 @@ static struct spi_nor *mtd_to_spi_nor(struct mtd_info *mtd)
 	return mtd->priv;
 }
 
-#ifndef CONFIG_SPI_FLASH_BAR
+#if !defined(CONFIG_SPI_FLASH_BAR) || defined(CONFIG_SPI_FLASH_ERASE_64K)
 static u8 spi_nor_convert_opcode(u8 opcode, const u8 table[][2], size_t size)
 {
 	size_t i;
@@ -247,6 +247,19 @@ static u8 spi_nor_convert_opcode(u8 opcode, const u8 table[][2], size_t size)
 	return opcode;
 }
 
+static u8 spi_nor_convert_4to64_erase(u8 opcode)
+{
+	static const u8 spi_nor_4to64_erase[][2] = {
+		{SPINOR_OP_BE_4K_4B,	SPINOR_OP_SE_4B },
+		{SPINOR_OP_BE_4K,	SPINOR_OP_SE },
+	};
+
+	return spi_nor_convert_opcode(opcode, spi_nor_4to64_erase,
+				      ARRAY_SIZE(spi_nor_4to64_erase));
+}
+#endif
+
+#ifndef CONFIG_SPI_FLASH_BAR
 static u8 spi_nor_convert_3to4_read(u8 opcode)
 {
 	static const u8 spi_nor_3to4_read[][2] = {
@@ -566,6 +579,17 @@ static int spi_nor_erase(struct mtd_info *mtd, struct erase_info *instr)
 	addr = instr->addr;
 	len = instr->len;
 
+#ifdef CONFIG_SPI_FLASH_ERASE_64K
+	uint32_t mtderasesize = mtd->erasesize;
+	u8 eraseopcode = nor->erase_opcode;
+
+	if ((len & 0xffff) == 0) {
+		nor->erase_opcode =
+			spi_nor_convert_4to64_erase(nor->erase_opcode);
+		mtd->erasesize = SZ_64K;
+	}
+#endif
+
 	while (len) {
 		WATCHDOG_RESET();
 #ifdef CONFIG_SPI_FLASH_BAR
@@ -592,6 +616,10 @@ erase_err:
 	ret = clean_bar(nor);
 #endif
 	write_disable(nor);
+#ifdef CONFIG_SPI_FLASH_ERASE_64K
+	mtd->erasesize = mtderasesize;
+	nor->erase_opcode = eraseopcode;
+#endif
 
 	return ret;
 }
