@@ -161,7 +161,7 @@ static void _mxc_serial_init(struct mxc_uart *base, int use_dte)
 
 static void _mxc_serial_setbrg(struct mxc_uart *base, unsigned long clk,
 			       unsigned long baudrate,
-			       struct mxc_serial_platdata *plat)
+			       struct mxc_serial_plat *plat)
 {
 	u32 fcr, cr2;
 
