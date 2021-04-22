@@ -25,18 +25,34 @@
                 usb2 = &usbotg2;
 	};
 
-	regulators {
-		compatible = "simple-bus";
+	reg_sd1_vmmc: regulator@0 {
+		compatible = "regulator-fixed";
+		regulator-name = "VDD_SD1";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio5 2 GPIO_ACTIVE_HIGH>;
+		startup-delay-us = <200000>;
+		enable-active-high;
+	};
 
-		reg_sd1_vmmc: regulator@0 {
-			compatible = "regulator-fixed";
-			regulator-name = "VDD_SD1";
-			regulator-min-microvolt = <3300000>;
-			regulator-max-microvolt = <3300000>;
-			gpio = <&gpio5 2 GPIO_ACTIVE_HIGH>;
-			startup-delay-us = <200000>;
-			enable-active-high;
-		};
+	reg_usb_otg1_vbus: regulator-usb-otg1-vbus {
+		compatible = "regulator-fixed";
+		regulator-name = "usb_otg1_vbus";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpio1 5 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+
+	reg_usb_otg2_vbus: regulator-usb-otg2-vbus {
+		compatible = "regulator-fixed";
+		regulator-name = "usb_otg2_vbus";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_usb_otg2_vbus_reg>;
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpio1 7 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
 	};
 
 	soc {
@@ -306,20 +322,18 @@
 };
 
 &usbotg1 {
-	reg = <0x30b10000 0x10000>;
+	vbus-supply = <&reg_usb_otg1_vbus>;
 	dr_mode = "host";
 	status = "okay";
 };
 
 &usbotg2 {
-	reg = <0x30b20000 0x10000>;
+	vbus-supply = <&reg_usb_otg2_vbus>;
 	dr_mode = "host";
 	status = "okay";
 };
 
 &usbh {
-	reg = <0x30b30000 0x10000>;
-	phy_tpye = "hsic";
 	disable-over-current;
 	status = "okay";
 };
@@ -353,4 +367,12 @@
 	uart-has-rtscts;
         fsl,dte-mode;
 	status = "okay";
+};
+
+&iomuxc_lpsr {
+		pinctrl_usb_otg2_vbus_reg: usbotg2vbusreggrp {
+			fsl,pins = <
+				MX7D_PAD_LPSR_GPIO1_IO07__GPIO1_IO7	0x14
+			>;
+		};
 };
