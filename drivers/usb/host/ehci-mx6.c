@@ -433,6 +433,7 @@ struct ehci_mx6_priv_data {
 	struct phy phy;
 	enum usb_init_type init_type;
 	int portnr;
+	char *phy_type;
 	void __iomem *phy_addr;
 	void __iomem *misc_addr;
 	void __iomem *anatop_addr;
@@ -474,7 +475,12 @@ static int mx6_init_after_reset(struct ehci_ctrl *dev)
 		return 0;
 
 	setbits_le32(&ehci->usbmode, CM_HOST);
-	writel(CONFIG_MXC_USB_PORTSC, &ehci->portsc);
+#if defined(CONFIG_MX7_USB_HSIC_PORTSC)
+	if (!strncmp(priv->phy_type, "hsic", 4))
+		writel(CONFIG_MX7_USB_HSIC_PORTSC, &ehci->portsc);
+	else
+#endif
+		writel(CONFIG_MXC_USB_PORTSC, &ehci->portsc);
 	setbits_le32(&ehci->portsc, USB_EN);
 
 	mdelay(10);
@@ -537,7 +543,17 @@ static int ehci_usb_phy_mode(struct udevice *dev)
 static int ehci_usb_of_to_plat(struct udevice *dev)
 {
 	struct usb_plat *plat = dev_get_plat(dev);
+	struct ehci_mx6_priv_data *priv = dev_get_priv(dev);
 	enum usb_dr_mode dr_mode;
+	const void *phy_type;
+
+	phy_type = fdt_getprop(gd->fdt_blob, dev_of_offset(dev),
+			       "phy_type", NULL);
+
+	if (phy_type) {
+		priv->phy_type = (char *)phy_type;
+		debug("phy_type %s\n", priv->phy_type);
+	}
 
 	dr_mode = usb_get_dr_mode(dev_ofnode(dev));
 
@@ -684,7 +700,12 @@ static int ehci_usb_probe(struct udevice *dev)
 
 	if (priv->init_type == USB_INIT_HOST) {
 		setbits_le32(&ehci->usbmode, CM_HOST);
-		writel(CONFIG_MXC_USB_PORTSC, &ehci->portsc);
+#if defined(CONFIG_MX7_USB_HSIC_PORTSC)
+		if (!strncmp(priv->phy_type, "hsic", 4))
+			writel(CONFIG_MX7_USB_HSIC_PORTSC, &ehci->portsc);
+		else
+#endif
+			writel(CONFIG_MXC_USB_PORTSC, &ehci->portsc);
 		setbits_le32(&ehci->portsc, USB_EN);
 	}
 
