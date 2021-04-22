@@ -6,6 +6,7 @@
 
 #include <common.h>
 #include <asm/io.h>
+#include <asm/global_data.h>
 #include <command.h>
 #include <watchdog.h>
 #include <wdt.h>
