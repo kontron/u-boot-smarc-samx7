@@ -28,7 +28,6 @@
 #include <env_internal.h>
 #include <search.h>
 #include <usb.h>
-#include <usb/ehci-ci.h>
 #include <dm.h>
 #include <dm/platform_data/serial_mxc.h>
 #include <version.h>
@@ -53,6 +52,8 @@ extern void use_pwm1_out_as_gpio(void);
 extern void start_imx_watchdog(int timeout, int kick);
 
 extern int EMB_EEP_I2C_EEPROM_BUS_NUM_1;
+
+int board_ehci_mx6_init(struct udevice *);
 
 DECLARE_GLOBAL_DATA_PTR;
 
@@ -361,34 +362,11 @@ static int attach_usb_hub(void)
 	return 0;
 }
 
-int board_ehci_hcd_init(int port)
+int board_ehci_mx6_init(struct udevice *dev)
 {
-	debug("%s: port = %d\n", __func__, port);
-	/*
-	 * port number will change when read from device tree
-	 * note that this depends on device tree and whether
-	 * OTG port 1 was detected or not. If not detected,
-	 * port number will be 0 again!
-	 */
-#if CONFIG_IS_ENABLED(DM_USB)
-	if (port == 1) {
-#else
-	if (port == 2) {
-#endif
-		attach_usb_hub();
-	}
+	debug("%s: dev->name = %s\n", __func__, dev->name);
 
-	return 0;
-}
-
-int board_ehci_hcd_exit(int port)
-{
-	debug("%s: port = %d\n", __func__, port);
-#if CONFIG_IS_ENABLED(DM_USB)
-	if (port == 1) {
-#else
-	if (port == 2) {
-#endif
+	if (!strcmp(dev->name, "usb@30b20000")) {
 		attach_usb_hub();
 	}
 
