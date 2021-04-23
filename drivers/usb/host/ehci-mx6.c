@@ -645,9 +645,11 @@ static int ehci_usb_probe(struct udevice *dev)
 		}
 	}
 
-	ret = mx6_parse_dt_addrs(dev);
-	if (ret)
-		return ret;
+	if (!is_mx7()) {
+		ret = mx6_parse_dt_addrs(dev);
+		if (ret)
+			return ret;
+	}
 
 	priv->ehci = ehci;
 	priv->init_type = type;
