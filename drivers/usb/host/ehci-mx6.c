@@ -439,6 +439,11 @@ struct ehci_mx6_priv_data {
 	void __iomem *anatop_addr;
 };
 
+int __weak board_ehci_mx6_init(struct udevice *dev)
+{
+	return 0;
+}
+
 static int mx6_init_after_reset(struct ehci_ctrl *dev)
 {
 	struct ehci_mx6_priv_data *priv = dev->priv;
@@ -667,6 +672,9 @@ static int ehci_usb_probe(struct udevice *dev)
 	enable_usboh3_clk(1);
 	mdelay(1);
 #endif
+
+	/* Do board specific initialization */
+	board_ehci_mx6_init(dev);
 
 #if CONFIG_IS_ENABLED(DM_REGULATOR)
 	ret = device_get_supply_regulator(dev, "vbus-supply",
