@@ -176,7 +176,8 @@ int splash_display(void)
 		goto end;
 
 #if defined(CONFIG_DM_VIDEO) && !defined(CONFIG_HIDE_LOGO_VERSION)
-	splash_display_banner();
+	if (env_get_yesno("splashbanner") > 0)
+		splash_display_banner();
 #endif
 end:
 	return ret;
