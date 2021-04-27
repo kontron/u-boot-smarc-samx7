@@ -14,6 +14,7 @@
 #include <asm/gpio.h>
 #include <spi.h>
 #include <spi_flash.h>
+#include <splash.h>
 #include <env.h>
 
 #include "amx6_iomux.h"
@@ -52,28 +53,6 @@ iomux_v3_cfg_t backlight_pads[] = {
 	IOMUX_PADS(PAD_SD1_DAT1__GPIO1_IO17 | MUX_PAD_CTRL(GPIO_PAD_CTRL)),
 };
 
-#if 0
-void enable_lvds(void)
-{
-	struct iomuxc *iomux = (struct iomuxc *)
-				IOMUXC_BASE_ADDR;
-	u32 reg = readl(&iomux->gpr[2]);
-	reg |= IOMUXC_GPR2_DATA_WIDTH_CH0_24BIT;
-	writel(reg, &iomux->gpr[2]);
-	SETUP_IOMUX_PADS(backlight_pads);
-
-	/* Enable back light for LVDS */
-	gpio_direction_output(IMX_GPIO_NR(1, 18), 1);
-	gpio_direction_output(IMX_GPIO_NR(1, 16), 1);
-	gpio_direction_output(IMX_GPIO_NR(1, 17), 1);
-}
-
-static void enable_lvds_and_display(struct display_info_t const *dev)
-{
-	setup_display(dev->lvds_clock);
-	enable_lvds ();
-}
-#else
 static void enable_backlight(void)
 {
 	SETUP_IOMUX_PADS(backlight_pads);
@@ -117,18 +96,46 @@ static void enable_lvds(struct display_info_t const *dev)
 
 	enable_backlight();
 }
-#endif
+
+static struct splash_location amx6_splash_locations[] = {
+	{
+		.name = "sf",
+		.storage = SPLASH_STORAGE_SF,
+		.flags = SPLASH_STORAGE_RAW,
+		.offset = 0x100000,
+	},
+	{
+		.name = "mmc",
+		.storage = SPLASH_STORAGE_MMC,
+		.flags = SPLASH_STORAGE_FS,
+		.devpart = "2:1"
+	},
+	{
+		.name = "sd",
+		.storage = SPLASH_STORAGE_MMC,
+		.flags = SPLASH_STORAGE_FS,
+		.devpart = "1:1"
+	},
+	{
+		.name = "sata",
+		.storage = SPLASH_STORAGE_SATA,
+		.flags = SPLASH_STORAGE_FS,
+		.devpart = "0:1"
+	},
+};
+
+int splash_screen_prepare(void)
+{
+	return splash_source_load(amx6_splash_locations,
+				  ARRAY_SIZE(amx6_splash_locations));
+}
 
 static struct display_info_t displays[] = {{
 	.bus	= -1,
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "LCD_800x480@LVDS",
 		.refresh        = 60,
@@ -150,11 +157,7 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "LCD_320x240@LVDS",
 		.refresh        = 60,
@@ -176,11 +179,7 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "LCD_480x272@LVDS",
 		.refresh        = 60,
@@ -202,11 +201,7 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "LCD_480x320@LVDS",
 		.refresh        = 60,
@@ -228,11 +223,7 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "LCD_640x480@LVDS",
 		.refresh        = 60,
@@ -254,11 +245,7 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "LCD_800x600@LVDS",
 		.refresh        = 60,
@@ -280,11 +267,7 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "LCD_960x640@LVDS",
 		.refresh        = 60,
@@ -306,11 +289,7 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "LCD_1024x576@LVDS",
 		.refresh        = 60,
@@ -332,11 +311,7 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "LCD_1024x600@LVDS",
 		.refresh        = 60,
@@ -358,11 +333,7 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "LCD_1024x768@LVDS",
 		.refresh        = 60,
@@ -384,11 +355,7 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "LCD_1152x768@LVDS",
 		.refresh        = 60,
@@ -410,11 +377,7 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "LCD_1152x864@LVDS",
 		.refresh        = 60,
@@ -436,11 +399,7 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "LCD_1280x720@LVDS",
 		.refresh        = 60,
@@ -462,11 +421,7 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "LCD_1280x768@LVDS",
 		.refresh        = 60,
@@ -488,11 +443,7 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "LCD_1280x800@LVDS",
 		.refresh        = 60,
@@ -514,11 +465,7 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "LCD_1280x1024@LVDS",
 		.refresh        = 50,
@@ -540,11 +487,7 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "LCD_1360x768@LVDS",
 		.refresh        = 50,
@@ -566,11 +509,7 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "LCD_1366x768@LVDS",
 		.refresh        = 50,
@@ -592,11 +531,7 @@ static struct display_info_t displays[] = {{
 	.addr	= 0,
 	.pixfmt	= IPU_PIX_FMT_LVDS666,
 	.detect	= detect_default,
-#if 0
-	.enable	= enable_lvds_and_display,
-#else
 	.enable	= enable_lvds,
-#endif
 	.mode	= {
 		.name           = "user",
 		.refresh        = 60,
@@ -615,34 +550,6 @@ static struct display_info_t displays[] = {{
 	.lvds_clock = 32
 } };
 
-
-void splash_load_from_spi(void)
-{
-	int ret;
-	unsigned char *tmp_splash = (unsigned char *)CONFIG_SPLASH_IMG_ADDR;
-	struct spi_flash *splash_flash;
-
-	splash_flash = spi_flash_probe(CONFIG_SF_DEFAULT_BUS, CONFIG_SF_DEFAULT_CS,
-			CONFIG_SF_DEFAULT_SPEED, CONFIG_SF_DEFAULT_MODE);
-
-	if (!splash_flash) {
-		printf ("Loading bootlogo from SPI Flash failed in flash_probe\n");
-		return;
-	}
-
-	ulong splash_img_size = env_get_ulong("splash_img_size", 16, 0);
-	/* if not found in env, use the default */
-	if (splash_img_size == 0)
-		splash_img_size = CONFIG_SPLASH_SIZE;
-
-	ret = spi_flash_read(splash_flash, CONFIG_SPLASH_OFFSET,
-					splash_img_size, tmp_splash);
-
-	if (ret) {
-		printf ("Loading bootlogo from SPI Flash failed in flash_read\n");
-		return;
-	}
-}
 
 int board_video_init(void)
 {
@@ -729,8 +636,8 @@ int board_video_skip(void)
 
 	if (!init) {
 		/* Always load splashimage from SPI Flash to RAM */
-		env_set_addr("splashimage", (const void*)CONFIG_SPLASH_IMG_ADDR);
-		splash_load_from_spi();
+		/* env_set_addr("splashimage", (const void*)CONFIG_SPLASH_IMG_ADDR); */
+		/* splash_load_from_spi(); */
 		skip = board_video_init();
 		init = 1;
 	}
@@ -767,7 +674,6 @@ void setup_display(void)
 
 	select_ldb_di_clock_source(MXC_PLL2_PFD0_CLK);
 
-#if 0
 #ifdef PATCH_FOR_CLOCKS
 	/*
 	 * In some situations the display clock did not start up correctly
@@ -845,7 +751,6 @@ void setup_display(void)
 	reg = readl(&mxc_ccm->ccdr); /* ccm_base + 0x4 */
 	reg &= ~(1 << 16);
 	writel(reg, &mxc_ccm->ccdr);
-#endif
 #endif
 
 #ifdef GATE_UNGATE_CLOCKS

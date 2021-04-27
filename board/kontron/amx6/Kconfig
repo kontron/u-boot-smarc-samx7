@@ -14,18 +14,6 @@ menu "Kontron Extensions"
 config KEX_IMX_WATCHDOG
 	bool "IMX watchdog support"
 
-config SPLASH_IMG_ADDR
-	hex "Splash screen image address in RAM"
-	default 0x10900000
-
-config SPLASH_OFFSET
-	hex "Splash screen image offset in SPI flash"
-	default 0x100000
-
-config SPLASH_SIZE
-	hex "Splash screen image size"
-	default 0x10000
-
 endmenu
 
 source "board/kontron/common/Kconfig"
