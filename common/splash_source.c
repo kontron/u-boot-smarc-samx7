@@ -24,10 +24,15 @@
 
 DECLARE_GLOBAL_DATA_PTR;
 
+#ifdef CONFIG_VIDEO_BMP_GZIP
+#define SPLASH_DEFAULT_GZ_SIZE		0x10000
+#endif
+
 #ifdef CONFIG_SPI_FLASH
 static struct spi_flash *sf;
 static int splash_sf_read_raw(u32 bmp_load_addr, int offset, size_t read_size)
 {
+
 	if (!sf) {
 		sf = spi_flash_probe(CONFIG_SF_DEFAULT_BUS,
 				     CONFIG_SF_DEFAULT_CS,
@@ -99,7 +104,20 @@ static int splash_load_raw(struct splash_location *location, u32 bmp_load_addr)
 		return res;
 
 	bmp_hdr = (struct bmp_header *)(uintptr_t)bmp_load_addr;
-	bmp_size = le32_to_cpu(bmp_hdr->file_size);
+#if defined(CONFIG_VIDEO_BMP_GZIP)
+	if (!((bmp_hdr->signature[0] == 'B') &&
+	      (bmp_hdr->signature[1] == 'M'))) {
+		/*
+		 * No valid BMP header found, assume gzipped splash image.
+		 * Load gzipped image using 'splashsize' environment var
+		 * and unpack in 'bmp_display' later.
+		 */
+		bmp_size = env_get_ulong("splashsize", 16, 0);
+		if (bmp_size == 0)
+			bmp_size = SPLASH_DEFAULT_GZ_SIZE;
+	} else
+#endif
+		bmp_size = le32_to_cpu(bmp_hdr->file_size);
 
 	if (bmp_load_addr + bmp_size >= gd->start_addr_sp)
 		goto splash_address_too_high;
