@@ -541,6 +541,19 @@ int misc_init_r(void)
 	gpio_request(IMX_GPIO_NR(3, 15), "gpio11");
 	gpio_direction_output(IMX_GPIO_NR(3,15), 0);	/* GPIO11 */
 
+#if defined(CONFIG_SYSRESET_GPIO)
+	/*
+	 * We have configured ENET1_RX_CLK pad to serve as reset GPIO (GPIO7
+	 * IO13) instead of WDOG2_B.
+	 * As the WDT LED on eval2 carrier will glow when GPIO7 IO13 signal
+	 * comes up as an input signak after reset, we will init GPIO7_IO13
+	 * as output line and set to 1 here.
+	 */
+	gpio_request(IMX_GPIO_NR(7, 13), "wdt_time_out");
+	gpio_direction_output(IMX_GPIO_NR(7,13), 1);
+	gpio_free(IMX_GPIO_NR(7, 13));
+#endif
+
 	return 0;
 }
 

@@ -62,10 +62,19 @@
 		};
 	};
 
+#if defined(CONFIG_SYSRESET_GPIO)
+	gpio-reboot {
+		compatible = "gpio-restart";
+		gpios = <&gpio7 13 GPIO_ACTIVE_LOW>;
+	};
+#endif
+
+#if defined(CONFIG_SYSRESET_WATCHDOG)
 	wdt-reboot {
 		compatible = "wdt-reboot";
 		wdt = <&wdog1>;
 	};
+#endif
 };
 
 &iomuxc {

@@ -32,6 +32,14 @@ void BOARD_FixupPins(void)
 	 * for ENET2_RX_CLK. Output from Pins tool is wrong.
 	 */
 	HW_IOMUXC_ENET2_RX_CLK_SELECT_INPUT_WR(IOMUXC_BASE, 0x00000000u);
+
+#if defined(CONFIG_SYSRESET_GPIO)
+	/*
+	 * Enable GPIO7_IO13 signal instead of WDOG2_B (WDT_TIME_OUT) on
+	 * ENET1_RX_CLK pad.
+	 */
+	HW_IOMUXC_SW_MUX_CTL_PAD_ENET1_RX_CLK_WR(IOMUXC_BASE, 0x00000005);
+#endif
 }
 
 void hsic_1p2_regulator_out(void)
