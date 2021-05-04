@@ -458,7 +458,7 @@ int misc_init_r(void)
 	 * i2c dev 0 first to setup the correct clock rate. Now the
 	 * speed is set up correctly when bus number 1 is selected.
 	 */
-	uclass_get_device_by_seq(UCLASS_I2C, 0, &bus)
+	uclass_get_device_by_seq(UCLASS_I2C, 0, &bus);
 
 	attach_usb_hub();
 	imx_set_usb_hsic_power();
