@@ -246,7 +246,9 @@ static u8 spi_nor_convert_opcode(u8 opcode, const u8 table[][2], size_t size)
 	/* No conversion found, keep input op code. */
 	return opcode;
 }
+#endif
 
+#if defined(CONFIG_SPI_FLASH_ERASE_64K)
 static u8 spi_nor_convert_4to64_erase(u8 opcode)
 {
 	static const u8 spi_nor_4to64_erase[][2] = {
