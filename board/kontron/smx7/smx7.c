@@ -911,6 +911,7 @@ void board_spl_console_init(void)
 
 int reset_out_delay(int delay)
 {
+	gpio_request(IMX_GPIO_NR(2,30), "RESET_OUT#");
 	/*
 	 * Pull RESET_OUT to low
 	 *
@@ -971,9 +972,6 @@ void board_init_f(ulong dummy)
 	/* setup GP timer */
 	timer_init();
 
-	/* pull RESET_OUT# high after 150ms delay */
-	reset_out_delay(150);
-
 	/* UART clocks enabled and gd valid - init serial console */
 	/* preloader_console_init(); * - does not work */
 #if 0
@@ -996,6 +994,11 @@ void board_init_f(ulong dummy)
 
 	/* Clear the BSS. */
 	memset(__bss_start, 0, __bss_end - __bss_start);
+
+	spl_early_init();
+
+	/* pull RESET_OUT# high after 150ms delay */
+	reset_out_delay(150);
 
 	/* load/boot image from boot device */
 	board_init_r(NULL, 0);

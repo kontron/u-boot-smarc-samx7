@@ -57,6 +57,31 @@
 
 	soc {
 		u-boot,dm-spl;
+		aips1: aips-bus@30000000 {
+			u-boot,dm-spl;
+
+			gpio1: gpio@30200000 {
+				u-boot,dm-spl;
+			};
+			gpio2: gpio@30210000 {
+				u-boot,dm-spl;
+			};
+			gpio3: gpio@30220000 {
+				u-boot,dm-spl;
+			};
+			gpio4: gpio@30230000 {
+				u-boot,dm-spl;
+			};
+			gpio5: gpio@30240000 {
+				u-boot,dm-spl;
+			};
+			gpio6: gpio@30250000 {
+				u-boot,dm-spl;
+			};
+			gpio7: gpio@30260000 {
+				u-boot,dm-spl;
+			};
+		};
 		aips3: aips-bus@30800000{
 			u-boot,dm-spl;
 		};
