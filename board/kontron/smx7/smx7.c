@@ -277,6 +277,27 @@ int board_early_init_f(void)
 	return 0;
 }
 
+int reset_out_delay(int delay)
+{
+	gpio_request(IMX_GPIO_NR(2,30), "RESET_OUT#");
+	/*
+	 * Pull RESET_OUT to low
+	 *
+	 * This is a workaround to mitigate that signal is pulled high
+	 * on the module.
+	 */
+	gpio_direction_output(IMX_GPIO_NR(2,30), 0);
+	/*
+	 * Wait 150ms and set RESET_OUT back to high level.
+	 * This is to meet requirement that RESET_OUT must go high within
+	 * 100 - 500 ms after CARRIER_POWER_ON.
+	 */
+	udelay(delay*1000);
+	gpio_direction_output(IMX_GPIO_NR(2,30), 1);
+
+	return 0;
+}
+
 int board_init(void)
 {
 	/* address of boot parameters */
@@ -296,6 +317,10 @@ int board_init(void)
 
 #ifdef CONFIG_MXC_SPI
        /* setup_spi(); */
+#endif
+
+#ifndef CONFIG_SPL
+	reset_out_delay(150);
 #endif
 
 	return 0;
@@ -908,27 +933,6 @@ void board_spl_console_init(void)
 	      U_BOOT_TIME " " U_BOOT_TZ ")\n");
 }
 #endif
-
-int reset_out_delay(int delay)
-{
-	gpio_request(IMX_GPIO_NR(2,30), "RESET_OUT#");
-	/*
-	 * Pull RESET_OUT to low
-	 *
-	 * This is a workaround to mitigate that signal is pulled high
-	 * on the module.
-	 */
-	gpio_direction_output(IMX_GPIO_NR(2,30), 0);
-	/*
-	 * Wait 150ms and set RESET_OUT back to high level.
-	 * This is to meet requirement that RESET_OUT must go high within
-	 * 100 - 500 ms after CARRIER_POWER_ON.
-	 */
-	udelay(delay*1000);
-	gpio_direction_output(IMX_GPIO_NR(2,30), 1);
-
-	return 0;
-}
 
 #if defined CONFIG_SPL_MMC_SUPPORT
 #define RECOVERY_GPIO IMX_GPIO_NR(3, 13)
