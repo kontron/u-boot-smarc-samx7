@@ -28,8 +28,8 @@ SPI Flash Memory Map
 Start Address   End Address     Size    Description
 0x00000000      0x000003ff      1k      Unused
 0x00000400      0x000bffff      768k    U-Boot image
-0x00c00000      0x00c7ffff      32k     U-boot environment
-0x00c80000      0x00cfffff      32k     U-Boot redundant environment
+0x000c0000      0x000c7fff      32k     U-boot environment
+0x000c8000      0x000cffff      32k     U-Boot redundant environment
 
 Building AMX6 Bootloader Image
 ------------------------------
